@@ -69,6 +69,7 @@ async function main() {
 
     const dashboard = await request(baseUrl, "/api/admin/dashboard");
     assert(dashboard.todayOrderCount >= 1 && dashboard.todayRevenue >= paid.order.amount, "后台看板统计订单和营收");
+    assert(typeof dashboard.revenueDelta === "number" && typeof dashboard.orderCountDelta === "number" && typeof dashboard.newMemberDelta === "number", "后台看板返回较昨日对比数据");
     assert(dashboard.staffSales.some((item) => item.employeeId === "emp_anna" && item.sales >= paid.order.amount), "后台员工业绩统计正确");
 
     const transfer = await request(baseUrl, `/api/admin/orders/${orderData.order.orderId}/transfer-storage`, {
@@ -184,6 +185,8 @@ async function main() {
     const rechargeRecords = await request(baseUrl, "/api/recharge-records?userId=user_demo");
     assert(rechargeRecords.records.length === 1, "充值记录可查询");
     assert(rechargeRecords.configs.some((config) => config.configId === rechargeConfig.config.configId), "充值中心返回可选配置");
+    const disabledRechargeConfig = await request(baseUrl, `/api/admin/recharge-configs/${rechargeConfig.config.configId}`, { method: "PATCH", body: { status: "disabled" } });
+    assert(disabledRechargeConfig.config.status === "disabled", "后台可停用充值配置");
 
     const exchangedCoupons = await request(baseUrl, "/api/coupons/exchange", { method: "POST", body: { userId: "user_demo", count: 1, skuId: "sku_bud" } });
     assert(exchangedCoupons.coupons.length === 1 && exchangedCoupons.costPoints === 100, "客户可用积分兑换酒水券");
@@ -203,6 +206,16 @@ async function main() {
     assert(lotteryRedeemConfirm.record.status === "completed" && lotteryRedeemConfirm.record.redeemedBy === "emp_anna", "员工可确认核销中奖记录");
     const lotteryOverview = await request(baseUrl, "/api/admin/lottery/overview");
     assert(lotteryOverview.totalDraws >= 1 && lotteryOverview.todayCostPoints >= 20, "后台抽奖概况更新");
+    const lotterySettings = await request(baseUrl, "/api/admin/lottery/settings", { method: "PATCH", body: { cooldownMinutes: 10, dailyLimit: 5 } });
+    assert(lotterySettings.settings.cooldownMinutes === 10 && lotterySettings.settings.dailyLimit === 5, "后台可配置抽奖冷却和每日次数");
+    let cooldownError = "";
+    try {
+      await request(baseUrl, "/api/lottery/draw", { method: "POST", body: { userId: "user_demo" } });
+    } catch (error) {
+      cooldownError = error.message;
+    }
+    assert(cooldownError.includes("抽奖冷却中"), "抽奖冷却时间生效");
+    await request(baseUrl, "/api/admin/lottery/settings", { method: "PATCH", body: { cooldownMinutes: 0 } });
 
     const finance = await request(baseUrl, "/api/admin/finance/overview");
     assert(typeof finance.todayRevenue === "number" && Array.isArray(finance.trend), "财务概览返回营收和趋势");
@@ -213,14 +226,24 @@ async function main() {
 
     const level = await request(baseUrl, "/api/admin/member-levels", { method: "POST", body: { name: "黑金会员", minPoints: 2000 } });
     assert(level.level.name === "黑金会员", "后台可新增会员等级");
+    const updatedLevel = await request(baseUrl, `/api/admin/member-levels/${level.level.levelId}`, { method: "PATCH", body: { minPoints: 1800, status: "disabled" } });
+    assert(updatedLevel.level.minPoints === 1800 && updatedLevel.level.status === "disabled", "后台可编辑会员等级");
 
     const category = await request(baseUrl, "/api/admin/categories", { method: "POST", body: { name: "软饮", sortOrder: 4 } });
     assert(category.category.name === "软饮", "后台可新增商品分类");
+    const disabledCategory = await request(baseUrl, `/api/admin/categories/${category.category.categoryId}`, { method: "PATCH", body: { status: "disabled" } });
+    assert(disabledCategory.category.status === "disabled", "后台可停用商品分类");
+    const activeCategory = await request(baseUrl, `/api/admin/categories/${category.category.categoryId}`, { method: "PATCH", body: { status: "active" } });
+    assert(activeCategory.category.status === "active", "后台可重新启用商品分类");
     const product = await request(baseUrl, "/api/admin/products", {
       method: "POST",
       body: { categoryId: category.category.categoryId, name: "苏打水", spec: "330ml", unit: "瓶", price: 18, stockQty: 6, warningQty: 2, storageDays: 0 },
     });
     assert(product.product.name === "苏打水" && product.product.stockQty === 6, "后台可新增 SKU");
+    const disabledProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "disabled", price: 20 } });
+    assert(disabledProduct.product.status === "disabled" && disabledProduct.product.price === 20, "后台可编辑并下架 SKU");
+    const activeProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "active" } });
+    assert(activeProduct.product.status === "active", "后台可重新上架 SKU");
     const filteredProducts = await request(baseUrl, `/api/products?categoryId=${category.category.categoryId}&keyword=${encodeURIComponent("苏打")}`);
     assert(filteredProducts.products.length === 1 && filteredProducts.products[0].skuId === product.product.skuId, "商品列表支持分类与关键词筛选");
     const stockInRequest = await request(baseUrl, "/api/admin/stock-requests", { method: "POST", body: { skuId: product.product.skuId, direction: "in", quantity: 4, operatorId: "emp_admin" } });
@@ -233,6 +256,9 @@ async function main() {
     const rejectRequest = await request(baseUrl, "/api/admin/stock-requests", { method: "POST", body: { skuId: product.product.skuId, direction: "in", quantity: 1, operatorId: "emp_admin" } });
     const rejectedRequest = await request(baseUrl, `/api/admin/stock-requests/${rejectRequest.request.requestId}/reject`, { method: "POST", body: { operatorId: "emp_admin", reason: "单据错误" } });
     assert(rejectedRequest.request.status === "rejected", "出入库申请可驳回");
+
+    const pointsConfig = await request(baseUrl, "/api/admin/points-config", { method: "PATCH", body: { couponExchangePoints: 80, checkinPoints: 12, pointExpireDays: 180, pointsVisible: true } });
+    assert(pointsConfig.config.couponExchangePoints === 80 && pointsConfig.config.checkinPoints === 12 && pointsConfig.config.pointExpireDays === 180, "后台可配置积分规则");
 
     const expiredStorage = await request(baseUrl, "/api/staff/storage", {
       method: "POST",
@@ -275,6 +301,9 @@ async function main() {
 
     const tableType = await request(baseUrl, "/api/admin/table-types", { method: "POST", body: { name: "超级VIP卡", capacity: 9 } });
     assert(tableType.type.name === "超级VIP卡", "后台可新增咖位类型");
+    const prize = await request(baseUrl, "/api/admin/lottery/prizes", { method: "POST", body: { name: "测试奖品", winRate: 5 } });
+    const disabledPrize = await request(baseUrl, `/api/admin/lottery/prizes/${prize.prize.prizeId}`, { method: "PATCH", body: { status: "disabled", winRate: 0 } });
+    assert(disabledPrize.prize.status === "disabled" && disabledPrize.prize.winRate === 0, "后台可编辑并停用抽奖奖品");
     const table = await request(baseUrl, "/api/admin/tables", { method: "POST", body: { name: "B2 超级桌", type: "超级VIP卡", capacity: 9 } });
     assert(table.table.name === "B2 超级桌", "后台可新增座台信息");
     const occupiedTable = await request(baseUrl, `/api/admin/tables/${table.table.tableId}`, {

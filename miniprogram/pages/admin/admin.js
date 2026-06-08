@@ -23,6 +23,7 @@ Page({
     lotteryOverview: {},
     lotteryPrizes: [],
     lotterySettings: {},
+    pointsConfig: {},
     scanRecords: [],
     systemSettings: {},
     blindSettings: {},
@@ -57,6 +58,8 @@ Page({
       dashboard: {
         ...data,
         todayRevenueText: money(data.todayRevenue),
+        yesterdayRevenueText: money(data.yesterdayRevenue),
+        revenueDeltaText: money(data.revenueDelta),
         lowStockCount: data.lowStock.length,
         pendingOrderCount: data.pendingOrders.length
       }
@@ -116,13 +119,14 @@ Page({
   },
 
   async loadV3Admin() {
-    const [finance, business, recharge, rechargeRecords, consumptionRecords, levels, lotteryOverview, lotteryPrizes, stockRequests, stockLedgers, scanRecords, system, blind] = await Promise.all([
+    const [finance, business, recharge, rechargeRecords, consumptionRecords, levels, pointsConfig, lotteryOverview, lotteryPrizes, stockRequests, stockLedgers, scanRecords, system, blind] = await Promise.all([
       request("/api/admin/finance/overview"),
       request("/api/admin/business-details"),
       request("/api/admin/recharge-configs"),
       request("/api/admin/recharge-records"),
       request("/api/admin/consumption-records"),
       request("/api/admin/member-levels"),
+      request("/api/admin/points-config"),
       request("/api/admin/lottery/overview"),
       request("/api/admin/lottery/prizes"),
       request("/api/admin/stock-requests"),
@@ -143,6 +147,7 @@ Page({
       rechargeRecords: rechargeRecords.records.map((item) => ({ ...item, amountText: money(item.amount), giftText: money(item.giftAmount), balanceText: money(item.balanceAfter) })),
       consumptionRecords: consumptionRecords.records.map((item) => ({ ...item, amountText: money(item.amount), statusText: statusText(item.orderStatus) })),
       memberLevels: levels.levels,
+      pointsConfig: pointsConfig.config,
       lotteryOverview,
       lotteryPrizes: lotteryPrizes.prizes,
       lotterySettings: lotteryPrizes.settings,
@@ -258,6 +263,28 @@ Page({
       wx.showToast({ title: "SKU 已新增" })
       await this.loadProducts()
       await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async toggleProduct(event) {
+    try {
+      const status = event.currentTarget.dataset.status === "active" ? "disabled" : "active"
+      await request(`/api/admin/products/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status, operatorId: "emp_admin" } })
+      wx.showToast({ title: status === "active" ? "已上架" : "已下架" })
+      await this.loadProducts()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async toggleCategory(event) {
+    try {
+      const status = event.currentTarget.dataset.status === "active" ? "disabled" : "active"
+      await request(`/api/admin/categories/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status, operatorId: "emp_admin" } })
+      wx.showToast({ title: status === "active" ? "分类启用" : "分类停用" })
+      await this.loadProducts()
     } catch (error) {
       showError(error)
     }
@@ -388,10 +415,40 @@ Page({
     }
   },
 
+  async disableRechargeConfig(event) {
+    try {
+      await request(`/api/admin/recharge-configs/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status: "disabled", operatorId: "emp_admin" } })
+      wx.showToast({ title: "配置已停用" })
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
   async createMemberLevel() {
     try {
       await request("/api/admin/member-levels", { method: "POST", data: { name: "黑金会员", minPoints: 2000 } })
       wx.showToast({ title: "已新增等级" })
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async disableMemberLevel(event) {
+    try {
+      await request(`/api/admin/member-levels/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status: "disabled", operatorId: "emp_admin" } })
+      wx.showToast({ title: "等级已停用" })
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async updatePointsConfig() {
+    try {
+      await request("/api/admin/points-config", { method: "PATCH", data: { checkinPoints: 12, couponExchangePoints: 80, pointExpireDays: 180, pointsVisible: true } })
+      wx.showToast({ title: "积分配置已更新" })
       await this.loadV3Admin()
     } catch (error) {
       showError(error)
@@ -408,10 +465,30 @@ Page({
     }
   },
 
+  async disablePrize(event) {
+    try {
+      await request(`/api/admin/lottery/prizes/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status: "disabled", winRate: 0, operatorId: "emp_admin" } })
+      wx.showToast({ title: "奖品已停用" })
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
   async toggleLottery() {
     try {
       await request("/api/admin/lottery/settings", { method: "PATCH", data: { enabled: !this.data.lotterySettings.enabled } })
       wx.showToast({ title: "抽奖设置已更新" })
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async updateLotteryRules() {
+    try {
+      await request("/api/admin/lottery/settings", { method: "PATCH", data: { dailyLimit: 5, cooldownMinutes: 10, costPoints: 20 } })
+      wx.showToast({ title: "抽奖规则已更新" })
       await this.loadV3Admin()
     } catch (error) {
       showError(error)

@@ -507,9 +507,16 @@ function publicOrder(store, order) {
 
 function dashboard(store) {
   const today = dayKey();
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = yesterdayDate.toISOString().slice(0, 10);
   const paidOrders = store.data.orders.filter((order) => order.payStatus === "paid");
   const todayOrders = paidOrders.filter((order) => order.paidAt?.startsWith(today));
+  const yesterdayOrders = paidOrders.filter((order) => order.paidAt?.startsWith(yesterday));
   const revenue = todayOrders.reduce((sum, order) => sum + order.amount, 0);
+  const yesterdayRevenue = yesterdayOrders.reduce((sum, order) => sum + order.amount, 0);
+  const todayMembers = store.data.users.filter((user) => user.createdAt?.startsWith(today)).length;
+  const yesterdayMembers = store.data.users.filter((user) => user.createdAt?.startsWith(yesterday)).length;
   const staffSales = store.data.employees.map((employee) => {
     const orders = paidOrders.filter((order) => order.employeeId === employee.employeeId);
     return {
@@ -521,11 +528,20 @@ function dashboard(store) {
     };
   });
   const occupied = store.data.tables.filter((table) => table.status === "occupied" || table.status === "reserved").length;
+  const tableUsageRate = store.data.tables.length ? Math.round((occupied / store.data.tables.length) * 100) : 0;
   return {
     todayRevenue: revenue,
+    yesterdayRevenue,
+    revenueDelta: revenue - yesterdayRevenue,
     todayOrderCount: todayOrders.length,
+    yesterdayOrderCount: yesterdayOrders.length,
+    orderCountDelta: todayOrders.length - yesterdayOrders.length,
+    newMemberCount: todayMembers,
+    yesterdayNewMemberCount: yesterdayMembers,
+    newMemberDelta: todayMembers - yesterdayMembers,
     memberCount: store.data.users.length,
-    tableUsageRate: store.data.tables.length ? Math.round((occupied / store.data.tables.length) * 100) : 0,
+    tableUsageRate,
+    tableUsageRateDelta: tableUsageRate,
     lowStock: store.data.products.filter((sku) => sku.stockQty <= sku.warningQty),
     pendingOrders: store.data.orders.filter((order) => order.orderStatus === "pending"),
     pendingPickupRequests: store.data.storagePickupRequests.filter((request) => request.status === "pending"),
@@ -1216,6 +1232,17 @@ function createRouter(store) {
     await store.save();
     return { category };
   });
+  add("PATCH", "/api/admin/categories/:categoryId", async (body, params) => {
+    const category = store.data.categories.find((item) => item.categoryId === params.categoryId);
+    if (!category) throw new HttpError(404, "商品分类不存在");
+    const before = deepClone(category);
+    if (body.name !== undefined) category.name = body.name;
+    if (body.sortOrder !== undefined) category.sortOrder = Number(body.sortOrder);
+    if (body.status !== undefined) category.status = body.status;
+    store.log(body.operatorId || "emp_admin", "admin", "update_category", "ProductCategory", category.categoryId, before, category, "修改商品分类");
+    await store.save();
+    return { category };
+  });
   add("POST", "/api/admin/products", async (body) => {
     const category = store.data.categories.find((item) => item.categoryId === (body.categoryId || store.data.categories[0]?.categoryId));
     if (!category) throw new HttpError(404, "商品分类不存在");
@@ -1254,6 +1281,19 @@ function createRouter(store) {
       });
     }
     store.log(body.operatorId || "emp_admin", "admin", "create_product", "ProductSKU", product.skuId, null, product, "新增 SKU");
+    await store.save();
+    return { product };
+  });
+  add("PATCH", "/api/admin/products/:skuId", async (body, params) => {
+    const product = store.getSku(params.skuId);
+    const before = deepClone(product);
+    for (const key of ["categoryId", "name", "spec", "unit", "status", "description", "imageUrl"]) {
+      if (body[key] !== undefined) product[key] = body[key];
+    }
+    for (const key of ["price", "warningQty", "storageDays"]) {
+      if (body[key] !== undefined) product[key] = Number(body[key]);
+    }
+    store.log(body.operatorId || "emp_admin", "admin", "update_product", "ProductSKU", product.skuId, before, product, body.reason || "修改 SKU");
     await store.save();
     return { product };
   });
@@ -1598,6 +1638,11 @@ function createRouter(store) {
     const today = dayKey();
     const todayCount = store.data.lotteryRecords.filter((record) => record.userId === user.userId && record.createdAt.startsWith(today)).length;
     if (todayCount >= store.data.lotterySettings.dailyLimit) throw new HttpError(429, "今日抽奖次数已用完");
+    const cooldownMinutes = Number(store.data.lotterySettings.cooldownMinutes || 0);
+    const lastDraw = store.data.lotteryRecords.find((record) => record.userId === user.userId);
+    if (cooldownMinutes > 0 && lastDraw && Date.now() - new Date(lastDraw.createdAt).getTime() < cooldownMinutes * 60 * 1000) {
+      throw new HttpError(429, "抽奖冷却中");
+    }
     const cost = store.data.lotterySettings.costPoints;
     if (user.pointsBalance < cost) throw new HttpError(400, "积分不足");
     const prizes = store.data.lotteryPrizes.filter((prize) => prize.status === "active");
@@ -1736,6 +1781,18 @@ function createRouter(store) {
     await store.save();
     return { config };
   });
+  add("PATCH", "/api/admin/recharge-configs/:configId", async (body, params) => {
+    const config = store.data.rechargeConfigs.find((item) => item.configId === params.configId);
+    if (!config) throw new HttpError(404, "充值配置不存在");
+    const before = deepClone(config);
+    if (body.amount !== undefined) config.amount = Number(body.amount);
+    if (body.giftAmount !== undefined) config.giftAmount = Number(body.giftAmount);
+    if (body.status !== undefined) config.status = body.status;
+    config.updatedAt = now();
+    store.log(body.operatorId || "emp_admin", "admin", "update_recharge_config", "RechargeConfig", config.configId, before, config, "修改充值配置");
+    await store.save();
+    return { config };
+  });
   add("GET", "/api/admin/recharge-records", async () => ({ records: store.data.rechargeRecords }));
   add("GET", "/api/admin/member-levels", async () => ({ levels: store.data.memberLevels }));
   add("POST", "/api/admin/member-levels", async (body) => {
@@ -1743,6 +1800,39 @@ function createRouter(store) {
     store.data.memberLevels.push(level);
     await store.save();
     return { level };
+  });
+  add("PATCH", "/api/admin/member-levels/:levelId", async (body, params) => {
+    const level = store.data.memberLevels.find((item) => item.levelId === params.levelId);
+    if (!level) throw new HttpError(404, "会员等级不存在");
+    const before = deepClone(level);
+    if (body.name !== undefined) level.name = body.name;
+    if (body.minPoints !== undefined) level.minPoints = Number(body.minPoints);
+    if (body.status !== undefined) level.status = body.status;
+    store.log(body.operatorId || "emp_admin", "admin", "update_member_level", "MemberLevel", level.levelId, before, level, "修改会员等级");
+    await store.save();
+    return { level };
+  });
+  add("GET", "/api/admin/points-config", async () => ({
+    config: {
+      pointRate: store.data.settings.pointRate,
+      pointsVisible: store.data.settings.pointsVisible,
+      checkinEnabled: store.data.settings.checkinEnabled,
+      checkinPoints: store.data.settings.checkinPoints,
+      pointExpireDays: store.data.settings.pointExpireDays,
+      couponExchangePoints: store.data.settings.couponExchangePoints,
+    },
+  }));
+  add("PATCH", "/api/admin/points-config", async (body) => {
+    const before = deepClone(store.data.settings);
+    for (const key of ["pointRate", "checkinPoints", "pointExpireDays", "couponExchangePoints"]) {
+      if (body[key] !== undefined) store.data.settings[key] = Number(body[key]);
+    }
+    for (const key of ["pointsVisible", "checkinEnabled"]) {
+      if (body[key] !== undefined) store.data.settings[key] = Boolean(body[key]);
+    }
+    store.log(body.operatorId || "emp_admin", "admin", "update_points_config", "Settings", store.data.settings.storeId, before, store.data.settings, "修改积分配置");
+    await store.save();
+    return { config: { pointRate: store.data.settings.pointRate, pointsVisible: store.data.settings.pointsVisible, checkinEnabled: store.data.settings.checkinEnabled, checkinPoints: store.data.settings.checkinPoints, pointExpireDays: store.data.settings.pointExpireDays, couponExchangePoints: store.data.settings.couponExchangePoints } };
   });
   add("GET", "/api/admin/lottery/overview", async () => {
     const month = monthKey();
@@ -1759,6 +1849,18 @@ function createRouter(store) {
   add("POST", "/api/admin/lottery/prizes", async (body) => {
     const prize = { prizeId: newId("prize"), name: body.name, winRate: Number(body.winRate || 0), status: body.status || "active", createdAt: now() };
     store.data.lotteryPrizes.push(prize);
+    await store.save();
+    return { prize };
+  });
+  add("PATCH", "/api/admin/lottery/prizes/:prizeId", async (body, params) => {
+    const prize = store.data.lotteryPrizes.find((item) => item.prizeId === params.prizeId);
+    if (!prize) throw new HttpError(404, "奖品不存在");
+    const before = deepClone(prize);
+    if (body.name !== undefined) prize.name = body.name;
+    if (body.winRate !== undefined) prize.winRate = Number(body.winRate);
+    if (body.status !== undefined) prize.status = body.status;
+    prize.updatedAt = now();
+    store.log(body.operatorId || "emp_admin", "admin", "update_lottery_prize", "LotteryPrize", prize.prizeId, before, prize, "修改抽奖奖品");
     await store.save();
     return { prize };
   });

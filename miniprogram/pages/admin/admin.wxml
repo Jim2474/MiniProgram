@@ -7,8 +7,11 @@
 
   <view class="metrics">
     <view class="metric"><view class="metric-value">{{dashboard.todayRevenueText}}</view><view class="metric-label">今日营业额</view></view>
+    <view class="metric"><view class="metric-value">{{dashboard.revenueDeltaText}}</view><view class="metric-label">较昨日营收</view></view>
     <view class="metric"><view class="metric-value">{{dashboard.todayOrderCount}}</view><view class="metric-label">今日订单</view></view>
+    <view class="metric"><view class="metric-value">{{dashboard.orderCountDelta}}</view><view class="metric-label">较昨日订单</view></view>
     <view class="metric"><view class="metric-value">{{dashboard.memberCount}}</view><view class="metric-label">会员数</view></view>
+    <view class="metric"><view class="metric-value">{{dashboard.newMemberDelta}}</view><view class="metric-label">较昨日新增</view></view>
     <view class="metric"><view class="metric-value">{{dashboard.tableUsageRate}}%</view><view class="metric-label">卡座使用率</view></view>
     <view class="metric"><view class="metric-value">{{dashboard.lowStockCount}}</view><view class="metric-label">低库存</view></view>
     <view class="metric"><view class="metric-value">{{dashboard.pendingOrderCount}}</view><view class="metric-label">待处理订单</view></view>
@@ -35,6 +38,11 @@
       <button size="mini" class="secondary" bindtap="searchProducts">筛选</button>
       <button size="mini" class="secondary" bindtap="createCategory">新增分类</button>
     </view>
+    <view wx:for="{{productCategories}}" wx:key="categoryId" class="row">
+      <view class="row-title">{{item.name}}</view>
+      <view class="muted">{{item.status}}</view>
+      <button size="mini" class="secondary" data-id="{{item.categoryId}}" data-status="{{item.status}}" bindtap="toggleCategory">启停分类</button>
+    </view>
     <picker range="{{productCategories}}" range-key="name" value="{{productForm.categoryIndex}}" bindchange="onProductCategoryChange">
       <view class="input">{{productCategories[productForm.categoryIndex].name || '选择分类'}}</view>
     </picker>
@@ -49,6 +57,7 @@
         <button size="mini" class="secondary" data-id="{{item.skuId}}" data-current="{{item.stockQty}}" bindtap="addStock">盘点 +10</button>
         <button size="mini" class="secondary" data-id="{{item.skuId}}" data-direction="in" bindtap="createStockRequest">入库申请</button>
         <button size="mini" class="secondary" data-id="{{item.skuId}}" data-direction="out" bindtap="createStockRequest">出库申请</button>
+        <button size="mini" class="secondary" data-id="{{item.skuId}}" data-status="{{item.status}}" bindtap="toggleProduct">上下架</button>
       </view>
     </view>
   </view>
@@ -135,6 +144,7 @@
     <view wx:for="{{rechargeConfigs}}" wx:key="configId" class="row">
       <view class="row-title">充 {{item.amount}} 送 {{item.giftAmount}}</view>
       <view class="muted">{{item.status}}</view>
+      <button size="mini" class="secondary" data-id="{{item.configId}}" bindtap="disableRechargeConfig">停用配置</button>
     </view>
     <view wx:for="{{rechargeRecords}}" wx:key="recordId" class="row">
       <view class="row-title">{{item.amountText}} + {{item.giftText}}</view>
@@ -142,7 +152,13 @@
     </view>
     <view wx:for="{{memberLevels}}" wx:key="levelId" class="row">
       <view class="row-title">{{item.name}}</view>
-      <view class="muted">最低积分 {{item.minPoints}}</view>
+      <view class="muted">最低积分 {{item.minPoints}} · {{item.status}}</view>
+      <button size="mini" class="secondary" data-id="{{item.levelId}}" bindtap="disableMemberLevel">停用等级</button>
+    </view>
+    <view class="row">
+      <view class="row-title">积分配置</view>
+      <view class="muted">签到 {{pointsConfig.checkinPoints}} · 有效期 {{pointsConfig.pointExpireDays}}天 · 兑换券 {{pointsConfig.couponExchangePoints}}分</view>
+      <button size="mini" class="secondary" bindtap="updatePointsConfig">更新积分配置</button>
     </view>
   </view>
 
@@ -154,9 +170,11 @@
     </view>
     <button size="mini" class="primary" bindtap="createPrize">新增奖品</button>
     <button size="mini" class="secondary" bindtap="toggleLottery">切换抽奖开关</button>
+    <button size="mini" class="secondary" bindtap="updateLotteryRules">设置冷却与次数</button>
     <view wx:for="{{lotteryPrizes}}" wx:key="prizeId" class="row">
       <view class="row-title">{{item.name}}</view>
       <view class="muted">中奖率 {{item.winRate}} · {{item.status}}</view>
+      <button size="mini" class="secondary" data-id="{{item.prizeId}}" bindtap="disablePrize">停用奖品</button>
     </view>
     <view wx:for="{{lotteryOverview.records}}" wx:key="recordId" class="row">
       <view class="row-title">{{item.prizeName}}</view>
