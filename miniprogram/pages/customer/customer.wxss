@@ -2,6 +2,46 @@
   margin-top: 12rpx;
 }
 
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  padding: 18rpx;
+  border: 1rpx solid #d8ded6;
+  border-radius: 8rpx;
+  background: #f8faf6;
+  margin-bottom: 16rpx;
+}
+
+.profile-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-name {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #17231d;
+}
+
+.avatar {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 50%;
+  flex: 0 0 96rpx;
+  background: #e7ece6;
+}
+
+.avatar-default {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f7b59;
+  color: #ffffff;
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
 .small-input {
   width: 180rpx;
   min-height: 56rpx;

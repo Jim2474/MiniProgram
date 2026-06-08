@@ -7,19 +7,28 @@
 
   <view class="section">
     <view class="section-title">个人中心</view>
+    <view class="profile-card">
+      <image wx:if="{{profile.displayAvatar}}" class="avatar" src="{{profile.displayAvatar}}" mode="aspectFill" />
+      <view wx:else class="avatar avatar-default">{{defaultAvatarText}}</view>
+      <view class="profile-main">
+        <view class="profile-name">{{profile.displayNickname}}</view>
+        <view class="muted">{{profile.displayPhone}} · {{profile.levelName}}</view>
+      </view>
+      <button wx:if="{{!isLoggedIn}}" size="mini" class="primary" bindtap="loginCustomer">登录</button>
+    </view>
     <view class="metrics">
       <view class="metric">
-        <view class="metric-value">{{profile.user.nickname || '未登录'}}</view>
+        <view class="metric-value">{{profile.displayNickname}}</view>
         <view class="metric-label">微信昵称</view>
       </view>
       <view class="metric">
-        <view class="metric-value">{{profile.user.phone || '待绑定'}}</view>
+        <view class="metric-value">{{profile.displayPhone}}</view>
         <view class="metric-label">手机号</view>
       </view>
     </view>
     <view class="row">
       <view class="row-title">当前会员 {{currentUserId}}</view>
-      <view class="muted">头像 {{profile.user.avatar || '默认头像'}} · 等级 {{profile.levelName}}</view>
+      <view class="muted">{{isLoggedIn ? '已登录' : '未登录，当前为本地演示会员'}} · 等级 {{profile.levelName}}</view>
       <input class="input" value="{{loginPhone}}" bindinput="onLoginPhone" placeholder="登录手机号" />
       <input class="input" value="{{loginNickname}}" bindinput="onLoginNickname" placeholder="微信昵称" />
       <input class="input" value="{{bindPhoneValue}}" bindinput="onBindPhone" placeholder="绑定手机号" />

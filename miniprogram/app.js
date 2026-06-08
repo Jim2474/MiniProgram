@@ -25,6 +25,7 @@ App({
 
   globalData: {
     userId: "user_demo",
+    customerLoggedIn: false,
     selectedEmployeeId: "",
     pendingEmployeeScene: "",
     pendingVerificationScene: "",

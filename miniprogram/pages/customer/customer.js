@@ -27,6 +27,8 @@ Page({
     reservationPartySize: 4,
     reservationRemark: "客户小程序预约",
     profile: { user: {} },
+    isLoggedIn: false,
+    defaultAvatarText: "客",
     loginPhone: "13800000000",
     loginNickname: "德扑客人",
     bindPhoneValue: "13800000000",
@@ -158,11 +160,16 @@ Page({
       request(`/api/checkin?userId=${app.globalData.userId}`),
       request(`/api/verification-codes?userId=${app.globalData.userId}`)
     ])
+    const isLoggedIn = app.globalData.customerLoggedIn === true
     this.setData({
       profile: {
         ...profile,
-        levelName: profile.level ? profile.level.name : "普通会员"
+        levelName: profile.level ? profile.level.name : "普通会员",
+        displayNickname: isLoggedIn ? profile.user.nickname : "未登录",
+        displayAvatar: isLoggedIn ? profile.user.avatar : "",
+        displayPhone: isLoggedIn && profile.user.phone ? profile.user.phone : "待绑定"
       },
+      isLoggedIn,
       currentUserId: profile.user.userId,
       loginPhone: profile.user.phone || this.data.loginPhone,
       bindPhoneValue: profile.user.phone || this.data.bindPhoneValue,
@@ -202,7 +209,8 @@ Page({
         data: payload
       })
       app.globalData.userId = data.user.userId
-      this.setData({ currentUserId: data.user.userId, bindPhoneValue: data.user.phone || this.data.bindPhoneValue })
+      app.globalData.customerLoggedIn = true
+      this.setData({ isLoggedIn: true, currentUserId: data.user.userId, bindPhoneValue: data.user.phone || this.data.bindPhoneValue })
       wx.showToast({ title: "登录成功" })
       await this.loadAll()
     } catch (error) {
@@ -216,6 +224,7 @@ Page({
         method: "POST",
         data: { userId: app.globalData.userId, phone: this.data.bindPhoneValue }
       })
+      app.globalData.customerLoggedIn = true
       this.setData({ bindPhoneValue: data.user.phone || this.data.bindPhoneValue })
       wx.showToast({ title: "手机号已绑定" })
       await this.loadMarketing()
@@ -232,6 +241,7 @@ Page({
         method: "POST",
         data: { userId: app.globalData.userId, code }
       })
+      app.globalData.customerLoggedIn = true
       this.setData({ bindPhoneValue: data.user.phone || this.data.bindPhoneValue })
       wx.showToast({ title: "手机号已授权" })
       await this.loadMarketing()

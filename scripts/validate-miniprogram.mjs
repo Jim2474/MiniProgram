@@ -67,6 +67,7 @@ assert(customerJs.includes("/api/cart/items"), "customer page calls cart API");
 assert(customerJs.includes("showProductDetail") && customerWxml.includes("查看详情"), "customer page supports product detail modal");
 assert(customerJs.includes("/api/wechat/login"), "customer page calls WeChat login API");
 assert(customerJs.includes("wx.login") && customerJs.includes("payload.code"), "customer page sends wx.login code when available");
+assert(customerJs.includes("isLoggedIn") && customerJs.includes("customerLoggedIn") && customerWxml.includes("avatar-default") && customerWxml.includes("未登录，当前为本地演示会员") && customerWxss.includes(".profile-card"), "customer page displays login state and default avatar");
 assert(customerJs.includes("/api/user/bind-phone"), "customer page calls bind phone API");
 assert(customerWxml.includes('open-type="getPhoneNumber"') && customerJs.includes("bindWechatPhone") && customerJs.includes("event.detail.code"), "customer page supports WeChat phone authorization code");
 assert(customerJs.includes("/api/orders") && customerJs.includes("/pay"), "customer page calls order pay API");

@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V55
+# 德扑棋牌门店小程序 V56
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V55 验收状态
+## V56 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V56.md`
 - `docs/ACCEPTANCE-V55.md`
 - `docs/ACCEPTANCE-V54.md`
 - `docs/REQUIREMENTS-AUDIT-V54.md`
@@ -137,7 +138,7 @@ node scripts/validate-miniprogram.mjs
 当前自动测试通过：
 
 - 后端业务自验收：187 项。
-- 小程序结构与 API 调用校验：153 项。
+- 小程序结构与 API 调用校验：154 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
 
@@ -262,6 +263,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V56 新增能力
+
+- 客户端个人中心新增真实登录态展示。
+- 未登录时显示默认头像和登录按钮，保留本地演示会员数据兜底。
+- 登录或微信手机号授权后切换为已登录态，展示昵称、头像和手机号。
 
 ## V55 新增能力
 
