@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V11
+# 德扑棋牌门店小程序 V12
 
 本仓库包含：
 
@@ -60,10 +60,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V11 验收状态
+## V12 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V12.md`
 - `docs/ACCEPTANCE-V11.md`
 - `docs/ACCEPTANCE-V10.md`
 - `docs/ACCEPTANCE-V9.md`
@@ -76,10 +77,17 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：112 项。
-- 小程序结构与 API 调用校验：104 项。
+- 后端业务自验收：114 项。
+- 小程序结构与 API 调用校验：106 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V12 新增能力
+
+- 客户端订单拆分为今日订单和历史订单。
+- 新增客户侧历史存取记录接口 `/api/storage-records`。
+- 客户端展示订单转存、取酒核销等历史存取流水。
+- 客户端展示取酒申请状态：待确认、已完成、已拒绝等。
 
 ## V11 新增能力
 

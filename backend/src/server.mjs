@@ -1030,6 +1030,17 @@ function createRouter(store) {
     return { storage };
   });
 
+  add("GET", "/api/storage-records", async (_body, _params, query) => {
+    const userId = query.get("userId") || "user_demo";
+    const ledgers = store.data.customerStorageLedgers
+      .filter((ledger) => ledger.userId === userId)
+      .map((ledger) => publicStorageLedger(store, ledger));
+    const pickupRequests = store.data.storagePickupRequests
+      .filter((request) => request.userId === userId)
+      .map((request) => ({ ...request, storage: store.data.customerStorage.find((storage) => storage.storageId === request.storageId) || null }));
+    return { ledgers, pickupRequests };
+  });
+
   add("POST", "/api/storage/:storageId/pickup-requests", async (body, params) => {
     const storage = store.getStorage(params.storageId);
     if (storage.status !== "available") throw new HttpError(400, "当前存酒不可取");

@@ -76,10 +76,20 @@
   </view>
 
   <view class="section">
-    <view class="section-title">我的订单</view>
-    <view wx:for="{{orders}}" wx:key="orderId" class="row">
+    <view class="section-title">今日订单</view>
+    <view wx:if="{{todayOrders.length === 0}}" class="muted">今日暂无订单。</view>
+    <view wx:for="{{todayOrders}}" wx:key="orderId" class="row">
       <view class="row-title">{{item.orderId}}</view>
-      <view class="muted">{{item.statusText}} · {{item.amountText}} · {{item.employeeName}}</view>
+      <view class="muted">{{item.statusText}} · {{item.amountText}} · {{item.employeeName}} · {{item.orderDate}}</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">历史订单</view>
+    <view wx:if="{{historyOrders.length === 0}}" class="muted">暂无历史订单。</view>
+    <view wx:for="{{historyOrders}}" wx:key="orderId" class="row">
+      <view class="row-title">{{item.orderId}}</view>
+      <view class="muted">{{item.statusText}} · {{item.amountText}} · {{item.employeeName}} · {{item.orderDate}}</view>
     </view>
   </view>
 
@@ -107,6 +117,16 @@
       <view class="row-title">积分明细</view>
       <button size="mini" class="secondary" data-type="points" bindtap="createQrCode">生成取积分二维码</button>
       <view wx:for="{{points.ledgers}}" wx:key="ledgerId" class="muted">{{item.reason}} · {{item.changeAmount}} · 余额 {{item.balanceAfter}}</view>
+    </view>
+    <view class="row">
+      <view class="row-title">历史存取记录</view>
+      <view wx:if="{{storageLedgers.length === 0}}" class="muted">暂无存取记录。</view>
+      <view wx:for="{{storageLedgers}}" wx:key="ledgerId" class="muted">{{item.recordDate}} · {{item.productName}} · {{item.actionType}} · {{item.changeQty}} · 余量 {{item.quantityAfter}}</view>
+    </view>
+    <view class="row">
+      <view class="row-title">取酒申请记录</view>
+      <view wx:if="{{pickupRecords.length === 0}}" class="muted">暂无取酒申请。</view>
+      <view wx:for="{{pickupRecords}}" wx:key="requestId" class="muted">{{item.requestDate}} · {{item.statusText}} · 数量 {{item.quantity}}</view>
     </view>
   </view>
 

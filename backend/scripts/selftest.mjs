@@ -102,6 +102,9 @@ async function main() {
     assert(confirmedPickup.storage.quantity === 0 && confirmedPickup.storage.status === "empty", "员工确认取酒后扣减客户存酒");
     const storageLedgerAfterPickup = await request(baseUrl, `/api/admin/storage-ledgers?storageId=${transfer.storage.storageId}&actionType=pickup_confirm`);
     assert(storageLedgerAfterPickup.ledgers.length === 1 && storageLedgerAfterPickup.ledgers[0].quantityAfter === 0, "客户存酒账记录取酒确认出账");
+    const customerStorageRecords = await request(baseUrl, "/api/storage-records?userId=user_demo");
+    assert(customerStorageRecords.ledgers.some((ledger) => ledger.actionType === "from_order") && customerStorageRecords.ledgers.some((ledger) => ledger.actionType === "pickup_confirm"), "客户可查询历史存取酒流水");
+    assert(customerStorageRecords.pickupRequests.some((request) => request.status === "completed"), "客户可查询历史取酒申请状态");
 
     const reservation = await request(baseUrl, "/api/reservations", {
       method: "POST",

@@ -13,8 +13,12 @@ Page({
     currentOrder: null,
     resultText: "",
     orders: [],
+    todayOrders: [],
+    historyOrders: [],
     points: { balance: 0, ledgers: [] },
     storage: [],
+    storageLedgers: [],
+    pickupRecords: [],
     tables: [],
     reservations: [],
     profile: { user: {} },
@@ -86,13 +90,18 @@ Page({
 
   async loadOrders() {
     const data = await request(`/api/orders?userId=${app.globalData.userId}`)
+    const today = new Date().toISOString().slice(0, 10)
+    const decoratedOrders = data.orders.map((item) => ({
+      ...item,
+      statusText: statusText(item.orderStatus),
+      amountText: money(item.amount),
+      employeeName: item.employee ? item.employee.name : "自然订单",
+      orderDate: (item.paidAt || item.createdAt || "").slice(0, 10)
+    }))
     this.setData({
-      orders: data.orders.slice(0, 8).map((item) => ({
-        ...item,
-        statusText: statusText(item.orderStatus),
-        amountText: money(item.amount),
-        employeeName: item.employee ? item.employee.name : "自然订单"
-      }))
+      orders: decoratedOrders.slice(0, 8),
+      todayOrders: decoratedOrders.filter((item) => item.orderDate === today),
+      historyOrders: decoratedOrders.filter((item) => item.orderDate !== today).slice(0, 12)
     })
   },
 
@@ -102,12 +111,25 @@ Page({
   },
 
   async loadStorage() {
-    const data = await request(`/api/storage?userId=${app.globalData.userId}`)
+    const [data, records] = await Promise.all([
+      request(`/api/storage?userId=${app.globalData.userId}`),
+      request(`/api/storage-records?userId=${app.globalData.userId}`)
+    ])
     this.setData({
       storage: data.storage.map((item) => ({
         ...item,
         statusText: statusText(item.status),
         expireDate: item.expireAt.slice(0, 10)
+      })),
+      storageLedgers: records.ledgers.map((item) => ({
+        ...item,
+        productName: item.product ? item.product.name : item.skuId,
+        recordDate: item.createdAt.slice(0, 10)
+      })),
+      pickupRecords: records.pickupRequests.map((item) => ({
+        ...item,
+        statusText: statusText(item.status),
+        requestDate: item.createdAt.slice(0, 10)
       }))
     })
   },
