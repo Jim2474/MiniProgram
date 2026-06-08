@@ -2469,17 +2469,9 @@ function createRouter(store) {
     throw new HttpError(400, "积分兑换酒水券暂未开放");
   });
 
-  add("POST", "/api/coupons/:couponId/redeem-request", async (body, params) => {
-    const coupon = store.data.coupons.find((item) => item.couponId === params.couponId);
-    if (!coupon) throw new HttpError(404, "酒水券不存在");
-    if (coupon.status !== "available") throw new HttpError(400, "酒水券不可兑换");
-    const before = deepClone(coupon);
-    coupon.status = "pending";
-    const record = { recordId: newId("couponRecord"), couponId: coupon.couponId, userId: coupon.userId, action: "redeem_request", status: "pending", operatorId: body.operatorId || coupon.userId, createdAt: now() };
-    store.data.couponRecords.unshift(record);
-    store.log(coupon.userId, "customer", "coupon_redeem_request", "Coupon", coupon.couponId, before, coupon, "客户申请兑换酒水券");
-    await store.save();
-    return { coupon: publicCoupon(store, coupon), record };
+  add("POST", "/api/coupons/:couponId/redeem-request", async (body) => {
+    store.getUser(body.userId || "user_demo");
+    throw new HttpError(400, "积分兑换酒水券暂未开放");
   });
 
   add("POST", "/api/verification-codes", async (body) => {
@@ -2537,19 +2529,9 @@ function createRouter(store) {
     return { codes: store.data.verificationCodes.filter((code) => code.userId === userId).map((code) => publicVerificationCode(store, code)) };
   });
 
-  add("POST", "/api/staff/coupons/:couponId/confirm", async (body, params) => {
-    const employee = store.getEmployee(body.operatorId || "emp_anna");
-    const coupon = store.data.coupons.find((item) => item.couponId === params.couponId);
-    if (!coupon) throw new HttpError(404, "酒水券不存在");
-    if (coupon.status !== "pending") throw new HttpError(400, "酒水券不是待确认状态");
-    const before = deepClone(coupon);
-    coupon.status = "completed";
-    coupon.completedAt = now();
-    const record = { recordId: newId("couponRecord"), couponId: coupon.couponId, userId: coupon.userId, action: "redeem_confirm", status: "completed", operatorId: employee.employeeId, createdAt: now() };
-    store.data.couponRecords.unshift(record);
-    store.log(employee.employeeId, employee.role, "coupon_confirm", "Coupon", coupon.couponId, before, coupon, "员工确认酒水券兑换");
-    await store.save();
-    return { coupon: publicCoupon(store, coupon), record };
+  add("POST", "/api/staff/coupons/:couponId/confirm", async (body) => {
+    store.getEmployee(body.operatorId || "emp_anna");
+    throw new HttpError(400, "酒水券核销暂未开放");
   });
 
   add("GET", "/api/recharge-records", async (_body, _params, query) => {
@@ -2585,26 +2567,8 @@ function createRouter(store) {
   });
 
   add("POST", "/api/lottery/draw", async (body) => {
-    const user = store.getUser(body.userId || "user_demo");
-    if (!store.data.lotterySettings.enabled) throw new HttpError(400, "积分抽奖暂未开放");
-    const today = dayKey();
-    const todayCount = store.data.lotteryRecords.filter((record) => record.userId === user.userId && record.createdAt.startsWith(today)).length;
-    if (todayCount >= store.data.lotterySettings.dailyLimit) throw new HttpError(429, "今日抽奖次数已用完");
-    const cooldownMinutes = Number(store.data.lotterySettings.cooldownMinutes || 0);
-    const lastDraw = store.data.lotteryRecords.find((record) => record.userId === user.userId);
-    if (cooldownMinutes > 0 && lastDraw && Date.now() - new Date(lastDraw.createdAt).getTime() < cooldownMinutes * 60 * 1000) {
-      throw new HttpError(429, "抽奖冷却中");
-    }
-    const cost = store.data.lotterySettings.costPoints;
-    if (user.pointsBalance < cost) throw new HttpError(400, "积分不足");
-    const prizes = store.data.lotteryPrizes.filter((prize) => prize.status === "active");
-    const prize = prizes[store.data.lotteryRecords.length % prizes.length];
-    store.createPointsLedger(user, -cost, "积分抽奖消耗", "lottery", prize.prizeId, "system");
-    const record = { recordId: newId("lottery"), userId: user.userId, prizeId: prize.prizeId, prizeName: prize.name, costPoints: cost, status: "won", redeemedBy: null, redeemedAt: null, createdAt: now() };
-    store.data.lotteryRecords.unshift(record);
-    store.log(user.userId, "customer", "lottery_draw", "LotteryRecord", record.recordId, null, record, "积分抽奖");
-    await store.save();
-    return { record, prize, user };
+    store.getUser(body.userId || "user_demo");
+    throw new HttpError(400, "积分抽奖暂未开放");
   });
 
   add("GET", "/api/lottery/records", async (_body, _params, query) => {
@@ -2612,30 +2576,14 @@ function createRouter(store) {
     return { records: store.data.lotteryRecords.filter((record) => record.userId === userId), settings: store.data.lotterySettings, prizes: [], featureEnabled: false };
   });
 
-  add("POST", "/api/lottery/records/:recordId/redeem-request", async (body, params) => {
-    const record = store.data.lotteryRecords.find((item) => item.recordId === params.recordId);
-    if (!record) throw new HttpError(404, "中奖记录不存在");
-    if (record.userId !== (body.userId || record.userId)) throw new HttpError(403, "不能核销他人中奖记录");
-    if (record.status !== "won") throw new HttpError(400, "中奖记录不可申请核销");
-    const before = deepClone(record);
-    record.status = "redeeming";
-    store.log(record.userId, "customer", "lottery_redeem_request", "LotteryRecord", record.recordId, before, record, "客户申请核销中奖记录");
-    await store.save();
-    return { record };
+  add("POST", "/api/lottery/records/:recordId/redeem-request", async (body) => {
+    store.getUser(body.userId || "user_demo");
+    throw new HttpError(400, "中奖核销暂未开放");
   });
 
-  add("POST", "/api/staff/lottery-records/:recordId/confirm", async (body, params) => {
-    const employee = store.getEmployee(body.operatorId || "emp_anna");
-    const record = store.data.lotteryRecords.find((item) => item.recordId === params.recordId);
-    if (!record) throw new HttpError(404, "中奖记录不存在");
-    if (record.status !== "redeeming" && record.status !== "won") throw new HttpError(400, "中奖记录已核销");
-    const before = deepClone(record);
-    record.status = "completed";
-    record.redeemedBy = employee.employeeId;
-    record.redeemedAt = now();
-    store.log(employee.employeeId, employee.role, "lottery_redeem_confirm", "LotteryRecord", record.recordId, before, record, "员工确认核销中奖记录");
-    await store.save();
-    return { record };
+  add("POST", "/api/staff/lottery-records/:recordId/confirm", async (body) => {
+    store.getEmployee(body.operatorId || "emp_anna");
+    throw new HttpError(400, "中奖核销暂未开放");
   });
 
   add("POST", "/api/staff/password", async (body) => {
@@ -2692,26 +2640,9 @@ function createRouter(store) {
       store.log(employee.employeeId, employee.role, "confirm_storage_qr", "CustomerStorage", storage.storageId, beforeStorage, storage, "员工扫码核销取酒");
       result = { storage };
     } else if (code.type === "coupon") {
-      const coupon = store.data.coupons.find((item) => item.couponId === code.couponId);
-      if (!coupon) throw new HttpError(404, "酒水券不存在");
-      if (coupon.status !== "available" && coupon.status !== "pending") throw new HttpError(400, "酒水券不可核销");
-      const beforeCoupon = deepClone(coupon);
-      coupon.status = "completed";
-      coupon.completedAt = now();
-      const record = { recordId: newId("couponRecord"), couponId: coupon.couponId, userId: coupon.userId, action: "qr_redeem_confirm", status: "completed", operatorId: employee.employeeId, createdAt: now() };
-      store.data.couponRecords.unshift(record);
-      store.log(employee.employeeId, employee.role, "confirm_coupon_qr", "Coupon", coupon.couponId, beforeCoupon, coupon, "员工扫码核销酒水券");
-      result = { coupon: publicCoupon(store, coupon), record };
+      throw new HttpError(400, "酒水券核销暂未开放");
     } else if (code.type === "lottery") {
-      const record = store.data.lotteryRecords.find((item) => item.recordId === code.lotteryRecordId);
-      if (!record) throw new HttpError(404, "中奖记录不存在");
-      if (record.status !== "won" && record.status !== "redeeming") throw new HttpError(400, "中奖记录不可核销");
-      const beforeRecord = deepClone(record);
-      record.status = "completed";
-      record.redeemedBy = employee.employeeId;
-      record.redeemedAt = now();
-      store.log(employee.employeeId, employee.role, "confirm_lottery_qr", "LotteryRecord", record.recordId, beforeRecord, record, "员工扫码核销中奖记录");
-      result = { lotteryRecord: record };
+      throw new HttpError(400, "中奖核销暂未开放");
     } else {
       throw new HttpError(400, "不支持的二维码类型");
     }

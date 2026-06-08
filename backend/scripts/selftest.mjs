@@ -344,6 +344,17 @@ async function main() {
       couponExchangeError = error.message;
     }
     assert(couponExchangeError.includes("积分兑换酒水券暂未开放"), "积分兑换酒水券暂不开放");
+    const legacyCoupon = { couponId: "coupon_legacy", userId: "user_demo", skuId: "sku_bud", status: "available", createdAt: new Date().toISOString(), completedAt: null };
+    store.data.coupons.unshift(legacyCoupon);
+    await expectHttpError(baseUrl, `/api/coupons/${legacyCoupon.couponId}/redeem-request`, { method: "POST", body: { userId: "user_demo" } }, 400, "旧酒水券客户兑换申请被服务端硬拦截");
+    assert(legacyCoupon.status === "available" && store.data.couponRecords.every((record) => record.couponId !== legacyCoupon.couponId), "旧酒水券兑换申请不会改写状态或流水");
+    legacyCoupon.status = "pending";
+    await expectHttpError(baseUrl, `/api/staff/coupons/${legacyCoupon.couponId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } }, 400, "旧酒水券员工核销被服务端硬拦截");
+    assert(legacyCoupon.status === "pending" && legacyCoupon.completedAt === null, "旧酒水券员工核销不会完成券");
+    const legacyCouponCode = { codeId: "verify_coupon_legacy", qrPayload: "verify:coupon_legacy", userId: "user_demo", type: "coupon", status: "active", storageId: null, couponId: legacyCoupon.couponId, lotteryRecordId: null, pointsAmount: null, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 86400000).toISOString(), usedAt: null, usedBy: null, qrProvider: "payload_qr", miniProgramPage: "", miniProgramScene: "verify:coupon_legacy" };
+    store.data.verificationCodes.unshift(legacyCouponCode);
+    await expectHttpError(baseUrl, `/api/staff/verification-codes/${legacyCouponCode.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } }, 400, "旧酒水券二维码核销被服务端硬拦截");
+    assert(legacyCouponCode.status === "active" && legacyCoupon.status === "pending", "旧酒水券二维码核销不会使用二维码或完成券");
     let lotteryError = "";
     try {
       await request(baseUrl, "/api/lottery/draw", { method: "POST", body: { userId: "user_demo" } });
@@ -351,6 +362,16 @@ async function main() {
       lotteryError = error.message;
     }
     assert(lotteryError.includes("积分抽奖暂未开放"), "积分抽奖暂不开放");
+    const legacyLotteryRecord = { recordId: "lottery_legacy", userId: "user_demo", prizeId: "prize_legacy", prizeName: "历史中奖", costPoints: 0, status: "won", redeemedBy: null, redeemedAt: null, createdAt: new Date().toISOString() };
+    store.data.lotteryRecords.unshift(legacyLotteryRecord);
+    await expectHttpError(baseUrl, `/api/lottery/records/${legacyLotteryRecord.recordId}/redeem-request`, { method: "POST", body: { userId: "user_demo" } }, 400, "旧中奖记录客户核销申请被服务端硬拦截");
+    assert(legacyLotteryRecord.status === "won" && legacyLotteryRecord.redeemedAt === null, "旧中奖记录客户核销申请不会改写状态");
+    await expectHttpError(baseUrl, `/api/staff/lottery-records/${legacyLotteryRecord.recordId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } }, 400, "旧中奖记录员工核销被服务端硬拦截");
+    assert(legacyLotteryRecord.status === "won" && legacyLotteryRecord.redeemedBy === null, "旧中奖记录员工核销不会完成记录");
+    const legacyLotteryCode = { codeId: "verify_lottery_legacy", qrPayload: "verify:lottery_legacy", userId: "user_demo", type: "lottery", status: "active", storageId: null, couponId: null, lotteryRecordId: legacyLotteryRecord.recordId, pointsAmount: null, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 86400000).toISOString(), usedAt: null, usedBy: null, qrProvider: "payload_qr", miniProgramPage: "", miniProgramScene: "verify:lottery_legacy" };
+    store.data.verificationCodes.unshift(legacyLotteryCode);
+    await expectHttpError(baseUrl, `/api/staff/verification-codes/${legacyLotteryCode.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } }, 400, "旧中奖二维码核销被服务端硬拦截");
+    assert(legacyLotteryCode.status === "active" && legacyLotteryRecord.status === "won", "旧中奖二维码核销不会使用二维码或完成记录");
 
     const finance = await request(baseUrl, "/api/admin/finance/overview");
     assert(typeof finance.todayRevenue === "number" && Array.isArray(finance.trend), "财务概览返回营收和趋势");
