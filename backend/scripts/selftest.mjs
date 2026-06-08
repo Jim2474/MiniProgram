@@ -440,6 +440,8 @@ async function main() {
 
     const verifyCode = await request(baseUrl, "/api/staff/verify-code", { method: "POST", body: { userId: "user_demo" } });
     assert(verifyCode.pointsBalance >= 0 && Array.isArray(verifyCode.coupons), "员工核销码可查询客户积分存酒券");
+    const phoneVerifyCode = await request(baseUrl, "/api/staff/verify-code", { method: "POST", body: { phone: "13800000000" } });
+    assert(phoneVerifyCode.user.userId === "user_demo" && Array.isArray(phoneVerifyCode.storage), "员工可按手机号查询客户积分存酒券");
 
     const pointsQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "points", pointsAmount: 5 } });
     assert(pointsQr.code.qrPayload.startsWith("verify:"), "客户可生成取积分二维码");

@@ -31,6 +31,7 @@ Page({
     dailyPerformanceRows: [],
     pickupRequests: [],
     verifyResult: null,
+    verifyPhone: "13800000000",
     qrPayload: "",
     scannedCode: null,
     seats: [],
@@ -249,9 +250,13 @@ Page({
     this.setData({ newPassword: event.detail.value })
   },
 
+  onVerifyPhone(event) {
+    this.setData({ verifyPhone: event.detail.value })
+  },
+
   async verifyCode() {
     try {
-      const verifyResult = await request("/api/staff/verify-code", { method: "POST", data: { userId: "user_demo" } })
+      const verifyResult = await request("/api/staff/verify-code", { method: "POST", data: { phone: this.data.verifyPhone } })
       this.setData({ verifyResult })
     } catch (error) {
       showError(error)

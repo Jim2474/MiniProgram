@@ -100,7 +100,8 @@
 
   <view class="section">
     <view class="section-title">积分与存酒核销</view>
-    <button class="primary" bindtap="verifyCode">扫码核销模拟</button>
+    <input class="input" value="{{verifyPhone}}" bindinput="onVerifyPhone" placeholder="核销查询客户手机号" />
+    <button class="primary" bindtap="verifyCode">查询客户积分存酒</button>
     <input class="input" value="{{qrPayload}}" bindinput="onQrPayload" placeholder="输入 verify:xxx 二维码码值" />
     <view class="btn-row">
       <button size="mini" class="secondary" bindtap="scanVerificationCode">扫码/识别二维码</button>

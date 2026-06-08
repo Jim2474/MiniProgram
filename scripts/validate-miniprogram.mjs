@@ -113,6 +113,7 @@ assert(staffJs.includes("/confirm"), "staff page calls pickup confirm API");
 assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adjust API");
 assert(staffJs.includes("pointPhone") && staffWxml.includes("客户手机号") && staffWxml.includes("调整客户积分") && !staffWxml.includes("调整示例客户积分"), "staff page adjusts customer points by phone");
 assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code API");
+assert(staffJs.includes("verifyPhone") && staffWxml.includes("核销查询客户手机号") && staffWxml.includes("查询客户积分存酒") && !staffWxml.includes("扫码核销模拟"), "staff page verifies customer assets by phone");
 assert(staffJs.includes("/api/staff/verification-codes/scan"), "staff page calls QR scan verification API");
 assert(staffJs.includes("/api/staff/verification-codes/") && staffJs.includes("/confirm"), "staff page calls QR confirm API");
 assert(staffJs.includes("consumePendingVerificationScene") && staffJs.includes("pendingVerificationScene"), "staff page consumes verification mini program code scene");

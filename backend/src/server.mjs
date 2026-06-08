@@ -2603,7 +2603,10 @@ function createRouter(store) {
   });
 
   add("POST", "/api/staff/verify-code", async (body) => {
-    const user = store.getUser(body.userId || "user_demo");
+    const user = body.userId
+      ? store.getUser(body.userId)
+      : store.data.users.find((item) => item.phone === body.phone);
+    if (!user) throw new HttpError(404, "会员不存在");
     return { user, pointsBalance: user.pointsBalance, storage: store.data.customerStorage.filter((item) => item.userId === user.userId), coupons: store.data.coupons.filter((item) => item.userId === user.userId) };
   });
 
