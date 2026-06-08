@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V22
+# 德扑棋牌门店小程序 V23
 
 本仓库包含：
 
@@ -69,10 +69,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V22 验收状态
+## V23 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V23.md`
 - `docs/ACCEPTANCE-V22.md`
 - `docs/ACCEPTANCE-V21.md`
 - `docs/ACCEPTANCE-V20.md`
@@ -96,10 +97,18 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：119 项。
+- 后端业务自验收：123 项。
 - 小程序结构与 API 调用校验：115 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V23 新增能力
+
+- 创建订单时同步生成待支付记录，支付账与订单状态分离。
+- 支付成功逻辑抽为统一状态机，mock 支付和后续微信回调共用扣库存、赠积分、写流水逻辑。
+- 重复支付请求幂等，不会重复扣库存或重复赠送积分。
+- 生产环境支付接口返回真实微信预支付待接入提示，避免误用 mock 支付。
+- 新增微信支付回调入口占位，未完成验签前拒绝处理。
 
 ## V22 新增能力
 

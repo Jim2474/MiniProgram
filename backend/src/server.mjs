@@ -644,6 +644,53 @@ function publicTable(store, table) {
   };
 }
 
+function getOrCreatePayment(store, order, provider = "mock_wechat") {
+  let payment = store.data.payments.find((item) => item.orderId === order.orderId && item.status !== "cancelled");
+  if (!payment) {
+    payment = {
+      paymentId: newId("pay"),
+      orderId: order.orderId,
+      wxTransactionId: "",
+      amount: order.amount,
+      provider,
+      status: "created",
+      prepayId: "",
+      nonceStr: "",
+      paySign: "",
+      paidAt: null,
+      refundedAt: null,
+      notifyAt: null,
+    };
+    store.data.payments.push(payment);
+  }
+  return payment;
+}
+
+function markOrderPaid(store, order, payment, transactionId, reason = "微信支付成功") {
+  if (order.payStatus === "paid") return { alreadyPaid: true };
+  if (order.orderStatus !== "unpaid") throw new HttpError(400, "订单状态不可支付");
+  const orderItems = store.data.orderItems.filter((item) => item.orderId === order.orderId);
+  for (const item of orderItems) {
+    const sku = store.getSku(item.skuId);
+    if (sku.stockQty < item.quantity) throw new HttpError(409, `${sku.name} 库存不足`);
+  }
+  const before = deepClone(order);
+  order.payStatus = "paid";
+  order.orderStatus = "pending";
+  order.paidAt = now();
+  order.pointsAwarded = Math.floor(order.amount * store.data.settings.pointRate);
+  payment.wxTransactionId = transactionId || payment.wxTransactionId;
+  payment.status = "paid";
+  payment.paidAt = order.paidAt;
+  payment.notifyAt ||= order.paidAt;
+  for (const item of orderItems) {
+    store.createStockLedger(store.getSku(item.skuId), -item.quantity, "sale", "order", order.orderId, "system", "支付成功扣减库存");
+  }
+  store.createPointsLedger(store.getUser(order.userId), order.pointsAwarded, "消费赠送积分", "order", order.orderId, "system");
+  store.log("system", "system", "pay_order", "Order", order.orderId, before, order, reason);
+  return { alreadyPaid: false };
+}
+
 function createVoiceEvent(store, game, eventType, message) {
   const event = {
     eventId: newId("voice"),
@@ -940,43 +987,38 @@ function createRouter(store) {
     }
     cart.status = "checked_out";
     store.data.cartItems = store.data.cartItems.filter((item) => item.cartId !== cart.cartId);
+    getOrCreatePayment(store, order, runtimeInfo().paymentProvider);
     store.log(user.userId, "customer", "create_order", "Order", order.orderId, null, order, "创建订单");
     await store.save();
     return { order: publicOrder(store, order) };
   });
 
   add("POST", "/api/orders/:orderId/pay", async (_body, params) => {
-    requireMockWechat("微信支付");
     const order = store.getOrder(params.orderId);
-    if (order.payStatus === "paid") return { order: publicOrder(store, order), idempotent: true };
+    const payment = getOrCreatePayment(store, order, runtimeInfo().paymentProvider);
+    if (order.payStatus === "paid") return { order: publicOrder(store, order), payment, paymentProvider: payment.provider, idempotent: true };
     if (order.orderStatus !== "unpaid") throw new HttpError(400, "订单状态不可支付");
-    const orderItems = store.data.orderItems.filter((item) => item.orderId === order.orderId);
-    for (const item of orderItems) {
-      const sku = store.getSku(item.skuId);
-      if (sku.stockQty < item.quantity) throw new HttpError(409, `${sku.name} 库存不足`);
+    if (!mockWechatEnabled()) {
+      payment.provider = "wechat_pay_required";
+      payment.status = "prepay_required";
+      await store.save();
+      throw new HttpError(501, "微信支付预支付单待接入，需配置商户号、证书、签名和回调验签");
     }
-    const before = deepClone(order);
-    order.payStatus = "paid";
-    order.orderStatus = "pending";
-    order.paidAt = now();
-    order.pointsAwarded = Math.floor(order.amount * store.data.settings.pointRate);
-    store.data.payments.push({
-      paymentId: newId("pay"),
-      orderId: order.orderId,
-      wxTransactionId: `mock_wx_${order.orderId}`,
-      amount: order.amount,
-      provider: "mock_wechat",
-      status: "paid",
-      paidAt: order.paidAt,
-      refundedAt: null,
-    });
-    for (const item of orderItems) {
-      store.createStockLedger(store.getSku(item.skuId), -item.quantity, "sale", "order", order.orderId, "system", "支付成功扣减库存");
-    }
-    store.createPointsLedger(store.getUser(order.userId), order.pointsAwarded, "消费赠送积分", "order", order.orderId, "system");
-    store.log("system", "system", "pay_order", "Order", order.orderId, before, order, "模拟微信支付成功");
+    payment.provider = "mock_wechat";
+    markOrderPaid(store, order, payment, `mock_wx_${order.orderId}`, "模拟微信支付成功");
     await store.save();
-    return { order: publicOrder(store, order), paymentProvider: "mock_wechat" };
+    return { order: publicOrder(store, order), payment, paymentProvider: "mock_wechat" };
+  });
+
+  add("POST", "/api/payments/wechat/notify", async (body) => {
+    if (!body.signatureVerified) throw new HttpError(501, "微信支付回调验签待接入");
+    const order = store.getOrder(body.orderId);
+    const payment = getOrCreatePayment(store, order, "wechat_pay");
+    if (order.payStatus === "paid") return { ok: true, idempotent: true, order: publicOrder(store, order), payment };
+    if (Number(body.amount) !== order.amount) throw new HttpError(400, "支付回调金额不匹配");
+    markOrderPaid(store, order, payment, body.transactionId || `wx_${order.orderId}`, "微信支付回调确认");
+    await store.save();
+    return { ok: true, order: publicOrder(store, order), payment };
   });
 
   add("GET", "/api/orders", async (_body, _params, query) => {

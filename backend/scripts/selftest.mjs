@@ -25,7 +25,7 @@ async function request(baseUrl, path, options = {}) {
 
 async function main() {
   await rm(dataFile, { force: true });
-  const { server } = await createApp({ dataFile });
+  const { server, store } = await createApp({ dataFile });
   await new Promise((resolveListen) => server.listen(0, resolveListen));
   const port = server.address().port;
   const baseUrl = `http://127.0.0.1:${port}`;
@@ -75,10 +75,11 @@ async function main() {
     assert(orderData.order.employee.employeeId === "emp_anna", "订单按员工二维码归属");
     assert(!("passwordHash" in orderData.order.employee), "订单归属员工信息不暴露密码字段");
     assert(orderData.order.amount === bud.price * 2 + whisky.price, "订单金额按购物车明细计算");
+    assert(store.data.payments.some((payment) => payment.orderId === orderData.order.orderId && payment.status === "created"), "创建订单同步生成待支付记录");
 
     const paid = await request(baseUrl, `/api/orders/${orderData.order.orderId}/pay`, { method: "POST" });
     assert(paid.order.payStatus === "paid" && paid.order.orderStatus === "pending", "模拟微信支付后订单进入待处理");
-    assert(paid.paymentProvider === "mock_wechat", "模拟微信支付返回提供方标记");
+    assert(paid.paymentProvider === "mock_wechat" && paid.payment.status === "paid", "模拟微信支付返回支付记录和提供方标记");
     assert(paid.order.pointsAwarded === paid.order.amount, "支付后按每元一积分赠送");
 
     const productsAfterPay = await request(baseUrl, "/api/products");
@@ -89,6 +90,10 @@ async function main() {
 
     const pointsAfterPay = await request(baseUrl, "/api/points?userId=user_demo");
     assert(pointsAfterPay.balance === 120 + paid.order.pointsAwarded, "支付后客户积分余额增加");
+    const paidAgain = await request(baseUrl, `/api/orders/${orderData.order.orderId}/pay`, { method: "POST" });
+    const productsAfterSecondPay = await request(baseUrl, "/api/products");
+    const pointsAfterSecondPay = await request(baseUrl, "/api/points?userId=user_demo");
+    assert(paidAgain.idempotent === true && productsAfterSecondPay.products.find((item) => item.skuId === "sku_bud").stockQty === budAfterPay.stockQty && pointsAfterSecondPay.balance === pointsAfterPay.balance, "重复支付请求幂等且不重复扣库存或赠积分");
 
     const dashboard = await request(baseUrl, "/api/admin/dashboard");
     assert(dashboard.todayOrderCount >= 1 && dashboard.todayRevenue >= paid.order.amount, "后台看板统计订单和营收");
@@ -456,6 +461,22 @@ async function main() {
         prodLoginError = error.message;
       }
       assert(prodLoginError.includes("生产环境禁止使用模拟接口"), "生产环境未显式允许时拦截模拟微信登录");
+      await request(blockedBaseUrl, "/api/cart/items", { method: "POST", body: { userId: "user_demo", skuId: "sku_bud", quantity: 1 } });
+      const blockedOrder = await request(blockedBaseUrl, "/api/orders", { method: "POST", body: { userId: "user_demo" } });
+      let prodPayError = "";
+      try {
+        await request(blockedBaseUrl, `/api/orders/${blockedOrder.order.orderId}/pay`, { method: "POST" });
+      } catch (error) {
+        prodPayError = error.message;
+      }
+      assert(prodPayError.includes("微信支付预支付单待接入"), "生产环境支付返回真实微信预支付待接入提示");
+      let notifyError = "";
+      try {
+        await request(blockedBaseUrl, "/api/payments/wechat/notify", { method: "POST", body: { orderId: blockedOrder.order.orderId, amount: blockedOrder.order.amount } });
+      } catch (error) {
+        notifyError = error.message;
+      }
+      assert(notifyError.includes("微信支付回调验签待接入"), "微信支付回调未验签时拒绝处理");
       let unauthAdminError = "";
       try {
         await request(blockedBaseUrl, "/api/admin/dashboard");
