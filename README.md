@@ -73,6 +73,7 @@ node scripts/validate-miniprogram.mjs
 
 验收记录：
 
+- `docs/REQUIREMENTS-AUDIT-V24.md`
 - `docs/ACCEPTANCE-V24.md`
 - `docs/ACCEPTANCE-V23.md`
 - `docs/ACCEPTANCE-V22.md`
