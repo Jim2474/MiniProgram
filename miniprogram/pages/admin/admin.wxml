@@ -52,6 +52,11 @@
     <input class="input" value="{{productKeyword}}" bindinput="onProductKeyword" placeholder="按商品名/规格筛选" />
     <view class="btn-row">
       <button size="mini" class="secondary" bindtap="searchProducts">筛选</button>
+    </view>
+    <view class="row">
+      <view class="row-title">商品分类表单</view>
+      <input class="input" value="{{categoryForm.name}}" bindinput="onCategoryName" placeholder="分类名称" />
+      <input class="input" type="number" value="{{categoryForm.sortOrder}}" bindinput="onCategorySortOrder" placeholder="排序值" />
       <button size="mini" class="secondary" bindtap="createCategory">新增分类</button>
     </view>
     <view wx:for="{{productCategories}}" wx:key="categoryId" class="row">
@@ -63,6 +68,9 @@
       <view class="input">{{productCategories[productForm.categoryIndex].name || '选择分类'}}</view>
     </picker>
     <input class="input" value="{{productForm.name}}" bindinput="onProductName" placeholder="SKU 名称" />
+    <input class="input" value="{{productForm.spec}}" bindinput="onProductSpec" placeholder="规格" />
+    <input class="input" value="{{productForm.unit}}" bindinput="onProductUnit" placeholder="单位" />
+    <input class="input" value="{{productForm.description}}" bindinput="onProductDescription" placeholder="商品描述" />
     <input class="input" type="number" value="{{productForm.price}}" bindinput="onProductPrice" placeholder="售价" />
     <input class="input" type="number" value="{{productForm.costPrice}}" bindinput="onProductCost" placeholder="成本价" />
     <input class="input" value="{{productForm.supplierName}}" bindinput="onProductSupplier" placeholder="供应商" />

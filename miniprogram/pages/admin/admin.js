@@ -102,9 +102,16 @@ Page({
       anteTerm: "前注",
       blindLevelsText: "1/2,2/4,5/10,10/20,25/50,50/100"
     },
+    categoryForm: {
+      name: "软饮",
+      sortOrder: 4
+    },
     productForm: {
       categoryIndex: 0,
       name: "气泡水",
+      spec: "330ml",
+      unit: "瓶",
+      description: "清爽无糖气泡水",
       price: 18,
       costPrice: 8,
       supplierName: "默认供应商",
@@ -375,6 +382,18 @@ Page({
     this.setData({ "productForm.name": event.detail.value })
   },
 
+  onProductSpec(event) {
+    this.setData({ "productForm.spec": event.detail.value })
+  },
+
+  onProductUnit(event) {
+    this.setData({ "productForm.unit": event.detail.value })
+  },
+
+  onProductDescription(event) {
+    this.setData({ "productForm.description": event.detail.value })
+  },
+
   onProductPrice(event) {
     this.setData({ "productForm.price": Number(event.detail.value || 0) })
   },
@@ -399,9 +418,17 @@ Page({
     this.setData({ "productForm.storageDays": Number(event.detail.value || 0) })
   },
 
+  onCategoryName(event) {
+    this.setData({ "categoryForm.name": event.detail.value })
+  },
+
+  onCategorySortOrder(event) {
+    this.setData({ "categoryForm.sortOrder": Number(event.detail.value || 0) })
+  },
+
   async createCategory() {
     try {
-      await request("/api/admin/categories", { method: "POST", data: { name: `新分类${Date.now().toString().slice(-3)}` } })
+      await request("/api/admin/categories", { method: "POST", data: { ...this.data.categoryForm, operatorId: "emp_admin" } })
       wx.showToast({ title: "分类已新增" })
       await this.loadProducts()
     } catch (error) {
@@ -417,14 +444,14 @@ Page({
         data: {
           categoryId: category.categoryId,
           name: this.data.productForm.name,
-          spec: "标准规格",
-          unit: "份",
+          spec: this.data.productForm.spec,
+          unit: this.data.productForm.unit,
           price: this.data.productForm.price,
           costPrice: this.data.productForm.costPrice,
           supplierName: this.data.productForm.supplierName,
           stockQty: this.data.productForm.stockQty,
           warningQty: this.data.productForm.warningQty,
-          description: "后台新增 SKU",
+          description: this.data.productForm.description,
           storageDays: this.data.productForm.storageDays
         }
       })

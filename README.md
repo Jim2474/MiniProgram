@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V47
+# 德扑棋牌门店小程序 V48
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V47 验收状态
+## V48 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V48.md`
 - `docs/ACCEPTANCE-V47.md`
 - `docs/ACCEPTANCE-V46.md`
 - `docs/ACCEPTANCE-V45.md`
@@ -253,6 +254,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V48 新增能力
+
+- 后台商品分类新增表单，可填写分类名称和排序值。
+- 后台 SKU 新增表单补齐规格、单位和商品描述。
+- 移除固定“新分类”“标准规格”“后台新增 SKU”的演示式写法。
 
 ## V47 新增能力
 
