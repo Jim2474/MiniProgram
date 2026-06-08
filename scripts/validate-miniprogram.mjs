@@ -57,6 +57,7 @@ for (const page of ["customer", "staff", "admin", "dealer"]) {
 }
 
 const customerJs = await readFile(join(root, "miniprogram/pages/customer/customer.js"), "utf8");
+const customerWxml = await readFile(join(root, "miniprogram/pages/customer/customer.wxml"), "utf8");
 assert(customerJs.includes("/api/cart/items"), "customer page calls cart API");
 assert(customerJs.includes("/api/wechat/login"), "customer page calls WeChat login API");
 assert(customerJs.includes("/api/user/bind-phone"), "customer page calls bind phone API");
@@ -77,6 +78,7 @@ assert(customerJs.includes("wx.scanCode"), "customer page uses WeChat scanCode")
 assert(customerJs.includes("wx.openLocation"), "customer page uses WeChat openLocation");
 assert(customerJs.includes("wx.makePhoneCall"), "customer page uses WeChat makePhoneCall");
 assert(customerJs.includes("/api/scan/employee"), "customer page records employee QR scan");
+assert(!customerJs.includes("onEmployeeChange") && !customerWxml.includes('range="{{employees}}"'), "customer page does not manually select employees");
 assert(customerJs.includes("/api/lottery/records/") && customerJs.includes("redeem-request"), "customer page calls lottery redeem request API");
 
 const staffJs = await readFile(join(root, "miniprogram/pages/staff/staff.js"), "utf8");

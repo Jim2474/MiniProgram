@@ -1,7 +1,7 @@
 App({
   globalData: {
     userId: "user_demo",
-    selectedEmployeeId: "emp_anna",
+    selectedEmployeeId: "",
     backendBaseUrl: "http://localhost:3000"
   }
 })

@@ -36,6 +36,7 @@ async function main() {
     assert(boot.employees.every((employee) => !("passwordHash" in employee)), "初始化数据不暴露员工密码字段");
 
     const loggedInUser = await request(baseUrl, "/api/wechat/login", { method: "POST", body: { phone: "13700001111", nickname: "新会员" } });
+    const newUserId = loggedInUser.user.userId;
     assert(loggedInUser.user.balance === 0 && loggedInUser.user.memberLevel === "普通会员", "微信登录新会员初始化余额和等级");
 
     const staffLogin = await request(baseUrl, "/api/staff/login", { method: "POST", body: { account: "anna", password: "demo" } });
@@ -46,6 +47,16 @@ async function main() {
     const bud = productsBefore.products.find((item) => item.skuId === "sku_bud");
     const whisky = productsBefore.products.find((item) => item.skuId === "sku_whisky");
     assert(bud.stockQty === 60, "初始 SKU 库存正确");
+
+    await request(baseUrl, "/api/cart/items", {
+      method: "POST",
+      body: { userId: newUserId, skuId: "sku_bud", quantity: 1 },
+    });
+    const naturalOrder = await request(baseUrl, "/api/orders", { method: "POST", body: { userId: newUserId } });
+    assert(!naturalOrder.order.employee && naturalOrder.order.source === "natural", "未扫码员工二维码时订单不归属员工");
+
+    const scanBeforeOrder = await request(baseUrl, "/api/scan/employee", { method: "POST", body: { userId: "user_demo", employeeId: "emp_anna", rawCode: "employee:emp_anna" } });
+    assert(scanBeforeOrder.employee.employeeId === "emp_anna" && scanBeforeOrder.record.scene === "employee_qr", "客户先扫码员工二维码建立归属");
 
     await request(baseUrl, "/api/cart/items", {
       method: "POST",
@@ -362,8 +373,6 @@ async function main() {
     const confirmedCouponQr = await request(baseUrl, `/api/staff/verification-codes/${couponQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
     assert(confirmedCouponQr.result.coupon.status === "completed", "员工可扫码核销酒水券二维码");
 
-    const scan = await request(baseUrl, "/api/scan/employee", { method: "POST", body: { userId: "user_demo", employeeId: "emp_anna", rawCode: "employee:emp_anna" } });
-    assert(scan.employee.employeeId === "emp_anna" && scan.record.scene === "employee_qr", "客户扫码员工二维码生成归属记录");
     const scanRecords = await request(baseUrl, "/api/admin/scan-records");
     assert(scanRecords.records.some((record) => record.employeeId === "emp_anna"), "后台可查看扫码归属记录");
 

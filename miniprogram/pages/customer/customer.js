@@ -4,8 +4,8 @@ const app = getApp()
 Page({
   data: {
     employees: [],
-    employeeIndex: 0,
     selectedEmployee: {},
+    scannedEmployeeId: "",
     products: [],
     cartItems: [],
     cartTotal: 0,
@@ -53,11 +53,11 @@ Page({
     try {
       const boot = await request("/api/bootstrap")
       const employees = boot.employees.filter((item) => item.role !== "admin")
-      const selectedEmployee = employees.find((item) => item.employeeId === app.globalData.selectedEmployeeId) || employees[0]
+      const selectedEmployee = employees.find((item) => item.employeeId === app.globalData.selectedEmployeeId) || {}
       this.setData({
         employees,
         selectedEmployee,
-        employeeIndex: Math.max(0, employees.findIndex((item) => item.employeeId === selectedEmployee.employeeId)),
+        scannedEmployeeId: app.globalData.selectedEmployeeId || "",
         currentUserId: app.globalData.userId
       })
       await Promise.all([this.loadProducts(), this.loadCart(), this.loadOrders(), this.loadPoints(), this.loadStorage(), this.loadTables(), this.loadReservations(), this.loadMarketing()])
@@ -78,8 +78,8 @@ Page({
   },
 
   async loadCart() {
-    const employeeId = this.data.selectedEmployee.employeeId
-    const data = await request(`/api/cart?userId=${app.globalData.userId}&employeeId=${employeeId}`)
+    const employeeParam = this.data.scannedEmployeeId ? `&employeeId=${this.data.scannedEmployeeId}` : ""
+    const data = await request(`/api/cart?userId=${app.globalData.userId}${employeeParam}`)
     const cartItems = data.items.map((item) => ({
       ...item,
       subtotalText: money(item.product.price * item.quantity)
@@ -192,14 +192,6 @@ Page({
     })
   },
 
-  async onEmployeeChange(event) {
-    const employeeIndex = Number(event.detail.value)
-    const selectedEmployee = this.data.employees[employeeIndex]
-    app.globalData.selectedEmployeeId = selectedEmployee.employeeId
-    this.setData({ employeeIndex, selectedEmployee })
-    await this.loadCart()
-  },
-
   onLoginPhone(event) {
     this.setData({ loginPhone: event.detail.value })
   },
@@ -242,20 +234,21 @@ Page({
 
   async scanEmployeeCode() {
     try {
-      let rawCode = `employee:${this.data.selectedEmployee.employeeId}`
+      let rawCode = ""
       if (wx.scanCode) {
         try {
           const result = await new Promise((resolve, reject) => wx.scanCode({ onlyFromCamera: false, success: resolve, fail: reject }))
           rawCode = result.result || rawCode
         } catch (_error) {
-          rawCode = `employee:${this.data.selectedEmployee.employeeId}`
+          rawCode = this.data.scannedEmployeeId ? `employee:${this.data.scannedEmployeeId}` : ""
         }
       }
-      const employeeId = rawCode.includes("employee:") ? rawCode.split("employee:")[1] : this.data.selectedEmployee.employeeId
+      if (!rawCode) throw new Error("请扫描员工专属二维码")
+      const employeeId = rawCode.includes("employee:") ? rawCode.split("employee:")[1] : ""
+      if (!employeeId) throw new Error("员工二维码格式不正确")
       const data = await request("/api/scan/employee", { method: "POST", data: { userId: app.globalData.userId, employeeId, rawCode } })
-      const employeeIndex = Math.max(0, this.data.employees.findIndex((item) => item.employeeId === data.employee.employeeId))
       app.globalData.selectedEmployeeId = data.employee.employeeId
-      this.setData({ selectedEmployee: data.employee, employeeIndex, scanText: `已扫码归属：${data.employee.name}` })
+      this.setData({ selectedEmployee: data.employee, scannedEmployeeId: data.employee.employeeId, scanText: `已扫码归属：${data.employee.name}` })
       await this.loadCart()
       wx.showToast({ title: "扫码成功" })
     } catch (error) {
@@ -269,7 +262,7 @@ Page({
         method: "POST",
         data: {
           userId: app.globalData.userId,
-          employeeId: this.data.selectedEmployee.employeeId,
+          employeeId: this.data.scannedEmployeeId || undefined,
           skuId: event.currentTarget.dataset.sku,
           quantity: 1
         }

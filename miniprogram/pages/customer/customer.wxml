@@ -32,9 +32,7 @@
 
   <view class="section">
     <view class="section-title">扫码员工</view>
-    <picker range="{{employees}}" range-key="name" value="{{employeeIndex}}" bindchange="onEmployeeChange">
-      <view class="input">{{selectedEmployee.name || '自然订单'}}</view>
-    </picker>
+    <view class="input">{{selectedEmployee.name ? '已绑定员工：' + selectedEmployee.name : '未扫码，订单不归属员工'}}</view>
     <view class="btn-row">
       <button class="primary" bindtap="scanEmployeeCode">扫码员工二维码</button>
     </view>
