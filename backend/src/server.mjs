@@ -23,6 +23,7 @@ const currentAppEnv = () => process.env.APP_ENV || process.env.NODE_ENV || "deve
 const mockWechatEnabled = () => process.env.ALLOW_MOCK_WECHAT === "true" || currentAppEnv() !== "production";
 const authRequired = () => process.env.REQUIRE_AUTH === "true" || currentAppEnv() === "production";
 const jsonStoreAllowedInProduction = () => process.env.ALLOW_JSON_STORE_IN_PRODUCTION === "true";
+const databaseProvider = () => (process.env.DATABASE_URL?.startsWith("sqlite://") ? "sqlite" : process.env.DATABASE_URL ? "unsupported" : "json_store");
 const requiredWechatLoginEnv = ["WECHAT_APPID", "WECHAT_APP_SECRET"];
 const requiredWechatPayEnv = [
   "WECHAT_APPID",
@@ -50,7 +51,8 @@ const deploymentChecks = () => {
     wechatQrDryRun: process.env.WECHAT_QR_DRY_RUN === "true",
     wechatPayDryRun: process.env.WECHAT_PAY_DRY_RUN === "true",
     databaseConfigured: Boolean(process.env.DATABASE_URL),
-    usingJsonStore: !process.env.DATABASE_URL,
+    databaseProvider: databaseProvider(),
+    usingJsonStore: databaseProvider() === "json_store",
     jsonStoreAllowedInProduction: jsonStoreAllowedInProduction(),
   };
 };
@@ -166,6 +168,51 @@ function migrateEmployeePassword(employee) {
   employee.passwordHash = hashPassword(employee.passwordHash);
   employee.passwordMigratedAt = now();
   return true;
+}
+
+function normalizeStoreData(data) {
+  data.stockRequests ||= [];
+  data.stockCounts ||= [];
+  data.scanRecords ||= [];
+  data.verificationCodes ||= [];
+  data.staffSessions ||= [];
+  data.voiceEvents ||= [];
+  let shouldSaveAfterLoad = false;
+  for (const user of data.users || []) {
+    user.balance ||= 0;
+    user.memberLevel ||= "普通会员";
+  }
+  for (const employee of data.employees || []) {
+    employee.commissionRate ??= employee.role === "staff" ? 0.05 : 0;
+    shouldSaveAfterLoad = migrateEmployeePassword(employee) || shouldSaveAfterLoad;
+  }
+  for (const product of data.products || []) {
+    product.costPrice ??= 0;
+    product.supplierName ||= "";
+  }
+  for (const table of data.tables || []) {
+    table.occupiedStartedAt ||= null;
+    table.consumptionAmount ||= 0;
+    table.imageUrl ||= defaultTableImage(table);
+  }
+  data.blindSettings ||= {};
+  data.blindSettings.blindLevels ||= defaultBlindLevels();
+  for (const storage of data.customerStorage || []) {
+    storage.handledAt ||= null;
+    storage.handledBy ||= null;
+    storage.expiredHandledAt ||= null;
+    storage.expiredHandledBy ||= null;
+    storage.expiredHandlingNote ||= "";
+  }
+  return shouldSaveAfterLoad;
+}
+
+function sqlitePathFromDatabaseUrl(databaseUrl) {
+  const value = String(databaseUrl || "");
+  if (!value.startsWith("sqlite://")) return "";
+  const rawPath = value.slice("sqlite://".length);
+  if (!rawPath || rawPath === ":memory:") return rawPath || ":memory:";
+  return resolve(rawPath.replace(/^\/([A-Za-z]:)/, "$1"));
 }
 
 function createUserFromWechat(store, { openid, nickname, avatar = "", phone = "" }) {
@@ -724,39 +771,7 @@ class Store {
       return this.data;
     }
     this.data = JSON.parse(await readFile(this.filePath, "utf8"));
-    this.data.stockRequests ||= [];
-    this.data.stockCounts ||= [];
-    this.data.scanRecords ||= [];
-    this.data.verificationCodes ||= [];
-    this.data.staffSessions ||= [];
-    this.data.voiceEvents ||= [];
-    let shouldSaveAfterLoad = false;
-    for (const user of this.data.users || []) {
-      user.balance ||= 0;
-      user.memberLevel ||= "普通会员";
-    }
-    for (const employee of this.data.employees || []) {
-      employee.commissionRate ??= employee.role === "staff" ? 0.05 : 0;
-      shouldSaveAfterLoad = migrateEmployeePassword(employee) || shouldSaveAfterLoad;
-    }
-    for (const product of this.data.products || []) {
-      product.costPrice ??= 0;
-      product.supplierName ||= "";
-    }
-    for (const table of this.data.tables || []) {
-      table.occupiedStartedAt ||= null;
-      table.consumptionAmount ||= 0;
-      table.imageUrl ||= defaultTableImage(table);
-    }
-    this.data.blindSettings ||= {};
-    this.data.blindSettings.blindLevels ||= defaultBlindLevels();
-    for (const storage of this.data.customerStorage || []) {
-      storage.handledAt ||= null;
-      storage.handledBy ||= null;
-      storage.expiredHandledAt ||= null;
-      storage.expiredHandledBy ||= null;
-      storage.expiredHandlingNote ||= "";
-    }
+    const shouldSaveAfterLoad = normalizeStoreData(this.data);
     if (shouldSaveAfterLoad) await this.save();
     return this.data;
   }
@@ -771,6 +786,8 @@ class Store {
     });
     return this.saveQueue;
   }
+
+  async close() {}
 
   log(operatorId, role, action, targetType, targetId, beforeValue, afterValue, reason = "") {
     const safeBefore = targetType === "Employee" ? publicEmployee(beforeValue) : beforeValue;
@@ -893,6 +910,59 @@ class Store {
       cart.source = "employee_qr";
     }
     return cart;
+  }
+}
+
+class SQLiteStore extends Store {
+  constructor(databasePath) {
+    super(databasePath);
+    this.databasePath = databasePath;
+    this.db = null;
+  }
+
+  async load() {
+    if (this.databasePath !== ":memory:") await mkdir(dirname(this.databasePath), { recursive: true });
+    const { DatabaseSync } = await import("node:sqlite");
+    this.db = new DatabaseSync(this.databasePath);
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS app_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        data TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+      );
+    `);
+    this.db.prepare("INSERT OR REPLACE INTO metadata (key, value) VALUES (?, ?)").run("store_type", "sqlite_app_state");
+    const row = this.db.prepare("SELECT data FROM app_state WHERE id = 1").get();
+    if (!row) {
+      this.data = seedData();
+      await this.save();
+      return this.data;
+    }
+    this.data = JSON.parse(row.data);
+    const shouldSaveAfterLoad = normalizeStoreData(this.data);
+    if (shouldSaveAfterLoad) await this.save();
+    return this.data;
+  }
+
+  async save() {
+    const previousSave = this.saveQueue.catch(() => {});
+    this.saveQueue = previousSave.then(async () => {
+      if (!this.db) throw new Error("SQLite store is not loaded");
+      this.db
+        .prepare("INSERT INTO app_state (id, data, updated_at) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data, updated_at = excluded.updated_at")
+        .run(JSON.stringify(this.data, null, 2), now());
+    });
+    return this.saveQueue;
+  }
+
+  async close() {
+    await this.saveQueue.catch(() => {});
+    this.db?.close();
+    this.db = null;
   }
 }
 
@@ -2888,7 +2958,9 @@ export async function createApp(options = {}) {
   if (currentAppEnv() === "production" && !process.env.DATABASE_URL && !jsonStoreAllowedInProduction()) {
     throw new HttpError(501, "生产环境缺少 DATABASE_URL；如仅沙箱演示需显式设置 ALLOW_JSON_STORE_IN_PRODUCTION=true");
   }
-  const store = new Store(options.dataFile || process.env.DATA_FILE || defaultDataFile);
+  const provider = databaseProvider();
+  if (provider === "unsupported") throw new HttpError(501, "当前仅支持 sqlite:// DATABASE_URL；PostgreSQL/MySQL 适配尚未启用");
+  const store = provider === "sqlite" ? new SQLiteStore(sqlitePathFromDatabaseUrl(process.env.DATABASE_URL)) : new Store(options.dataFile || process.env.DATA_FILE || defaultDataFile);
   await store.load();
   const router = createRouter(store);
   const server = createServer(async (req, res) => {
@@ -2907,6 +2979,9 @@ export async function createApp(options = {}) {
     } catch (error) {
       sendError(res, error);
     }
+  });
+  server.on("close", () => {
+    store.close().catch(() => {});
   });
   return { server, store };
 }

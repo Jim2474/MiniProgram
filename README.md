@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V35
+# 德扑棋牌门店小程序 V36
 
 本仓库包含：
 
@@ -27,6 +27,7 @@ APP_ENV=production   # 默认禁止模拟微信能力
 ALLOW_MOCK_WECHAT=true  # 仅用于生产前沙箱演示，显式允许模拟微信能力
 REQUIRE_AUTH=true       # 开发/沙箱环境也强制后台和员工接口校验员工会话
 ALLOW_JSON_STORE_IN_PRODUCTION=true  # 仅沙箱演示；生产无 DATABASE_URL 默认拒绝启动
+DATABASE_URL=sqlite://./backend/data/store.sqlite  # 单节点部署可用 SQLite 状态库
 ```
 
 生产环境变量可参考 `.env.example`。`/api/health` 会返回 `runtime.deployment`，列出真实微信支付/登录和数据库配置缺口。
@@ -72,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V35 验收状态
+## V36 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V36.md`
 - `docs/ACCEPTANCE-V35.md`
 - `docs/ACCEPTANCE-V34.md`
 - `docs/ACCEPTANCE-V33.md`
@@ -114,10 +116,18 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：169 项。
+- 后端业务自验收：171 项。
 - 小程序结构与 API 调用校验：130 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V36 新增能力
+
+- `DATABASE_URL=sqlite://...` 时后端启用 SQLite 状态库，生产环境不再只能依赖 JSON Store。
+- SQLite 状态库使用 `app_state` 表保存当前业务状态，并通过共享迁移逻辑补齐旧字段。
+- `/api/health` 暴露 `databaseProvider`，可区分 `json_store`、`sqlite` 和未支持的数据库 URL。
+- 生产环境仍默认拒绝无 `DATABASE_URL` 的 JSON Store；非 `sqlite://` URL 明确返回“尚未启用”。
+- 自动验收覆盖生产 SQLite 启动和重启后读取持久化数据。
 
 ## V35 新增能力
 

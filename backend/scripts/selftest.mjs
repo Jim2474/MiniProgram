@@ -529,6 +529,7 @@ async function main() {
     }
     process.env.APP_ENV = "production";
     delete process.env.ALLOW_MOCK_WECHAT;
+    delete process.env.DATABASE_URL;
     try {
       let productionStoreError = "";
       try {
@@ -537,6 +538,32 @@ async function main() {
         productionStoreError = error.message;
       }
       assert(productionStoreError.includes("生产环境缺少 DATABASE_URL"), "生产环境默认拒绝使用 JSON Store");
+      const sqliteDataFile = join(rootDir, "data", "test-store-prod.sqlite");
+      await rm(sqliteDataFile, { force: true });
+      process.env.DATABASE_URL = `sqlite://${sqliteDataFile}`;
+      const { server: sqliteServer, store: sqliteStore } = await createApp();
+      await new Promise((resolveListen) => sqliteServer.listen(0, resolveListen));
+      const sqliteBaseUrl = `http://127.0.0.1:${sqliteServer.address().port}`;
+      try {
+        const sqliteHealth = await request(sqliteBaseUrl, "/api/health");
+        assert(sqliteHealth.runtime.deployment.databaseProvider === "sqlite" && sqliteHealth.runtime.deployment.usingJsonStore === false, "生产环境可使用 SQLite 数据库状态库启动");
+        await request(sqliteBaseUrl, "/api/staff/login", { method: "POST", body: { account: "anna", password: "demo" } });
+      } finally {
+        await new Promise((resolveClose) => sqliteServer.close(resolveClose));
+        await sqliteStore.close();
+      }
+      const { server: sqliteRestartServer, store: sqliteRestartStore } = await createApp();
+      await new Promise((resolveListen) => sqliteRestartServer.listen(0, resolveListen));
+      const sqliteRestartBaseUrl = `http://127.0.0.1:${sqliteRestartServer.address().port}`;
+      try {
+        const sqliteBoot = await request(sqliteRestartBaseUrl, "/api/bootstrap");
+        assert(sqliteBoot.runtime.deployment.databaseProvider === "sqlite" && sqliteBoot.runtime.deployment.databaseConfigured === true, "SQLite 数据库状态库重启后可读取持久化数据");
+      } finally {
+        await new Promise((resolveClose) => sqliteRestartServer.close(resolveClose));
+        await sqliteRestartStore.close();
+        await rm(sqliteDataFile, { force: true });
+      }
+      delete process.env.DATABASE_URL;
       process.env.ALLOW_JSON_STORE_IN_PRODUCTION = "true";
       const blockedDataFile = join(rootDir, "data", "test-store-prod-block.json");
       await rm(blockedDataFile, { force: true });
