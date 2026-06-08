@@ -71,7 +71,8 @@ Page({
     tableForm: {
       name: "B2 新桌",
       type: "普通卡座",
-      capacity: 9
+      capacity: 9,
+      imageUrl: "https://dummyimage.com/640x360/183026/f4d9a6&text=Poker+Table"
     }
   },
 
@@ -390,6 +391,20 @@ Page({
     }
   }
 ,
+  async cancelAdminReservation(event) {
+    try {
+      await request(`/api/admin/reservations/${event.currentTarget.dataset.id}`, {
+        method: "PATCH",
+        data: { status: "cancelled", reason: "小程序后台取消预约" }
+      })
+      wx.showToast({ title: "已取消" })
+      await this.loadReservations()
+      await this.loadTables()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
   async expireReservation(event) {
     try {
       await request(`/api/admin/reservations/${event.currentTarget.dataset.id}`, {
@@ -423,6 +438,10 @@ Page({
 
   onTableCapacity(event) {
     this.setData({ "tableForm.capacity": Number(event.detail.value || 1) })
+  },
+
+  onTableImage(event) {
+    this.setData({ "tableForm.imageUrl": event.detail.value })
   },
 
   onTableKeyword(event) {

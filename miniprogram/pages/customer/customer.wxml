@@ -161,6 +161,7 @@
   <view class="section">
     <view class="section-title">桌位预约</view>
     <view wx:for="{{tables}}" wx:key="tableId" class="row">
+      <image wx:if="{{item.imageUrl}}" mode="aspectFill" src="{{item.imageUrl}}" class="table-image" />
       <view class="row-title">{{item.name}} · {{item.capacity}}人</view>
       <view class="muted">{{item.type}} · {{item.statusText}}</view>
       <button size="mini" class="secondary" data-id="{{item.tableId}}" bindtap="createReservation">提交预约</button>

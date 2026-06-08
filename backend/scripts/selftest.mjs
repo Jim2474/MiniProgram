@@ -125,12 +125,19 @@ async function main() {
       body: { userId: "user_demo", tableId: "table_a1", reservationTime: new Date().toISOString() },
     });
     assert(reservation.reservation.status === "pending", "客户可提交桌位预约");
+    const publicTables = await request(baseUrl, "/api/tables");
+    assert(publicTables.tables.every((item) => item.capacity >= 1 && item.imageUrl !== undefined), "客户预约页可获取桌台人数和图片字段");
     const confirmedReservation = await request(baseUrl, `/api/admin/reservations/${reservation.reservation.reservationId}`, {
       method: "PATCH",
       body: { status: "confirmed", operatorId: "emp_admin" },
     });
     assert(confirmedReservation.reservation.status === "confirmed", "后台可确认预约");
     assert(confirmedReservation.table.status === "reserved", "确认预约后桌位变为预订");
+    const adminCancelledReservation = await request(baseUrl, `/api/admin/reservations/${reservation.reservation.reservationId}`, {
+      method: "PATCH",
+      body: { status: "cancelled", operatorId: "emp_admin", reason: "客户电话取消" },
+    });
+    assert(adminCancelledReservation.reservation.status === "cancelled" && adminCancelledReservation.table.status === "available", "后台可取消已确认预约并释放桌台");
     const cancelReservation = await request(baseUrl, "/api/reservations", {
       method: "POST",
       body: { userId: "user_demo", tableId: "table_vip", reservationTime: new Date().toISOString() },

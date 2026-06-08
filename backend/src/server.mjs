@@ -163,7 +163,7 @@ function seedData() {
         warningQty: 12,
         status: "active",
         description: "冰镇瓶装啤酒，适合拼桌畅饮。",
-        imageUrl: "",
+        imageUrl: "https://dummyimage.com/640x360/18241f/f4d9a6&text=A1+Poker+Table",
         storageDays: 30,
       },
       {
@@ -179,7 +179,7 @@ function seedData() {
         warningQty: 2,
         status: "active",
         description: "可现场饮用，也可转为客户存酒。",
-        imageUrl: "",
+        imageUrl: "https://dummyimage.com/640x360/261b30/f4d9a6&text=VIP+Room",
         storageDays: 60,
       },
       {
@@ -1259,6 +1259,11 @@ function createRouter(store) {
     const table = store.data.tables.find((item) => item.tableId === reservation.tableId);
     if (table && reservation.status === "confirmed") table.status = "reserved";
     if (table && (reservation.status === "cancelled" || reservation.status === "expired")) table.status = "available";
+    if (reservation.status === "confirmed" && !reservation.confirmedAt) reservation.confirmedAt = now();
+    if (reservation.status === "cancelled" && !reservation.cancelledAt) {
+      reservation.cancelledAt = now();
+      reservation.cancelReason = body.reason || "后台取消预约";
+    }
     if (reservation.status === "expired") reservation.expiredAt = now();
     store.log(body.operatorId || "emp_admin", "admin", "update_reservation", "Reservation", reservation.reservationId, before, reservation, body.reason || "处理预约");
     await store.save();

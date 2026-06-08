@@ -67,6 +67,7 @@ assert(customerJs.includes("/api/storage/") && customerJs.includes("pickup-reque
 assert(customerJs.includes("/api/storage-records"), "customer page calls storage records API");
 assert(customerJs.includes("/api/reservations"), "customer page calls reservation API");
 assert(customerJs.includes("/cancel"), "customer page calls reservation cancel API");
+assert(customerWxml.includes("table-image") && customerWxml.includes("item.imageUrl"), "customer reservation list displays table image");
 assert(customerJs.includes("/api/checkin"), "customer page calls checkin API");
 assert(!customerJs.includes("/api/recharge") && !customerWxml.includes("微信支付充值"), "customer page hides balance recharge flow");
 assert(!customerJs.includes("/api/lottery/draw") && !customerWxml.includes("积分抽奖"), "customer page hides lottery flow");
@@ -122,6 +123,8 @@ assert(adminJs.includes("/api/admin/scan-records"), "admin page calls scan recor
 assert(adminJs.includes("/api/admin/tables"), "admin page calls table management API");
 assert(adminJs.includes("tablePagination") && adminJs.includes("pageSize") && adminJs.includes("tableSummary"), "admin page supports table pagination and summary");
 assert(adminJs.includes("tableStatusOptions") && adminJs.includes("onTableKeyword"), "admin page supports table status and keyword filtering");
+assert(adminJs.includes("cancelAdminReservation") && adminWxml.includes("取消预约"), "admin page can cancel reservations");
+assert(adminJs.includes("onTableImage") && adminWxml.includes("桌台图片 URL"), "admin page supports table image URL input");
 assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind settings API");
 assert(adminJs.includes("blindForm") && adminJs.includes("onBlindField"), "admin page supports blind settings form");
 assert(adminJs.includes("titleMap") && adminJs.includes("voiceTerms"), "admin page updates blind title map and voice terms");
