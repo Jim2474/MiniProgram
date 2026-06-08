@@ -46,6 +46,7 @@ const deploymentChecks = () => {
     wechatPayConfigured: missingWechatPayEnv.length === 0,
     missingWechatPayEnv,
     wechatLoginDryRun: process.env.WECHAT_LOGIN_DRY_RUN === "true",
+    wechatPhoneDryRun: process.env.WECHAT_PHONE_DRY_RUN === "true",
     wechatPayDryRun: process.env.WECHAT_PAY_DRY_RUN === "true",
     databaseConfigured: Boolean(process.env.DATABASE_URL),
     usingJsonStore: !process.env.DATABASE_URL,
@@ -178,6 +179,44 @@ async function wechatCodeToSession(code) {
   }
   if (!data.openid) throw new HttpError(502, "微信登录未返回 openid");
   return { ...data, provider: "wechat_jscode2session" };
+}
+
+async function getWechatAccessToken() {
+  const missing = requiredWechatLoginEnv.filter((key) => !process.env[key]);
+  if (missing.length) throw new HttpError(501, missingConfigMessage("微信手机号授权", missing));
+  const url = new URL("https://api.weixin.qq.com/cgi-bin/token");
+  url.searchParams.set("grant_type", "client_credential");
+  url.searchParams.set("appid", process.env.WECHAT_APPID);
+  url.searchParams.set("secret", process.env.WECHAT_APP_SECRET);
+  const response = await fetch(url);
+  const data = await response.json();
+  if (!response.ok || data.errcode) {
+    throw new HttpError(502, `微信 access_token 获取失败：${data.errmsg || response.statusText}`);
+  }
+  if (!data.access_token) throw new HttpError(502, "微信 access_token 未返回");
+  return data.access_token;
+}
+
+async function wechatCodeToPhone(code) {
+  if (!code) throw new HttpError(400, "缺少微信手机号授权 code");
+  const missing = requiredWechatLoginEnv.filter((key) => !process.env[key]);
+  if (missing.length) throw new HttpError(501, missingConfigMessage("微信手机号授权", missing));
+  if (process.env.WECHAT_PHONE_DRY_RUN === "true") {
+    return { phoneNumber: `13${String(code).replace(/\D/g, "").slice(-9).padStart(9, "0")}`, purePhoneNumber: `13${String(code).replace(/\D/g, "").slice(-9).padStart(9, "0")}`, countryCode: "86", provider: "wechat_phone_dry_run" };
+  }
+  const accessToken = await getWechatAccessToken();
+  const response = await fetch(`https://api.weixin.qq.com/wxa/business/getuserphonenumber?access_token=${encodeURIComponent(accessToken)}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  const data = await response.json();
+  if (!response.ok || data.errcode) {
+    throw new HttpError(502, `微信手机号授权失败：${data.errmsg || response.statusText}`);
+  }
+  const phoneInfo = data.phone_info || {};
+  if (!phoneInfo.phoneNumber) throw new HttpError(502, "微信手机号授权未返回手机号");
+  return { ...phoneInfo, provider: "wechat_phone" };
 }
 
 function normalizePrivateKey(value) {
@@ -1265,10 +1304,20 @@ function createRouter(store) {
   add("POST", "/api/user/bind-phone", async (body) => {
     const user = store.getUser(body.userId || "user_demo");
     const before = deepClone(user);
-    user.phone = body.phone || user.phone;
-    store.log(user.userId, "customer", "bind_phone", "User", user.userId, before, user, "绑定手机号");
+    let phoneProvider = "manual";
+    let phone = body.phone;
+    if (body.code || !mockWechatEnabled()) {
+      const phoneInfo = await wechatCodeToPhone(body.code);
+      phone = phoneInfo.phoneNumber || phoneInfo.purePhoneNumber;
+      phoneProvider = phoneInfo.provider;
+    }
+    if (!phone) throw new HttpError(400, "缺少手机号");
+    user.phone = phone;
+    user.phoneBoundAt = now();
+    user.phoneProvider = phoneProvider;
+    store.log(user.userId, "customer", "bind_phone", "User", user.userId, before, user, phoneProvider === "manual" ? "手动绑定手机号" : "微信授权绑定手机号");
     await store.save();
-    return { user };
+    return { user, phoneProvider };
   });
 
   add("GET", "/api/products/categories", async () => ({ categories: store.data.categories.filter((item) => item.status === "active") }));

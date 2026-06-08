@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V32
+# 德扑棋牌门店小程序 V33
 
 本仓库包含：
 
@@ -72,10 +72,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V32 验收状态
+## V33 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V33.md`
 - `docs/ACCEPTANCE-V32.md`
 - `docs/ACCEPTANCE-V31.md`
 - `docs/ACCEPTANCE-V30.md`
@@ -111,10 +112,18 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：162 项。
-- 小程序结构与 API 调用校验：125 项。
+- 后端业务自验收：164 项。
+- 小程序结构与 API 调用校验：126 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V33 新增能力
+
+- 客户小程序新增微信手机号授权按钮，使用 `open-type="getPhoneNumber"` 获取一次性授权 `code`。
+- 后端 `/api/user/bind-phone` 支持用微信手机号授权 `code` 换取手机号并绑定会员。
+- 生产环境默认禁止手填手机号绑定，要求微信手机号授权 `code`。
+- 新增 `WECHAT_PHONE_DRY_RUN`，生产沙箱可验证手机号授权链路。
+- 健康检查暴露 `wechatPhoneDryRun`，自动验收覆盖生产缺 code 拦截和 dry-run 绑定成功。
 
 ## V32 新增能力
 

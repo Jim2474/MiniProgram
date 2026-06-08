@@ -518,6 +518,7 @@ async function main() {
       "WECHAT_PAY_PLATFORM_SERIAL_NO",
       "WECHAT_PAY_NOTIFY_URL",
       "WECHAT_LOGIN_DRY_RUN",
+      "WECHAT_PHONE_DRY_RUN",
       "WECHAT_PAY_DRY_RUN",
       "ALLOW_JSON_STORE_IN_PRODUCTION",
     ]) {
@@ -551,6 +552,13 @@ async function main() {
           prodLoginError = error.message;
         }
         assert(prodLoginError.includes("缺少微信登录 code"), "生产环境真实微信登录要求小程序 code");
+        let prodPhoneError = "";
+        try {
+          await request(blockedBaseUrl, "/api/user/bind-phone", { method: "POST", body: { userId: "user_demo", phone: "13600000000" } });
+        } catch (error) {
+          prodPhoneError = error.message;
+        }
+        assert(prodPhoneError.includes("缺少微信手机号授权 code"), "生产环境手机号绑定要求微信授权 code");
         await request(blockedBaseUrl, "/api/cart/items", { method: "POST", body: { userId: "user_demo", skuId: "sku_bud", quantity: 1 } });
         const blockedOrder = await request(blockedBaseUrl, "/api/orders", { method: "POST", body: { userId: "user_demo" } });
         let prodPayError = "";
@@ -613,6 +621,7 @@ async function main() {
       process.env.WECHAT_PAY_PLATFORM_SERIAL_NO = "PLATFORMSERIAL";
       process.env.WECHAT_PAY_NOTIFY_URL = "https://example.com/api/payments/wechat/notify";
       process.env.WECHAT_LOGIN_DRY_RUN = "true";
+      process.env.WECHAT_PHONE_DRY_RUN = "true";
       process.env.WECHAT_PAY_DRY_RUN = "true";
       const dryRunDataFile = join(rootDir, "data", "test-store-prod-dryrun.json");
       await rm(dryRunDataFile, { force: true });
@@ -622,9 +631,11 @@ async function main() {
       try {
         const dryRunHealth = await request(dryRunBaseUrl, "/api/health");
         assert(dryRunHealth.runtime.deployment.wechatLoginConfigured === true && dryRunHealth.runtime.deployment.wechatPayConfigured === true, "真实微信登录和支付配置齐全时健康检查通过");
-        assert(dryRunHealth.runtime.deployment.wechatLoginDryRun === true && dryRunHealth.runtime.deployment.wechatPayDryRun === true, "健康检查暴露微信 dry-run 标记");
+        assert(dryRunHealth.runtime.deployment.wechatLoginDryRun === true && dryRunHealth.runtime.deployment.wechatPhoneDryRun === true && dryRunHealth.runtime.deployment.wechatPayDryRun === true, "健康检查暴露微信 dry-run 标记");
         const wxUser = await request(dryRunBaseUrl, "/api/wechat/login", { method: "POST", body: { code: "testcode", nickname: "真实微信会员" } });
         assert(wxUser.authProvider === "wechat_jscode2session_dry_run" && wxUser.user.openid === "dry_openid_testcode", "生产环境可通过微信 code 登录创建会员");
+        const phoneBoundUser = await request(dryRunBaseUrl, "/api/user/bind-phone", { method: "POST", body: { userId: wxUser.user.userId, code: "phone-code-13512345678" } });
+        assert(phoneBoundUser.phoneProvider === "wechat_phone_dry_run" && phoneBoundUser.user.phone === "13512345678", "生产环境可通过微信手机号授权 code 绑定手机号");
         const dryProductsBefore = await request(dryRunBaseUrl, "/api/products");
         const dryBudBefore = dryProductsBefore.products.find((item) => item.skuId === "sku_bud");
         await request(dryRunBaseUrl, "/api/cart/items", { method: "POST", body: { userId: wxUser.user.userId, skuId: "sku_bud", quantity: 1 } });

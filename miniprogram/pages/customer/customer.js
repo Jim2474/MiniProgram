@@ -203,11 +203,28 @@ Page({
 
   async bindPhone() {
     try {
-      await request("/api/user/bind-phone", {
+      const data = await request("/api/user/bind-phone", {
         method: "POST",
         data: { userId: app.globalData.userId, phone: this.data.bindPhoneValue }
       })
+      this.setData({ bindPhoneValue: data.user.phone || this.data.bindPhoneValue })
       wx.showToast({ title: "手机号已绑定" })
+      await this.loadMarketing()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async bindWechatPhone(event) {
+    try {
+      const code = event.detail && event.detail.code
+      if (!code) throw new Error("未获得微信手机号授权")
+      const data = await request("/api/user/bind-phone", {
+        method: "POST",
+        data: { userId: app.globalData.userId, code }
+      })
+      this.setData({ bindPhoneValue: data.user.phone || this.data.bindPhoneValue })
+      wx.showToast({ title: "手机号已授权" })
       await this.loadMarketing()
     } catch (error) {
       showError(error)

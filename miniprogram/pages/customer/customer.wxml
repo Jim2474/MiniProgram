@@ -25,7 +25,8 @@
       <input class="input" value="{{bindPhoneValue}}" bindinput="onBindPhone" placeholder="绑定手机号" />
       <view class="btn-row">
         <button size="mini" class="primary" bindtap="loginCustomer">微信登录/切换会员</button>
-        <button size="mini" class="secondary" bindtap="bindPhone">绑定手机号</button>
+        <button size="mini" class="secondary" open-type="getPhoneNumber" bindgetphonenumber="bindWechatPhone">微信授权手机号</button>
+        <button size="mini" class="secondary" bindtap="bindPhone">手动绑定</button>
       </view>
     </view>
   </view>
