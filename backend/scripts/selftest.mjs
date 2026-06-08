@@ -241,9 +241,10 @@ async function main() {
 
     const game = await request(baseUrl, "/api/staff/blind-games", {
       method: "POST",
-      body: { operatorId: "emp_dealer", smallBlind: 1, bigBlind: 2, intervalMinutes: 10, initialPlayers: 9, buyinAmount: 100 },
+      body: { operatorId: "emp_dealer", smallBlind: 1, bigBlind: 2, intervalMinutes: 12, initialPlayers: 9, buyinAmount: 100, voiceEnabled: false },
     });
     assert(game.game.status === "running" && game.game.currentPlayers === 9, "荷官可创建升盲游戏");
+    assert(game.game.intervalMinutes === 12 && game.game.voiceEnabled === false, "荷官可选择升盲间隔并关闭语音提醒");
     const nextLevel = await request(baseUrl, `/api/staff/blind-games/${game.game.gameId}`, {
       method: "PATCH",
       body: { action: "next_level", operatorId: "emp_dealer" },
@@ -274,6 +275,16 @@ async function main() {
     });
     const headsUpTimer = await request(baseUrl, `/api/staff/blind-games/${headsUpGame.game.gameId}/timer`);
     assert(headsUpTimer.timer.latestEvents.some((event) => event.eventType === "heads_up" && event.message.includes("单挑阶段")), "荷官淘汰到剩余2人时提示单挑阶段");
+    const silentHeadsUpGame = await request(baseUrl, "/api/staff/blind-games", {
+      method: "POST",
+      body: { operatorId: "emp_dealer", initialPlayers: 3, smallBlind: 1, bigBlind: 2, voiceEnabled: false },
+    });
+    await request(baseUrl, `/api/staff/blind-games/${silentHeadsUpGame.game.gameId}`, {
+      method: "PATCH",
+      body: { action: "eliminate", operatorId: "emp_dealer" },
+    });
+    const silentHeadsUpTimer = await request(baseUrl, `/api/staff/blind-games/${silentHeadsUpGame.game.gameId}/timer`);
+    assert(!silentHeadsUpTimer.timer.latestEvents.some((event) => event.eventType === "heads_up"), "关闭语音提醒后不生成单挑语音事件");
     const buyinAdded = await request(baseUrl, `/api/staff/blind-games/${game.game.gameId}`, {
       method: "PATCH",
       body: { action: "buyin", operatorId: "emp_dealer", count: 2 },

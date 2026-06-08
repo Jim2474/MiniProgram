@@ -212,6 +212,8 @@ const dealerJs = await readFile(join(root, "miniprogram/pages/dealer/dealer.js")
 const dealerWxml = await readFile(join(root, "miniprogram/pages/dealer/dealer.wxml"), "utf8");
 assert(dealerJs.includes("/api/staff/blind-games"), "dealer page calls blind game API");
 assert(dealerJs.includes("/timer"), "dealer page calls blind timer API");
+assert(dealerJs.includes("intervalOptions: [5, 8, 10, 12, 15, 20]") && dealerJs.includes("onIntervalChange") && dealerWxml.includes('range="{{intervalOptions}}"'), "dealer page uses fixed blind interval picker");
+assert(dealerJs.includes("voiceEnabled: true") && dealerJs.includes("onVoiceEnabledChange") && dealerWxml.includes("语音提醒"), "dealer page supports voice reminder switch");
 assert(dealerWxml.includes("next_level"), "dealer page supports next level action");
 assert(dealerWxml.includes("buyin_minus"), "dealer page supports buyin decrement action");
 assert(dealerWxml.includes("set_buyin_amount"), "dealer page supports buyin amount sync action");

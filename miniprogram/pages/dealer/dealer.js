@@ -5,10 +5,13 @@ Page({
     form: {
       smallBlind: 1,
       bigBlind: 2,
+      intervalIndex: 2,
       intervalMinutes: 10,
       initialPlayers: 9,
-      buyinAmount: 100
+      buyinAmount: 100,
+      voiceEnabled: true
     },
+    intervalOptions: [5, 8, 10, 12, 15, 20],
     game: null,
     timer: null,
     voiceEvents: [],
@@ -30,9 +33,14 @@ Page({
         ...blind.settings,
         blindLevelsText: (blind.settings.blindLevels || []).map((item) => `${item.smallBlind}/${item.bigBlind}${item.ante ? `/${item.ante}` : ""}`).join(" → ")
       }
+      const intervalMinutes = game ? game.intervalMinutes : this.data.form.intervalMinutes
+      const intervalIndex = Math.max(0, this.data.intervalOptions.indexOf(intervalMinutes))
       this.setData({
         game,
         "form.buyinAmount": game ? game.buyinAmount : this.data.form.buyinAmount,
+        "form.intervalMinutes": intervalMinutes,
+        "form.intervalIndex": intervalIndex,
+        "form.voiceEnabled": game ? game.voiceEnabled !== false : this.data.form.voiceEnabled,
         seats: (boot.seats || []).map((item) => ({ ...item, statusText: statusText(item.status) })),
         blindSettings
       })
@@ -54,6 +62,15 @@ Page({
   onInput(event) {
     const key = event.currentTarget.dataset.key
     this.setData({ [`form.${key}`]: Number(event.detail.value || 0) })
+  },
+
+  onIntervalChange(event) {
+    const intervalIndex = Number(event.detail.value || 0)
+    this.setData({ "form.intervalIndex": intervalIndex, "form.intervalMinutes": this.data.intervalOptions[intervalIndex] || 10 })
+  },
+
+  onVoiceEnabledChange(event) {
+    this.setData({ "form.voiceEnabled": Boolean(event.detail.value) })
   },
 
   async createGame() {

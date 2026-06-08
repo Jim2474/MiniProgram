@@ -9,9 +9,12 @@
     <view class="section-title">创建本局</view>
     <input class="input" type="number" value="{{form.smallBlind}}" data-key="smallBlind" bindinput="onInput" placeholder="小盲" />
     <input class="input" type="number" value="{{form.bigBlind}}" data-key="bigBlind" bindinput="onInput" placeholder="大盲" />
-    <input class="input" type="number" value="{{form.intervalMinutes}}" data-key="intervalMinutes" bindinput="onInput" placeholder="升盲间隔分钟" />
+    <picker mode="selector" range="{{intervalOptions}}" value="{{form.intervalIndex}}" bindchange="onIntervalChange">
+      <view class="input">升盲间隔：{{form.intervalMinutes}} 分钟</view>
+    </picker>
     <input class="input" type="number" value="{{form.initialPlayers}}" data-key="initialPlayers" bindinput="onInput" placeholder="初始人数" />
     <input class="input" type="number" value="{{form.buyinAmount}}" data-key="buyinAmount" bindinput="onInput" placeholder="单手买入金额" />
+    <switch checked="{{form.voiceEnabled}}" bindchange="onVoiceEnabledChange" /> 语音提醒
     <button class="primary" bindtap="createGame">开始本局</button>
   </view>
 
