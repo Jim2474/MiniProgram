@@ -1,5 +1,17 @@
 const { request, showError, money, statusText } = require("../../utils/api")
 const app = getApp()
+const defaultBlindTitleMap = {
+  levelTitle: "LEVEL",
+  playerLeftTitle: "PLAYER LEFT",
+  entrantsTitle: "ENTRANTS",
+  prizePlayerTitle: "PRIZE PLAYER",
+  blindsTitle: "BLINDS",
+  anteTitle: "ANTE",
+  nextLevelTitle: "NEXT LEVEL",
+  nextBreakTitle: "NEXT BREAK IN",
+  avgChipsTitle: "AVG CHIPS",
+  totalChipsTitle: "TOTAL CHIPS"
+}
 
 Page({
   data: {
@@ -130,10 +142,7 @@ Page({
       entrants: 9,
       totalBuyins: 0,
       autoStartAfterCountdown: true,
-      levelTitle: "LEVEL",
-      playerLeftTitle: "PLAYER LEFT",
-      blindsTitle: "BLINDS",
-      entrantsTitle: "ENTRANTS",
+      ...defaultBlindTitleMap,
       smallBlindTerm: "小盲",
       bigBlindTerm: "大盲",
       anteTerm: "前注",
@@ -384,8 +393,14 @@ Page({
         ...blind.settings,
         levelTitle: blind.settings.titleMap?.level || this.data.blindForm.levelTitle,
         playerLeftTitle: blind.settings.titleMap?.playerLeft || this.data.blindForm.playerLeftTitle,
-        blindsTitle: blind.settings.titleMap?.blinds || this.data.blindForm.blindsTitle,
         entrantsTitle: blind.settings.titleMap?.entrants || this.data.blindForm.entrantsTitle,
+        prizePlayerTitle: blind.settings.titleMap?.prizePlayer || this.data.blindForm.prizePlayerTitle,
+        blindsTitle: blind.settings.titleMap?.blinds || this.data.blindForm.blindsTitle,
+        anteTitle: blind.settings.titleMap?.ante || this.data.blindForm.anteTitle,
+        nextLevelTitle: blind.settings.titleMap?.nextLevel || this.data.blindForm.nextLevelTitle,
+        nextBreakTitle: blind.settings.titleMap?.nextBreak || this.data.blindForm.nextBreakTitle,
+        avgChipsTitle: blind.settings.titleMap?.avgChips || this.data.blindForm.avgChipsTitle,
+        totalChipsTitle: blind.settings.titleMap?.totalChips || this.data.blindForm.totalChipsTitle,
         smallBlindTerm: blind.settings.voiceTerms?.smallBlind || this.data.blindForm.smallBlindTerm,
         bigBlindTerm: blind.settings.voiceTerms?.bigBlind || this.data.blindForm.bigBlindTerm,
         anteTerm: blind.settings.voiceTerms?.ante || this.data.blindForm.anteTerm,
@@ -1147,6 +1162,10 @@ Page({
     this.setData({ "blindForm.autoStartAfterCountdown": Boolean(event.detail.value) })
   },
 
+  restoreBlindTitles() {
+    this.setData(Object.fromEntries(Object.keys(defaultBlindTitleMap).map((key) => [`blindForm.${key}`, defaultBlindTitleMap[key]])))
+  },
+
   async updateBlindSettings() {
     try {
       const form = this.data.blindForm
@@ -1182,8 +1201,14 @@ Page({
           titleMap: {
             level: form.levelTitle,
             playerLeft: form.playerLeftTitle,
+            entrants: form.entrantsTitle,
+            prizePlayer: form.prizePlayerTitle,
             blinds: form.blindsTitle,
-            entrants: form.entrantsTitle
+            ante: form.anteTitle,
+            nextLevel: form.nextLevelTitle,
+            nextBreak: form.nextBreakTitle,
+            avgChips: form.avgChipsTitle,
+            totalChips: form.totalChipsTitle
           },
           voiceTerms: {
             smallBlind: form.smallBlindTerm,

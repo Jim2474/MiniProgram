@@ -134,6 +134,18 @@ const defaultBlindLevels = () => [
   { level: 5, smallBlind: 25, bigBlind: 50, ante: 0 },
   { level: 6, smallBlind: 50, bigBlind: 100, ante: 0 },
 ];
+const defaultBlindTitleMap = () => ({
+  level: "LEVEL",
+  playerLeft: "PLAYER LEFT",
+  entrants: "ENTRANTS",
+  prizePlayer: "PRIZE PLAYER",
+  blinds: "BLINDS",
+  ante: "ANTE",
+  nextLevel: "NEXT LEVEL",
+  nextBreak: "NEXT BREAK IN",
+  avgChips: "AVG CHIPS",
+  totalChips: "TOTAL CHIPS",
+});
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -236,6 +248,7 @@ function normalizeStoreData(data) {
   }
   data.blindSettings ||= {};
   data.blindSettings.blindLevels ||= defaultBlindLevels();
+  data.blindSettings.titleMap = { ...defaultBlindTitleMap(), ...(data.blindSettings.titleMap || {}) };
   for (const storage of data.customerStorage || []) {
     storage.handledAt ||= null;
     storage.handledBy ||= null;
@@ -765,18 +778,7 @@ function seedData() {
       dialogColor: "#15221B",
       fontSize: 48,
       fontFamily: "system",
-      titleMap: {
-        level: "LEVEL",
-        playerLeft: "PLAYER LEFT",
-        entrants: "ENTRANTS",
-        prizePlayer: "PRIZE PLAYER",
-        blinds: "BLINDS",
-        ante: "ANTE",
-        nextLevel: "NEXT LEVEL",
-        nextBreak: "NEXT BREAK IN",
-        avgChips: "AVG CHIPS",
-        totalChips: "TOTAL CHIPS",
-      },
+      titleMap: defaultBlindTitleMap(),
       showBeijingTime: true,
       showRegistrationCountdown: true,
       autoStartAfterCountdown: false,

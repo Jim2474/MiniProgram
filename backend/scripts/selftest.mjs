@@ -595,13 +595,14 @@ async function main() {
           { level: 1, smallBlind: 1, bigBlind: 2, ante: 0 },
           { level: 2, smallBlind: 3, bigBlind: 6, ante: 1 },
         ],
-        titleMap: { level: "级别", entrants: "参赛人数", blinds: "盲注" },
+        titleMap: { level: "级别", entrants: "参赛人数", prizePlayer: "奖励人数", blinds: "盲注", ante: "前注标题", nextLevel: "下一级", nextBreak: "下次休息", avgChips: "平均记分牌", totalChips: "总记分牌" },
         voiceTerms: { smallBlind: "小盲位", bigBlind: "大盲位", ante: "前注" },
       },
     });
     assert(blindSettings.settings.theme === "neon" && blindSettings.settings.registrationStatus === "stopped" && blindSettings.settings.fontColor === "#00FFAA", "后台可配置升盲样式和报名状态");
     assert(blindSettings.settings.backgroundImage && blindSettings.settings.logo && blindSettings.settings.championBackgroundImage, "后台可配置升盲背景、Logo 和冠军背景");
     assert(blindSettings.settings.titleMap.level === "级别" && blindSettings.settings.titleMap.playerLeft === "PLAYER LEFT", "后台可局部配置升盲标题文案且保留未改标题");
+    assert(blindSettings.settings.titleMap.prizePlayer === "奖励人数" && blindSettings.settings.titleMap.nextBreak === "下次休息" && blindSettings.settings.titleMap.avgChips === "平均记分牌", "后台可配置完整升盲计时器标题");
     assert(blindSettings.settings.voiceType === "custom" && blindSettings.settings.voiceStartText === "比赛开始" && blindSettings.settings.voiceTerms.smallBlind === "小盲位", "后台可配置升盲语音和术语");
     assert(blindSettings.settings.entrants === 18 && blindSettings.settings.totalBuyins === 23 && blindSettings.settings.autoStartAfterCountdown === true, "后台可配置参赛人数、总买入和倒计时行为");
     assert(blindSettings.settings.blindLevels[1].smallBlind === 3 && blindSettings.settings.blindLevels[1].ante === 1, "后台可配置自定义升盲规则序列");

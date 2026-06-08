@@ -380,8 +380,15 @@
       <switch checked="{{blindForm.autoStartAfterCountdown}}" bindchange="onBlindAutoStartChange" /> 倒计时结束自动升盲
       <input class="input" value="{{blindForm.levelTitle}}" data-key="levelTitle" bindinput="onBlindField" placeholder="标题：级别" />
       <input class="input" value="{{blindForm.playerLeftTitle}}" data-key="playerLeftTitle" bindinput="onBlindField" placeholder="标题：剩余人数" />
-      <input class="input" value="{{blindForm.blindsTitle}}" data-key="blindsTitle" bindinput="onBlindField" placeholder="标题：盲注" />
       <input class="input" value="{{blindForm.entrantsTitle}}" data-key="entrantsTitle" bindinput="onBlindField" placeholder="标题：参赛人数" />
+      <input class="input" value="{{blindForm.prizePlayerTitle}}" data-key="prizePlayerTitle" bindinput="onBlindField" placeholder="标题：奖励人数" />
+      <input class="input" value="{{blindForm.blindsTitle}}" data-key="blindsTitle" bindinput="onBlindField" placeholder="标题：盲注" />
+      <input class="input" value="{{blindForm.anteTitle}}" data-key="anteTitle" bindinput="onBlindField" placeholder="标题：前注" />
+      <input class="input" value="{{blindForm.nextLevelTitle}}" data-key="nextLevelTitle" bindinput="onBlindField" placeholder="标题：下一级" />
+      <input class="input" value="{{blindForm.nextBreakTitle}}" data-key="nextBreakTitle" bindinput="onBlindField" placeholder="标题：下次休息" />
+      <input class="input" value="{{blindForm.avgChipsTitle}}" data-key="avgChipsTitle" bindinput="onBlindField" placeholder="标题：平均记分牌" />
+      <input class="input" value="{{blindForm.totalChipsTitle}}" data-key="totalChipsTitle" bindinput="onBlindField" placeholder="标题：总记分牌" />
+      <button size="mini" class="secondary" bindtap="restoreBlindTitles">恢复默认标题</button>
       <input class="input" value="{{blindForm.blindLevelsText}}" data-key="blindLevelsText" bindinput="onBlindField" placeholder="升盲规则：1/2,2/4,5/10" />
       <input class="input" value="{{blindForm.voiceType}}" data-key="voiceType" bindinput="onBlindField" placeholder="语音类型" />
       <input class="input" value="{{blindForm.voiceStartText}}" data-key="voiceStartText" bindinput="onBlindField" placeholder="开始语音文案" />

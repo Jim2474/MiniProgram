@@ -196,6 +196,7 @@ assert(adminJs.includes("tableMaintenanceReason") && adminJs.includes("tableDele
 assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind settings API");
 assert(adminJs.includes("blindForm") && adminJs.includes("onBlindField"), "admin page supports blind settings form");
 assert(adminJs.includes("titleMap") && adminJs.includes("voiceTerms"), "admin page updates blind title map and voice terms");
+assert(adminJs.includes("defaultBlindTitleMap") && adminJs.includes("restoreBlindTitles") && adminWxml.includes("恢复默认标题") && adminWxml.includes("prizePlayerTitle") && adminWxml.includes("nextBreakTitle") && adminWxml.includes("totalChipsTitle"), "admin page supports full blind title map and restore defaults");
 assert(adminJs.includes("blindLevelsText") && adminWxml.includes("升盲规则"), "admin page supports blind level sequence configuration");
 assert(adminJs.includes("autoStartAfterCountdown") && adminJs.includes("onBlindAutoStartChange") && adminWxml.includes("倒计时结束自动升盲") && adminWxml.includes("保存升盲设置") && !adminWxml.includes("更新升盲主题"), "admin page supports blind auto-start setting");
 assert(adminJs.includes("/api/admin/system-settings"), "admin page calls system settings API");
@@ -217,6 +218,7 @@ assert(dealerWxml.includes("set_buyin_amount"), "dealer page supports buyin amou
 assert(dealerWxml.includes("gameSeatAction"), "dealer page supports seat-specific game action");
 assert(dealerJs.includes("/api/staff/blind-settings") && !dealerJs.includes("/api/admin/blind-settings"), "dealer page reads staff-safe blind settings API");
 assert(dealerWxml.includes("championBackgroundImage") && dealerWxml.includes("voiceTerms") && dealerWxml.includes("blindLevelsText"), "dealer page displays advanced blind settings and blind sequence");
+assert(dealerWxml.includes("titleMap.prizePlayer") && dealerWxml.includes("titleMap.nextBreak") && dealerWxml.includes("titleMap.totalChips"), "dealer page displays full blind title map");
 assert(dealerJs.includes("headsUpText") && dealerJs.includes("单挑阶段") && dealerWxml.includes("game.headsUpText"), "dealer page displays heads-up stage prompt");
 
 console.log(`Miniprogram validation passed: ${checks.length} checks`);
