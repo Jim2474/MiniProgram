@@ -241,6 +241,7 @@
     <input class="input" value="{{tableForm.name}}" bindinput="onTableName" placeholder="桌台名称" />
     <input class="input" type="number" value="{{tableForm.capacity}}" bindinput="onTableCapacity" placeholder="人数" />
     <input class="input" value="{{tableForm.imageUrl}}" bindinput="onTableImage" placeholder="桌台图片 URL" />
+    <button size="mini" class="secondary" bindtap="chooseTableImage">上传桌台图片</button>
     <button size="mini" class="primary" bindtap="createTable">新增座台</button>
     <view class="row">
       <view class="row-title">开台占用表单</view>

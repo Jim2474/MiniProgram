@@ -191,6 +191,7 @@ assert(adminJs.includes("cancelAdminReservation") && adminWxml.includes("取消�
 assert(adminJs.includes("reservationConfirmReason") && adminJs.includes("reservationCancelReason") && adminJs.includes("reservationExpireReason") && adminWxml.includes("预约处理原因") && !adminJs.includes("小程序后台确认预约") && !adminJs.includes("小程序后台取消预约") && !adminJs.includes("小程序后台标记失效"), "admin page supports real reservation handling reasons");
 assert(adminWxml.includes("partySize") && adminWxml.includes("无备注"), "admin page displays reservation party size and remark");
 assert(adminJs.includes("onTableImage") && adminWxml.includes("桌台图片 URL"), "admin page supports table image URL input");
+assert(adminJs.includes("chooseTableImage") && adminJs.includes('field: "tableImage"') && adminWxml.includes("上传桌台图片"), "admin page supports uploading table images");
 assert(adminJs.includes("tableOccupyForm") && adminJs.includes("onTableOccupyAmount") && adminWxml.includes("开台消费金额") && !adminJs.includes("consumptionAmount: 388"), "admin page supports real table occupancy input");
 assert(adminJs.includes("occupiedStartedText") && adminWxml.includes("占用开始") && adminWxml.includes("item.occupiedStartedText"), "admin page displays occupied table start time");
 assert(adminJs.includes("deleteTable") && adminWxml.includes("删除/禁用"), "admin page can delete or disable tables");

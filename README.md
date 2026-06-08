@@ -73,10 +73,12 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V92 验收状态
+## V93 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V93.md`
+- `docs/REQUIREMENTS-AUDIT-V93.md`
 - `docs/ACCEPTANCE-V92.md`
 - `docs/REQUIREMENTS-AUDIT-V92.md`
 - `docs/ACCEPTANCE-V91.md`
@@ -192,9 +194,16 @@ node scripts/validate-miniprogram.mjs
 当前自动测试通过：
 
 - 后端业务自验收：236 项。
-- 小程序结构与 API 调用校验：208 项。
+- 小程序结构与 API 调用校验：209 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V93 新增能力
+
+- 后台咖位管理新增桌台图片上传入口。
+- 上传成功后自动回填桌台图片 URL。
+- 保留手填 URL 能力，兼容外部 CDN 图片。
+- 自动验收覆盖桌台图片上传入口。
 
 ## V92 新增能力
 

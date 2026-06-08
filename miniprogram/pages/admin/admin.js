@@ -901,6 +901,27 @@ Page({
     this.setData({ "tableForm.imageUrl": event.detail.value })
   },
 
+  async chooseTableImage() {
+    try {
+      let filePath = ""
+      if (wx.chooseMedia) {
+        const media = await new Promise((resolve, reject) => wx.chooseMedia({ count: 1, mediaType: ["image"], sourceType: ["album", "camera"], success: resolve, fail: reject }))
+        filePath = media.tempFiles && media.tempFiles[0] && media.tempFiles[0].tempFilePath
+      } else {
+        const image = await new Promise((resolve, reject) => wx.chooseImage({ count: 1, sourceType: ["album", "camera"], success: resolve, fail: reject }))
+        filePath = image.tempFilePaths && image.tempFilePaths[0]
+      }
+      if (!filePath) return
+      const data = await uploadFile("/api/admin/assets/upload", filePath, { field: "tableImage" })
+      if (data.asset && data.asset.url) {
+        this.setData({ "tableForm.imageUrl": data.asset.url })
+        wx.showToast({ title: "桌台图片已上传" })
+      }
+    } catch (error) {
+      showError(error)
+    }
+  },
+
   onTableTypeName(event) {
     this.setData({ "tableTypeForm.name": event.detail.value })
   },
