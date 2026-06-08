@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V37
+# 德扑棋牌门店小程序 V38
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V37 验收状态
+## V38 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V38.md`
 - `docs/ACCEPTANCE-V37.md`
 - `docs/ACCEPTANCE-V36.md`
 - `docs/ACCEPTANCE-V35.md`
@@ -243,6 +244,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V38 新增能力
+
+- 新增员工端 `/api/staff/performance/daily` 当月每日业绩接口，按员工二维码归属订单统计每日销售额、订单数和提成。
+- 员工端展示“当月每日业绩”，包含本月销售、订单、提成合计和每天明细。
+- 自动验收覆盖员工每日业绩接口和小程序端展示入口。
 
 ## V21 新增能力
 

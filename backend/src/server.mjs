@@ -1045,6 +1045,10 @@ function monthKey(dateValue = new Date()) {
   return new Date(dateValue).toISOString().slice(0, 7);
 }
 
+function dayKeyFor(dateValue = new Date()) {
+  return new Date(dateValue).toISOString().slice(0, 10);
+}
+
 function publicCoupon(store, coupon) {
   return {
     ...coupon,
@@ -2715,6 +2719,33 @@ function createRouter(store) {
       rows.push({ month: key, orderCount: orders.length, sales, commissionRate, commissionAmount: Math.round(sales * commissionRate * 100) / 100 });
     }
     return { employee: publicEmployee(employee), rows };
+  });
+
+  add("GET", "/api/staff/performance/daily", async (_body, _params, query) => {
+    const employeeId = query.get("employeeId") || "emp_anna";
+    const selectedMonth = query.get("month") || query.get("date") || monthKey();
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(selectedMonth)) throw new HttpError(400, "月份格式应为 YYYY-MM");
+    const employee = store.getEmployee(employeeId);
+    const commissionRate = Number(employee.commissionRate || 0);
+    const paid = store.data.orders.filter((order) => {
+      if (order.employeeId !== employeeId || order.payStatus !== "paid") return false;
+      return monthKey(order.paidAt || order.createdAt) === selectedMonth;
+    });
+    const daysInMonth = new Date(Number(selectedMonth.slice(0, 4)), Number(selectedMonth.slice(5, 7)), 0).getDate();
+    const rows = Array.from({ length: daysInMonth }, (_, index) => {
+      const date = `${selectedMonth}-${String(index + 1).padStart(2, "0")}`;
+      const orders = paid.filter((order) => dayKeyFor(order.paidAt || order.createdAt) === date);
+      const sales = orders.reduce((sum, order) => sum + order.amount, 0);
+      return { date, orderCount: orders.length, sales, commissionRate, commissionAmount: Math.round(sales * commissionRate * 100) / 100 };
+    });
+    return {
+      employee: publicEmployee(employee),
+      month: selectedMonth,
+      rows,
+      totalSales: rows.reduce((sum, row) => sum + row.sales, 0),
+      totalOrders: rows.reduce((sum, row) => sum + row.orderCount, 0),
+      totalCommission: rows.reduce((sum, row) => sum + row.commissionAmount, 0),
+    };
   });
 
   add("GET", "/api/admin/finance/overview", async () => {

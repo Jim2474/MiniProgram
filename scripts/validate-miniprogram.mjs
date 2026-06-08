@@ -101,6 +101,8 @@ assert(staffJs.includes("/api/staff/storage"), "staff page calls storage create 
 assert(staffJs.includes("/api/staff/login"), "staff page calls staff login API");
 assert(staffJs.includes("app.globalData.staffSessionId = data.session.sessionId"), "staff page stores staff session after login");
 assert(staffJs.includes("/api/staff/performance/monthly"), "staff page calls monthly performance API");
+assert(staffJs.includes("/api/staff/performance/daily"), "staff page calls daily performance API");
+assert(staffJs.includes("dailyPerformanceRows") && staffWxml.includes("当月每日业绩") && staffWxml.includes("dailyCommissionText"), "staff page displays current-month daily performance");
 assert(staffJs.includes("commissionText") && staffWxml.includes("预估提成"), "staff page displays commission amount");
 assert(staffJs.includes("/api/staff/employees/") && staffJs.includes("/order-qr"), "staff page calls employee order QR API");
 assert(staffJs.includes("showOrderQr") && staffWxml.includes("orderQrPayload"), "staff page displays employee order QR payload");

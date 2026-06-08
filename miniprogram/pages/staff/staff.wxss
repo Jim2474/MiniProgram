@@ -14,6 +14,11 @@
   padding: 12rpx;
 }
 
+.compact-row {
+  padding-top: 12rpx;
+  padding-bottom: 12rpx;
+}
+
 .qr-image {
   width: 320rpx;
   height: 320rpx;

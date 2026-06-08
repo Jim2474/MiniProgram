@@ -135,6 +135,10 @@ async function main() {
     assert(monthlyPerformance.rows.length === 6 && monthlyPerformance.rows[0].sales >= paid.order.amount, "员工端返回最近六个月业绩");
     assert(monthlyPerformance.rows[0].commissionRate === 0.08 && monthlyPerformance.rows[0].commissionAmount > 0, "员工端返回近六月提成金额");
     assert(!("passwordHash" in monthlyPerformance.employee), "员工业绩接口不暴露密码字段");
+    const dailyPerformance = await request(baseUrl, "/api/staff/performance/daily?employeeId=emp_anna");
+    const todayPerformance = dailyPerformance.rows.find((row) => row.date === new Date().toISOString().slice(0, 10));
+    assert(todayPerformance && todayPerformance.sales >= paid.order.amount && todayPerformance.orderCount >= 1, "员工端返回当月每日业绩");
+    assert(dailyPerformance.totalCommission > 0 && dailyPerformance.totalOrders >= 1, "员工端返回当月每日提成合计");
 
     const transfer = await request(baseUrl, `/api/admin/orders/${orderData.order.orderId}/transfer-storage`, {
       method: "POST",

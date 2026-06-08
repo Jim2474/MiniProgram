@@ -22,7 +22,12 @@ Page({
     orders: [],
     salesText: "¥0",
     commissionText: "¥0",
+    dailySalesText: "¥0",
+    dailyCommissionText: "¥0",
+    dailyOrderCount: 0,
+    performanceMonth: "",
     performanceRows: [],
+    dailyPerformanceRows: [],
     pickupRequests: [],
     verifyResult: null,
     qrPayload: "",
@@ -70,11 +75,18 @@ Page({
   },
 
   async loadPerformance() {
-    const data = await request(`/api/staff/performance/monthly?employeeId=${this.data.selectedEmployee.employeeId}&months=6`)
+    const employeeId = this.data.selectedEmployee.employeeId
+    const data = await request(`/api/staff/performance/monthly?employeeId=${employeeId}&months=6`)
+    const dailyData = await request(`/api/staff/performance/daily?employeeId=${employeeId}`)
     const commission = data.rows.reduce((sum, item) => sum + item.commissionAmount, 0)
     this.setData({
       commissionText: money(commission),
-      performanceRows: data.rows.map((item) => ({ ...item, salesText: money(item.sales), commissionText: money(item.commissionAmount), commissionRateText: `${Math.round(item.commissionRate * 10000) / 100}%` }))
+      performanceRows: data.rows.map((item) => ({ ...item, salesText: money(item.sales), commissionText: money(item.commissionAmount), commissionRateText: `${Math.round(item.commissionRate * 10000) / 100}%` })),
+      performanceMonth: dailyData.month,
+      dailySalesText: money(dailyData.totalSales),
+      dailyCommissionText: money(dailyData.totalCommission),
+      dailyOrderCount: dailyData.totalOrders,
+      dailyPerformanceRows: dailyData.rows.map((item) => ({ ...item, salesText: money(item.sales), commissionText: money(item.commissionAmount), commissionRateText: `${Math.round(item.commissionRate * 10000) / 100}%` }))
     })
   },
 

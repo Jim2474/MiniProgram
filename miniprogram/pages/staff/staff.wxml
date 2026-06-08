@@ -39,6 +39,18 @@
   </view>
 
   <view class="section">
+    <view class="section-title">当月每日业绩</view>
+    <view class="row">
+      <view class="row-title">{{performanceMonth}} · {{dailySalesText}}</view>
+      <view class="muted">订单 {{dailyOrderCount}} 笔 · 每日提成合计 {{dailyCommissionText}}</view>
+    </view>
+    <view wx:for="{{dailyPerformanceRows}}" wx:key="date" class="row compact-row">
+      <view class="row-title">{{item.date}} · {{item.salesText}}</view>
+      <view class="muted">订单 {{item.orderCount}} 笔 · 提成 {{item.commissionText}} · 比例 {{item.commissionRateText}}</view>
+    </view>
+  </view>
+
+  <view class="section">
     <view class="section-title">近六个月业绩</view>
     <view wx:for="{{performanceRows}}" wx:key="month" class="row">
       <view class="row-title">{{item.month}} · {{item.salesText}}</view>
