@@ -78,6 +78,7 @@ node scripts/validate-miniprogram.mjs
 验收记录：
 
 - `docs/ACCEPTANCE-V60.md`
+- `docs/REQUIREMENTS-AUDIT-V60.md`
 - `docs/ACCEPTANCE-V59.md`
 - `docs/ACCEPTANCE-V58.md`
 - `docs/ACCEPTANCE-V57.md`
@@ -275,6 +276,7 @@ node scripts/validate-miniprogram.mjs
 - 后端硬拦截积分抽奖、中奖记录核销申请和员工中奖核销接口。
 - 旧酒水券/旧中奖二维码即使存在于数据中，也不会被员工确认核销。
 - 自动验收覆盖旧数据入口状态不变性，确保暂不开放功能不会改写券、中奖记录或二维码状态。
+- 新增 V60 需求审计矩阵，同步出入库取消、订单转存真实表单和券/抽奖后端硬拦截后的 Excel 覆盖状态。
 
 ## V59 新增能力
 
