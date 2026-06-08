@@ -36,6 +36,21 @@ async function expectHttpError(baseUrl, path, options, status, message) {
   assert(res.status === status, message);
 }
 
+async function uploadTinyPng(baseUrl) {
+  const boundary = `----codex-${randomBytes(6).toString("hex")}`;
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=", "base64");
+  const body = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="logo.png"\r\nContent-Type: image/png\r\n\r\n`),
+    png,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+  return request(baseUrl, "/api/admin/assets/upload", {
+    method: "POST",
+    rawBody: body,
+    headers: { "content-type": `multipart/form-data; boundary=${boundary}` },
+  });
+}
+
 function signWechatPayBody(privateKey, timestamp, nonce, rawBody) {
   const sign = createSign("RSA-SHA256");
   sign.update(`${timestamp}\n${nonce}\n${rawBody}\n`);
@@ -588,6 +603,9 @@ async function main() {
     assert(deletedTable.table.status === "disabled" && deletedTable.table.deletedAt, "后台可删除座台并软禁用保留历史");
     const adminUsers = await request(baseUrl, "/api/admin/users");
     assert(adminUsers.users.some((user) => user.userId === "user_demo" && typeof user.hasStorage === "boolean" && typeof user.totalSpend === "number" && typeof user.orderCount === "number"), "后台会员列表展示积分、存酒和消费汇总");
+
+    const uploadedLogo = await uploadTinyPng(baseUrl);
+    assert(uploadedLogo.asset.url.startsWith("/uploads/") && uploadedLogo.asset.contentType === "image/png", "后台可上传图片资源并返回可展示 URL");
 
     const blindSettings = await request(baseUrl, "/api/admin/blind-settings", {
       method: "PATCH",

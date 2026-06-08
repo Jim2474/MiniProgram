@@ -31,6 +31,33 @@ function request(path, options = {}) {
   })
 }
 
+function uploadFile(path, filePath, formData = {}) {
+  const header = {}
+  if (app.globalData.staffSessionId) {
+    header["x-staff-session"] = app.globalData.staffSessionId
+  }
+  return new Promise((resolve, reject) => {
+    wx.uploadFile({
+      url: `${baseUrl()}${path}`,
+      filePath,
+      name: "file",
+      formData,
+      header,
+      success(res) {
+        const data = typeof res.data === "string" ? JSON.parse(res.data || "{}") : res.data
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve(data)
+        } else {
+          reject(new Error((data && data.error) || `上传失败 ${res.statusCode}`))
+        }
+      },
+      fail(error) {
+        reject(new Error(error.errMsg || "上传失败"))
+      }
+    })
+  })
+}
+
 function showError(error) {
   wx.showToast({
     title: error.message || "操作失败",
@@ -72,6 +99,7 @@ function statusText(status) {
 
 module.exports = {
   request,
+  uploadFile,
   showError,
   money,
   statusText

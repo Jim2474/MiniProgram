@@ -52,6 +52,7 @@ const apiSource = await readFile(join(root, "miniprogram/utils/api.js"), "utf8")
 assert(apiSource.includes("http://localhost:3000"), "api util points to local backend");
 assert(apiSource.includes("wx.request"), "api util uses wx.request");
 assert(apiSource.includes("x-staff-session") && apiSource.includes("staffSessionId"), "api util sends staff session header");
+assert(apiSource.includes("wx.uploadFile") && apiSource.includes("uploadFile"), "api util supports file upload");
 
 for (const page of ["customer", "staff", "admin", "dealer"]) {
   const js = await readFile(join(root, `miniprogram/pages/${page}/${page}.js`), "utf8");
@@ -199,6 +200,7 @@ assert(adminJs.includes("blindForm") && adminJs.includes("onBlindField"), "admin
 assert(adminJs.includes("blindThemeOptions") && adminJs.includes("broadcast") && adminJs.includes("onBlindThemeChange") && adminWxml.includes('range="{{blindThemeOptions}}"') && adminWxml.includes("主题风格"), "admin page uses four preset blind theme picker");
 assert(adminJs.includes("blindBackgroundOptions") && adminJs.includes("blindBackgroundLibrary") && adminJs.includes("onBlindBackgroundChange") && adminWxml.includes('range="{{blindBackgroundOptions}}"') && adminWxml.includes("系统背景图库"), "admin page supports system blind background library picker");
 assert(adminJs.includes("blindChampionBackgroundOptions") && adminJs.includes("blindChampionBackgroundLibrary") && adminJs.includes("onBlindChampionBackgroundChange") && adminWxml.includes('range="{{blindChampionBackgroundOptions}}"') && adminWxml.includes("冠军背景图库"), "admin page supports system champion background library picker");
+assert(adminJs.includes("chooseBlindImage") && adminJs.includes("/api/admin/assets/upload") && adminJs.includes("wx.chooseMedia") && adminWxml.includes("上传背景图片") && adminWxml.includes("上传 Logo") && adminWxml.includes("上传冠军背景"), "admin page supports uploading blind display images");
 assert(adminWxml.includes("blind-logo-preview") && adminWxml.includes("blindForm.logo") && adminWxss.includes("blind-logo-image"), "admin page previews blind timer logo");
 assert(adminJs.includes("blindFontFamilyOptions") && adminJs.includes("Source Han Sans") && adminJs.includes("onBlindFontFamilyChange") && adminWxml.includes('range="{{blindFontFamilyOptions}}"') && adminWxml.includes("字体样式"), "admin page uses preset blind font family picker");
 assert(adminJs.includes("blindColorPalettes") && adminJs.includes("onBlindColorChange") && adminWxml.includes('range="{{fontColorOptions}}"') && adminWxml.includes('range="{{timerColorOptions}}"') && adminWxml.includes('range="{{breakColorOptions}}"') && adminWxml.includes('range="{{dialogColorOptions}}"'), "admin page supports blind color palette pickers");

@@ -371,7 +371,9 @@
         <view class="input">系统背景图库：{{blindBackgroundOptions[blindForm.backgroundImageIndex].label}}</view>
       </picker>
       <input class="input" value="{{blindForm.backgroundImage}}" data-key="backgroundImage" bindinput="onBlindField" placeholder="背景图 URL" />
+      <button size="mini" class="secondary" data-key="backgroundImage" bindtap="chooseBlindImage">上传背景图片</button>
       <input class="input" value="{{blindForm.logo}}" data-key="logo" bindinput="onBlindField" placeholder="Logo URL" />
+      <button size="mini" class="secondary" data-key="logo" bindtap="chooseBlindImage">上传 Logo</button>
       <view wx:if="{{blindForm.logo}}" class="blind-logo-preview">
         <image class="blind-logo-image" src="{{blindForm.logo}}" mode="aspectFit" />
         <view class="muted">Logo 预览</view>
@@ -380,6 +382,7 @@
         <view class="input">冠军背景图库：{{blindChampionBackgroundOptions[blindForm.championBackgroundImageIndex].label}}</view>
       </picker>
       <input class="input" value="{{blindForm.championBackgroundImage}}" data-key="championBackgroundImage" bindinput="onBlindField" placeholder="冠军背景图 URL" />
+      <button size="mini" class="secondary" data-key="championBackgroundImage" bindtap="chooseBlindImage">上传冠军背景</button>
       <picker mode="selector" range="{{fontColorOptions}}" range-key="label" value="{{blindForm.fontColorIndex}}" data-field="fontColor" bindchange="onBlindColorChange">
         <view class="input">字体颜色：{{fontColorOptions[blindForm.fontColorIndex].label}}</view>
       </picker>

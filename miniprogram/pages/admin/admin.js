@@ -1,4 +1,4 @@
-const { request, showError, money, statusText } = require("../../utils/api")
+const { request, uploadFile, showError, money, statusText } = require("../../utils/api")
 const app = getApp()
 const defaultBlindTitleMap = {
   levelTitle: "LEVEL",
@@ -1288,6 +1288,28 @@ Page({
     const updates = { "blindForm.backgroundImageIndex": backgroundImageIndex }
     if (option.value) updates["blindForm.backgroundImage"] = option.value
     this.setData(updates)
+  },
+
+  async chooseBlindImage(event) {
+    const key = event.currentTarget.dataset.key
+    try {
+      let filePath = ""
+      if (wx.chooseMedia) {
+        const media = await new Promise((resolve, reject) => wx.chooseMedia({ count: 1, mediaType: ["image"], sourceType: ["album", "camera"], success: resolve, fail: reject }))
+        filePath = media.tempFiles && media.tempFiles[0] && media.tempFiles[0].tempFilePath
+      } else {
+        const image = await new Promise((resolve, reject) => wx.chooseImage({ count: 1, sourceType: ["album", "camera"], success: resolve, fail: reject }))
+        filePath = image.tempFilePaths && image.tempFilePaths[0]
+      }
+      if (!filePath) return
+      const data = await uploadFile("/api/admin/assets/upload", filePath, { field: key })
+      if (data.asset && data.asset.url) {
+        this.setData({ [`blindForm.${key}`]: data.asset.url })
+        wx.showToast({ title: "图片已上传" })
+      }
+    } catch (error) {
+      showError(error)
+    }
   },
 
   onBlindChampionBackgroundChange(event) {

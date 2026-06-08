@@ -9,6 +9,7 @@ import QRCode from "qrcode";
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const rootDir = resolve(__dirname, "..");
 const publicDir = resolve(rootDir, "..", "legacy-web", "public");
+const uploadDir = join(publicDir, "uploads");
 const dataDir = join(rootDir, "data");
 const defaultDataFile = join(dataDir, "store.json");
 
@@ -1421,6 +1422,54 @@ async function readBody(req) {
   } catch {
     throw new HttpError(400, "请求体不是有效 JSON");
   }
+}
+
+async function readRawBody(req, maxBytes = 5 * 1024 * 1024) {
+  const chunks = [];
+  let total = 0;
+  for await (const chunk of req) {
+    total += chunk.length;
+    if (total > maxBytes) throw new HttpError(413, "上传图片不能超过 5MB");
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+function parseMultipartFile(buffer, contentType) {
+  const boundary = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/)?.[1] || contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/)?.[2];
+  if (!boundary) throw new HttpError(400, "缺少上传边界");
+  const marker = Buffer.from(`--${boundary}`);
+  let offset = 0;
+  while (offset < buffer.length) {
+    const partStart = buffer.indexOf(marker, offset);
+    if (partStart < 0) break;
+    const headerEnd = buffer.indexOf(Buffer.from("\r\n\r\n"), partStart);
+    if (headerEnd < 0) break;
+    const headerText = buffer.slice(partStart + marker.length + 2, headerEnd).toString("utf8");
+    const nextPart = buffer.indexOf(marker, headerEnd + 4);
+    if (nextPart < 0) break;
+    const dataEnd = buffer[nextPart - 2] === 13 && buffer[nextPart - 1] === 10 ? nextPart - 2 : nextPart;
+    const filename = headerText.match(/filename="([^"]+)"/)?.[1];
+    const type = headerText.match(/content-type:\s*([^\r\n]+)/i)?.[1]?.trim() || "application/octet-stream";
+    if (filename) return { filename, type, buffer: buffer.slice(headerEnd + 4, dataEnd) };
+    offset = nextPart + marker.length;
+  }
+  throw new HttpError(400, "未找到上传图片文件");
+}
+
+async function saveUploadedImage(req) {
+  const contentType = req.headers["content-type"] || "";
+  if (!contentType.includes("multipart/form-data")) throw new HttpError(400, "请使用 multipart/form-data 上传图片");
+  const file = parseMultipartFile(await readRawBody(req), contentType);
+  if (!file.type.startsWith("image/")) throw new HttpError(400, "仅支持图片文件");
+  const originalExt = extname(file.filename || "").toLowerCase();
+  const byType = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp", "image/gif": ".gif" };
+  const ext = [".jpg", ".jpeg", ".png", ".webp", ".gif"].includes(originalExt) ? originalExt : byType[file.type];
+  if (!ext) throw new HttpError(400, "仅支持 jpg/png/webp/gif 图片");
+  await mkdir(uploadDir, { recursive: true });
+  const assetId = `${Date.now()}-${randomBytes(6).toString("hex")}${ext}`;
+  await writeFile(join(uploadDir, assetId), file.buffer);
+  return { assetId, url: `/uploads/${assetId}`, contentType: file.type, size: file.buffer.length };
 }
 
 function sendJson(res, status, value) {
@@ -3081,6 +3130,11 @@ function createRouter(store) {
   });
   add("GET", "/api/staff/blind-settings", async () => ({ settings: store.data.blindSettings }));
   add("GET", "/api/admin/blind-settings", async () => ({ settings: store.data.blindSettings }));
+  add("POST", "/api/admin/assets/upload", async (_body, _params, _query, context) => {
+    const asset = await saveUploadedImage(context.req);
+    store.log("emp_admin", "admin", "upload_asset", "Asset", asset.assetId, null, asset, "上传后台图片资源");
+    return { asset };
+  }, { rawBody: true });
   add("PATCH", "/api/admin/blind-settings", async (body) => {
     const before = deepClone(store.data.blindSettings);
     const { titleMap, voiceTerms, ...updates } = body;
@@ -3115,7 +3169,7 @@ function createRouter(store) {
       if (route.method !== req.method) continue;
       const params = matchRoute(req.method, path, route.pattern);
       if (!params) continue;
-      const bodyData = req.method === "GET" ? { parsed: {}, raw: "" } : await readBody(req);
+      const bodyData = req.method === "GET" || route.options.rawBody ? { parsed: {}, raw: "" } : await readBody(req);
       const body = bodyData.parsed;
       const previousRequest = requestQueue.catch(() => {});
       const operation = previousRequest.then(async () => {
