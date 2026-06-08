@@ -183,6 +183,7 @@ assert(adminJs.includes("reservationConfirmReason") && adminJs.includes("reserva
 assert(adminWxml.includes("partySize") && adminWxml.includes("无备注"), "admin page displays reservation party size and remark");
 assert(adminJs.includes("onTableImage") && adminWxml.includes("桌台图片 URL"), "admin page supports table image URL input");
 assert(adminJs.includes("tableOccupyForm") && adminJs.includes("onTableOccupyAmount") && adminWxml.includes("开台消费金额") && !adminJs.includes("consumptionAmount: 388"), "admin page supports real table occupancy input");
+assert(adminJs.includes("occupiedStartedText") && adminWxml.includes("占用开始") && adminWxml.includes("item.occupiedStartedText"), "admin page displays occupied table start time");
 assert(adminJs.includes("deleteTable") && adminWxml.includes("删除/禁用"), "admin page can delete or disable tables");
 assert(adminJs.includes("tableMaintenanceReason") && adminJs.includes("tableDeleteReason") && adminWxml.includes("维护原因") && adminWxml.includes("删除/禁用原因") && !adminJs.includes("后台维护") && !adminJs.includes("小程序后台删除座台"), "admin page supports real table maintenance and disable reasons");
 assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind settings API");

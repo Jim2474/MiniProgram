@@ -267,7 +267,12 @@ Page({
     if (status) params.push(`status=${status}`)
     const data = await request(`/api/admin/tables?${params.join("&")}`)
     this.setData({
-      tables: data.tables.map((item) => ({ ...item, statusText: statusText(item.status), consumptionText: money(item.consumptionAmount) })),
+      tables: data.tables.map((item) => ({
+        ...item,
+        statusText: statusText(item.status),
+        consumptionText: money(item.consumptionAmount),
+        occupiedStartedText: item.occupiedStartedAt ? item.occupiedStartedAt.slice(0, 16) : "未占用"
+      })),
       tableTypes: data.tableTypes,
       tablePagination: data.pagination,
       tableSummary: data.summary
