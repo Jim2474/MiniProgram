@@ -30,6 +30,8 @@ Page({
     checkinRecords: [],
     lotteryRecords: [],
     redeemableLotteryId: "",
+    verificationCodes: [],
+    qrText: "",
     storeLocation: {},
     supportPhone: "",
     scanText: ""
@@ -124,7 +126,7 @@ Page({
   },
 
   async loadMarketing() {
-    const [profile, leaderboard, coupons, location, support, rechargeRecords, checkin, lotteryRecords] = await Promise.all([
+    const [profile, leaderboard, coupons, location, support, rechargeRecords, checkin, lotteryRecords, verificationCodes] = await Promise.all([
       request(`/api/user/profile?userId=${app.globalData.userId}`),
       request(`/api/leaderboard/points?userId=${app.globalData.userId}`),
       request(`/api/coupons?userId=${app.globalData.userId}`),
@@ -132,7 +134,8 @@ Page({
       request("/api/support/contact"),
       request(`/api/recharge-records?userId=${app.globalData.userId}`),
       request(`/api/checkin?userId=${app.globalData.userId}`),
-      request(`/api/lottery/records?userId=${app.globalData.userId}`)
+      request(`/api/lottery/records?userId=${app.globalData.userId}`),
+      request(`/api/verification-codes?userId=${app.globalData.userId}`)
     ])
     const rechargeConfigs = rechargeRecords.configs || []
     const lotteryList = lotteryRecords.records || []
@@ -153,6 +156,7 @@ Page({
       checkinRecords: checkin.records,
       lotteryRecords: lotteryList.map((item) => ({ ...item, statusText: statusText(item.status) })),
       redeemableLotteryId: (lotteryList.find((item) => item.status === "won") || {}).recordId || "",
+      verificationCodes: verificationCodes.codes.map((item) => ({ ...item, statusText: statusText(item.status) })),
       storeLocation: location.location,
       supportPhone: support.phone
     })
@@ -342,6 +346,35 @@ Page({
       await request("/api/coupons/exchange", { method: "POST", data: { userId: app.globalData.userId, count: 1, skuId: "sku_bud" } })
       wx.showToast({ title: "已兑换酒水券" })
       await this.loadPoints()
+      await this.loadMarketing()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async createQrCode(event) {
+    try {
+      const type = event.currentTarget.dataset.type
+      const payload = { userId: app.globalData.userId, type }
+      if (type === "points") payload.pointsAmount = 5
+      if (type === "storage") {
+        const storage = this.data.storage.find((item) => item.status === "available" && item.quantity > 0)
+        if (!storage) throw new Error("暂无可取存酒")
+        payload.storageId = storage.storageId
+      }
+      if (type === "coupon") {
+        const coupon = this.data.coupons.find((item) => item.status === "available" || item.status === "pending")
+        if (!coupon) throw new Error("暂无可用酒水券")
+        payload.couponId = coupon.couponId
+      }
+      if (type === "lottery") {
+        const record = this.data.lotteryRecords.find((item) => item.status === "won" || item.status === "redeeming")
+        if (!record) throw new Error("暂无可核销中奖记录")
+        payload.lotteryRecordId = record.recordId
+      }
+      const data = await request("/api/verification-codes", { method: "POST", data: payload })
+      this.setData({ qrText: data.code.qrPayload })
+      wx.showModal({ title: "二维码码值", content: data.code.qrPayload, showCancel: false })
       await this.loadMarketing()
     } catch (error) {
       showError(error)

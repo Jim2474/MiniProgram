@@ -60,7 +60,8 @@ function statusText(status) {
     redeeming: "待核销",
     won: "已中奖",
     active: "启用",
-    disabled: "停用"
+    disabled: "停用",
+    used: "已使用"
   }
   return map[status] || status
 }

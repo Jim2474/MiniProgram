@@ -68,6 +68,7 @@ assert(customerJs.includes("/api/lottery/draw"), "customer page calls lottery AP
 assert(customerJs.includes("/api/leaderboard/points"), "customer page calls leaderboard API");
 assert(customerJs.includes("/api/coupons/"), "customer page calls coupon API");
 assert(customerJs.includes("/api/coupons/exchange"), "customer page calls coupon exchange API");
+assert(customerJs.includes("/api/verification-codes"), "customer page calls verification code API");
 assert(customerJs.includes("wx.scanCode"), "customer page uses WeChat scanCode");
 assert(customerJs.includes("wx.openLocation"), "customer page uses WeChat openLocation");
 assert(customerJs.includes("wx.makePhoneCall"), "customer page uses WeChat makePhoneCall");
@@ -80,6 +81,8 @@ assert(staffJs.includes("/api/staff/login"), "staff page calls staff login API")
 assert(staffJs.includes("/confirm"), "staff page calls pickup confirm API");
 assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adjust API");
 assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code API");
+assert(staffJs.includes("/api/staff/verification-codes/scan"), "staff page calls QR scan verification API");
+assert(staffJs.includes("/api/staff/verification-codes/") && staffJs.includes("/confirm"), "staff page calls QR confirm API");
 assert(staffJs.includes("/api/staff/seats/"), "staff page calls seat API");
 assert(staffJs.includes("/api/staff/password"), "staff page calls password API");
 assert(staffJs.includes("/api/staff/lottery-records/"), "staff page calls lottery redeem confirm API");

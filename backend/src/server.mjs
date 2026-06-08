@@ -209,6 +209,7 @@ function seedData() {
     stockLedgers: [],
     stockRequests: [],
     scanRecords: [],
+    verificationCodes: [],
     staffSessions: [],
     customerStorage: [
       {
@@ -353,6 +354,7 @@ class Store {
     this.data = JSON.parse(await readFile(this.filePath, "utf8"));
     this.data.stockRequests ||= [];
     this.data.scanRecords ||= [];
+    this.data.verificationCodes ||= [];
     this.data.staffSessions ||= [];
     this.data.voiceEvents ||= [];
     for (const table of this.data.tables || []) {
@@ -602,6 +604,29 @@ function createVoiceEvent(store, game, eventType, message) {
   };
   store.data.voiceEvents.unshift(event);
   return event;
+}
+
+function publicVerificationCode(store, code) {
+  return {
+    ...code,
+    user: store.data.users.find((user) => user.userId === code.userId),
+    storage: code.storageId ? store.data.customerStorage.find((storage) => storage.storageId === code.storageId) : null,
+    coupon: code.couponId ? store.data.coupons.find((coupon) => coupon.couponId === code.couponId) : null,
+    lotteryRecord: code.lotteryRecordId ? store.data.lotteryRecords.find((record) => record.recordId === code.lotteryRecordId) : null,
+  };
+}
+
+function resolveVerificationCode(store, value) {
+  const raw = String(value || "");
+  const codeId = raw.startsWith("verify:") ? raw.slice("verify:".length) : raw;
+  const code = store.data.verificationCodes.find((item) => item.codeId === codeId);
+  if (!code) throw new HttpError(404, "核销二维码不存在");
+  if (code.status !== "active") throw new HttpError(400, "核销二维码已失效");
+  if (new Date(code.expiresAt).getTime() < Date.now()) {
+    code.status = "expired";
+    throw new HttpError(400, "核销二维码已过期");
+  }
+  return code;
 }
 
 async function readBody(req) {
@@ -1579,6 +1604,59 @@ function createRouter(store) {
     return { coupon: publicCoupon(store, coupon), record };
   });
 
+  add("POST", "/api/verification-codes", async (body) => {
+    const user = store.getUser(body.userId || "user_demo");
+    const type = body.type || "points";
+    const code = {
+      codeId: newId("verify"),
+      qrPayload: "",
+      userId: user.userId,
+      type,
+      status: "active",
+      storageId: body.storageId || null,
+      couponId: body.couponId || null,
+      lotteryRecordId: body.lotteryRecordId || null,
+      pointsAmount: body.pointsAmount !== undefined ? Number(body.pointsAmount) : null,
+      createdAt: now(),
+      expiresAt: body.expiresAt || addDays(1),
+      usedAt: null,
+      usedBy: null,
+    };
+    if (type === "storage") {
+      const storage = store.getStorage(code.storageId);
+      if (storage.userId !== user.userId) throw new HttpError(403, "不能生成他人存酒二维码");
+      if (storage.status !== "available") throw new HttpError(400, "存酒状态不可生成二维码");
+    }
+    if (type === "coupon") {
+      const coupon = store.data.coupons.find((item) => item.couponId === code.couponId);
+      if (!coupon) throw new HttpError(404, "酒水券不存在");
+      if (coupon.userId !== user.userId) throw new HttpError(403, "不能生成他人酒水券二维码");
+      if (coupon.status !== "available" && coupon.status !== "pending") throw new HttpError(400, "酒水券状态不可生成二维码");
+    }
+    if (type === "lottery") {
+      const record = store.data.lotteryRecords.find((item) => item.recordId === code.lotteryRecordId);
+      if (!record) throw new HttpError(404, "中奖记录不存在");
+      if (record.userId !== user.userId) throw new HttpError(403, "不能生成他人中奖二维码");
+      if (record.status !== "won" && record.status !== "redeeming") throw new HttpError(400, "中奖记录状态不可生成二维码");
+    }
+    if (type === "points") {
+      const amount = Math.abs(Number(code.pointsAmount || 0));
+      if (!amount) throw new HttpError(400, "积分二维码需要填写积分数量");
+      if (user.pointsBalance < amount) throw new HttpError(400, "积分不足，无法生成取积分二维码");
+      code.pointsAmount = amount;
+    }
+    code.qrPayload = `verify:${code.codeId}`;
+    store.data.verificationCodes.unshift(code);
+    store.log(user.userId, "customer", "create_verification_code", "VerificationCode", code.codeId, null, code, `生成${type}二维码`);
+    await store.save();
+    return { code: publicVerificationCode(store, code) };
+  });
+
+  add("GET", "/api/verification-codes", async (_body, _params, query) => {
+    const userId = query.get("userId") || "user_demo";
+    return { codes: store.data.verificationCodes.filter((code) => code.userId === userId).map((code) => publicVerificationCode(store, code)) };
+  });
+
   add("POST", "/api/staff/coupons/:couponId/confirm", async (body, params) => {
     const employee = store.getEmployee(body.operatorId || "emp_anna");
     const coupon = store.data.coupons.find((item) => item.couponId === params.couponId);
@@ -1699,6 +1777,71 @@ function createRouter(store) {
   add("POST", "/api/staff/verify-code", async (body) => {
     const user = store.getUser(body.userId || "user_demo");
     return { user, pointsBalance: user.pointsBalance, storage: store.data.customerStorage.filter((item) => item.userId === user.userId), coupons: store.data.coupons.filter((item) => item.userId === user.userId) };
+  });
+
+  add("POST", "/api/staff/verification-codes/scan", async (body) => {
+    const employee = store.getEmployee(body.operatorId || "emp_anna");
+    const code = resolveVerificationCode(store, body.qrPayload || body.codeId);
+    store.log(employee.employeeId, employee.role, "scan_verification_code", "VerificationCode", code.codeId, null, code, "员工扫码查看核销二维码");
+    await store.save();
+    return { code: publicVerificationCode(store, code) };
+  });
+
+  add("POST", "/api/staff/verification-codes/:codeId/confirm", async (body, params) => {
+    const employee = store.getEmployee(body.operatorId || "emp_anna");
+    const code = resolveVerificationCode(store, params.codeId);
+    const beforeCode = deepClone(code);
+    let result = {};
+    if (code.type === "points") {
+      const user = store.getUser(code.userId);
+      const beforeUser = deepClone(user);
+      const amount = Math.abs(Number(code.pointsAmount || 0));
+      if (user.pointsBalance < amount) throw new HttpError(400, "积分不足，无法核销");
+      const ledger = store.createPointsLedger(user, -amount, "二维码取积分", "verification_code", code.codeId, employee.employeeId);
+      store.log(employee.employeeId, employee.role, "confirm_points_qr", "User", user.userId, beforeUser, user, "员工扫码核销积分");
+      result = { user, ledger };
+    } else if (code.type === "storage") {
+      const storage = store.getStorage(code.storageId);
+      if (storage.status !== "available") throw new HttpError(400, "存酒状态不可核销");
+      if (new Date(storage.expireAt).getTime() < Date.now()) {
+        storage.status = "expired";
+        throw new HttpError(400, "存酒已过期，需管理员处理");
+      }
+      const beforeStorage = deepClone(storage);
+      const quantity = Math.min(storage.quantity, Number(body.quantity || 1));
+      store.createStorageLedger(storage, -quantity, "qr_pickup_confirm", employee.employeeId, "员工扫码取酒");
+      store.log(employee.employeeId, employee.role, "confirm_storage_qr", "CustomerStorage", storage.storageId, beforeStorage, storage, "员工扫码核销取酒");
+      result = { storage };
+    } else if (code.type === "coupon") {
+      const coupon = store.data.coupons.find((item) => item.couponId === code.couponId);
+      if (!coupon) throw new HttpError(404, "酒水券不存在");
+      if (coupon.status !== "available" && coupon.status !== "pending") throw new HttpError(400, "酒水券不可核销");
+      const beforeCoupon = deepClone(coupon);
+      coupon.status = "completed";
+      coupon.completedAt = now();
+      const record = { recordId: newId("couponRecord"), couponId: coupon.couponId, userId: coupon.userId, action: "qr_redeem_confirm", status: "completed", operatorId: employee.employeeId, createdAt: now() };
+      store.data.couponRecords.unshift(record);
+      store.log(employee.employeeId, employee.role, "confirm_coupon_qr", "Coupon", coupon.couponId, beforeCoupon, coupon, "员工扫码核销酒水券");
+      result = { coupon: publicCoupon(store, coupon), record };
+    } else if (code.type === "lottery") {
+      const record = store.data.lotteryRecords.find((item) => item.recordId === code.lotteryRecordId);
+      if (!record) throw new HttpError(404, "中奖记录不存在");
+      if (record.status !== "won" && record.status !== "redeeming") throw new HttpError(400, "中奖记录不可核销");
+      const beforeRecord = deepClone(record);
+      record.status = "completed";
+      record.redeemedBy = employee.employeeId;
+      record.redeemedAt = now();
+      store.log(employee.employeeId, employee.role, "confirm_lottery_qr", "LotteryRecord", record.recordId, beforeRecord, record, "员工扫码核销中奖记录");
+      result = { lotteryRecord: record };
+    } else {
+      throw new HttpError(400, "不支持的二维码类型");
+    }
+    code.status = "used";
+    code.usedAt = now();
+    code.usedBy = employee.employeeId;
+    store.log(employee.employeeId, employee.role, "confirm_verification_code", "VerificationCode", code.codeId, beforeCode, code, "员工确认核销二维码");
+    await store.save();
+    return { code: publicVerificationCode(store, code), result };
   });
 
   add("POST", "/api/staff/seats/:seatNo/sit", async (body, params) => {

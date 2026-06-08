@@ -73,6 +73,15 @@
   <view class="section">
     <view class="section-title">核销与酒水券</view>
     <button class="primary" bindtap="verifyCode">扫码核销模拟</button>
+    <input class="input" value="{{qrPayload}}" bindinput="onQrPayload" placeholder="输入 verify:xxx 二维码码值" />
+    <view class="btn-row">
+      <button size="mini" class="secondary" bindtap="scanVerificationCode">扫码/识别二维码</button>
+      <button size="mini" class="primary" bindtap="confirmVerificationCode">确认核销二维码</button>
+    </view>
+    <view wx:if="{{scannedCode}}" class="row">
+      <view class="row-title">{{scannedCode.type}} · {{scannedCode.statusText || scannedCode.status}}</view>
+      <view class="muted">{{scannedCode.qrPayload}} · {{scannedCode.user.phone}}</view>
+    </view>
     <view wx:if="{{verifyResult}}" class="row">
       <view class="row-title">{{verifyResult.user.phone}}</view>
       <view class="muted">积分 {{verifyResult.pointsBalance}} · 存酒 {{verifyResult.storage.length}} · 券 {{verifyResult.coupons.length}}</view>

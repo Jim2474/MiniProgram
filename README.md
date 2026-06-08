@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V6
+# 德扑棋牌门店小程序 V7
 
 本仓库包含：
 
@@ -60,10 +60,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V6 验收状态
+## V7 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V7.md`
 - `docs/ACCEPTANCE-V6.md`
 - `docs/ACCEPTANCE-V5.md`
 - `docs/ACCEPTANCE-V4.md`
@@ -71,13 +72,17 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：84 项。
-- 小程序结构与 API 调用校验：88 项。
+- 后端业务自验收：90 项。
+- 小程序结构与 API 调用校验：91 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
 
-## V6 新增能力
+## V7 新增能力
 
+- 统一核销二维码令牌。
+- 客户生成取积分、取酒、酒水券、中奖记录二维码。
+- 员工扫码识别二维码并确认核销。
+- 二维码核销自动更新积分、存酒、酒水券和中奖记录。
 - 首页看板较昨日对比数据。
 - 商品分类启停、SKU 上下架与编辑。
 - 充值配置停用、会员等级编辑/停用。

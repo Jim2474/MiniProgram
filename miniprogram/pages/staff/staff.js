@@ -20,6 +20,8 @@ Page({
     salesText: "¥0",
     pickupRequests: [],
     verifyResult: null,
+    qrPayload: "",
+    scannedCode: null,
     couponConfirmList: [],
     lotteryConfirmList: [],
     seats: [],
@@ -199,6 +201,42 @@ Page({
     try {
       const verifyResult = await request("/api/staff/verify-code", { method: "POST", data: { userId: "user_demo" } })
       this.setData({ verifyResult })
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  onQrPayload(event) {
+    this.setData({ qrPayload: event.detail.value })
+  },
+
+  async scanVerificationCode() {
+    try {
+      let qrPayload = this.data.qrPayload
+      if (!qrPayload && wx.scanCode) {
+        try {
+          const result = await new Promise((resolve, reject) => wx.scanCode({ onlyFromCamera: false, success: resolve, fail: reject }))
+          qrPayload = result.result
+        } catch (_error) {
+          qrPayload = this.data.qrPayload
+        }
+      }
+      if (!qrPayload) throw new Error("请先输入或扫描二维码码值")
+      const data = await request("/api/staff/verification-codes/scan", { method: "POST", data: { operatorId: this.data.selectedEmployee.employeeId, qrPayload } })
+      this.setData({ qrPayload, scannedCode: { ...data.code, statusText: statusText(data.code.status) } })
+      wx.showToast({ title: "已识别" })
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async confirmVerificationCode() {
+    try {
+      if (!this.data.scannedCode) throw new Error("请先扫码")
+      const data = await request(`/api/staff/verification-codes/${this.data.scannedCode.codeId}/confirm`, { method: "POST", data: { operatorId: this.data.selectedEmployee.employeeId, quantity: 1 } })
+      this.setData({ scannedCode: { ...data.code, statusText: statusText(data.code.status) } })
+      wx.showToast({ title: "核销成功" })
+      await this.loadAll()
     } catch (error) {
       showError(error)
     }

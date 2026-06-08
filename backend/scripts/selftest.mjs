@@ -206,6 +206,11 @@ async function main() {
     assert(lotteryRedeemConfirm.record.status === "completed" && lotteryRedeemConfirm.record.redeemedBy === "emp_anna", "员工可确认核销中奖记录");
     const lotteryOverview = await request(baseUrl, "/api/admin/lottery/overview");
     assert(lotteryOverview.totalDraws >= 1 && lotteryOverview.todayCostPoints >= 20, "后台抽奖概况更新");
+    await request(baseUrl, "/api/staff/points/adjust", { method: "POST", body: { operatorId: "emp_anna", userId: "user_demo", amount: 50, reason: "二维码抽奖测试补积分" } });
+    const lotteryForQr = await request(baseUrl, "/api/lottery/draw", { method: "POST", body: { userId: "user_demo" } });
+    const lotteryQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "lottery", lotteryRecordId: lotteryForQr.record.recordId } });
+    const confirmedLotteryQr = await request(baseUrl, `/api/staff/verification-codes/${lotteryQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
+    assert(confirmedLotteryQr.result.lotteryRecord.status === "completed", "员工可扫码核销中奖二维码");
     const lotterySettings = await request(baseUrl, "/api/admin/lottery/settings", { method: "PATCH", body: { cooldownMinutes: 10, dailyLimit: 5 } });
     assert(lotterySettings.settings.cooldownMinutes === 10 && lotterySettings.settings.dailyLimit === 5, "后台可配置抽奖冷却和每日次数");
     let cooldownError = "";
@@ -286,6 +291,27 @@ async function main() {
 
     const verifyCode = await request(baseUrl, "/api/staff/verify-code", { method: "POST", body: { userId: "user_demo" } });
     assert(verifyCode.pointsBalance >= 0 && Array.isArray(verifyCode.coupons), "员工核销码可查询客户积分存酒券");
+
+    const pointsQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "points", pointsAmount: 5 } });
+    assert(pointsQr.code.qrPayload.startsWith("verify:"), "客户可生成取积分二维码");
+    const scannedPointsQr = await request(baseUrl, "/api/staff/verification-codes/scan", { method: "POST", body: { operatorId: "emp_anna", qrPayload: pointsQr.code.qrPayload } });
+    assert(scannedPointsQr.code.type === "points", "员工可扫码查看积分二维码");
+    const confirmedPointsQr = await request(baseUrl, `/api/staff/verification-codes/${pointsQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
+    assert(confirmedPointsQr.code.status === "used" && confirmedPointsQr.result.ledger.changeAmount === -5, "员工可扫码核销取积分");
+
+    const qrStorage = await request(baseUrl, "/api/staff/storage", {
+      method: "POST",
+      body: { operatorId: "emp_anna", phone: "13800000000", skuId: "sku_bud", quantity: 1, agreementAccepted: true },
+    });
+    const storageQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "storage", storageId: qrStorage.storage.storageId } });
+    const confirmedStorageQr = await request(baseUrl, `/api/staff/verification-codes/${storageQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna", quantity: 1 } });
+    assert(confirmedStorageQr.result.storage.status === "empty", "员工可扫码核销取酒二维码");
+
+    await request(baseUrl, "/api/staff/points/adjust", { method: "POST", body: { operatorId: "emp_anna", userId: "user_demo", amount: 120, reason: "二维码酒水券测试补积分" } });
+    const qrCouponSource = await request(baseUrl, "/api/coupons/exchange", { method: "POST", body: { userId: "user_demo", count: 1, skuId: "sku_bud" } });
+    const couponQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "coupon", couponId: qrCouponSource.coupons[0].couponId } });
+    const confirmedCouponQr = await request(baseUrl, `/api/staff/verification-codes/${couponQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
+    assert(confirmedCouponQr.result.coupon.status === "completed", "员工可扫码核销酒水券二维码");
 
     const scan = await request(baseUrl, "/api/scan/employee", { method: "POST", body: { userId: "user_demo", employeeId: "emp_anna", rawCode: "employee:emp_anna" } });
     assert(scan.employee.employeeId === "emp_anna" && scan.record.scene === "employee_qr", "客户扫码员工二维码生成归属记录");

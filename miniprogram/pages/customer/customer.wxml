@@ -73,10 +73,14 @@
     <view wx:for="{{storage}}" wx:key="storageId" class="row">
       <view class="row-title">{{item.product.name}} · {{item.quantity}}{{item.product.unit}}</view>
       <view class="muted">{{item.statusText}} · 到期 {{item.expireDate}}</view>
-      <button wx:if="{{item.status === 'available' && item.quantity > 0}}" size="mini" class="primary" data-id="{{item.storageId}}" bindtap="requestPickup">申请取酒</button>
+      <view wx:if="{{item.status === 'available' && item.quantity > 0}}" class="btn-row">
+        <button size="mini" class="primary" data-id="{{item.storageId}}" bindtap="requestPickup">申请取酒</button>
+        <button size="mini" class="secondary" data-type="storage" bindtap="createQrCode">生成取酒二维码</button>
+      </view>
     </view>
     <view class="row">
       <view class="row-title">积分明细</view>
+      <button size="mini" class="secondary" data-type="points" bindtap="createQrCode">生成取积分二维码</button>
       <view wx:for="{{points.ledgers}}" wx:key="ledgerId" class="muted">{{item.reason}} · {{item.changeAmount}} · 余额 {{item.balanceAfter}}</view>
     </view>
   </view>
@@ -120,13 +124,22 @@
       <view class="btn-row">
         <button size="mini" class="secondary" bindtap="exchangeCoupon">积分兑换酒水券</button>
         <button wx:if="{{redeemableCouponId}}" size="mini" class="primary" data-id="{{redeemableCouponId}}" bindtap="requestCouponRedeem">申请兑换</button>
+        <button size="mini" class="secondary" data-type="coupon" bindtap="createQrCode">生成酒水券二维码</button>
       </view>
       <view wx:for="{{couponRecords}}" wx:key="recordId" class="muted">{{item.action}} · {{item.statusText}}</view>
     </view>
     <view class="row">
       <view class="row-title">中奖记录</view>
       <view wx:for="{{lotteryRecords}}" wx:key="recordId" class="muted">{{item.prizeName}} · {{item.statusText}}</view>
-      <button wx:if="{{redeemableLotteryId}}" size="mini" class="primary" data-id="{{redeemableLotteryId}}" bindtap="requestLotteryRedeem">申请核销奖品</button>
+      <view class="btn-row">
+        <button wx:if="{{redeemableLotteryId}}" size="mini" class="primary" data-id="{{redeemableLotteryId}}" bindtap="requestLotteryRedeem">申请核销奖品</button>
+        <button size="mini" class="secondary" data-type="lottery" bindtap="createQrCode">生成中奖二维码</button>
+      </view>
+    </view>
+    <view class="row">
+      <view class="row-title">核销二维码</view>
+      <view class="muted" wx:if="{{qrText}}">当前码值：{{qrText}}</view>
+      <view wx:for="{{verificationCodes}}" wx:key="codeId" class="muted">{{item.type}} · {{item.qrPayload}} · {{item.statusText}}</view>
     </view>
     <view class="row">
       <view class="row-title">门店服务</view>
