@@ -82,9 +82,12 @@ assert(!customerJs.includes("onEmployeeChange") && !customerWxml.includes('range
 assert(customerJs.includes("/api/lottery/records/") && customerJs.includes("redeem-request"), "customer page calls lottery redeem request API");
 
 const staffJs = await readFile(join(root, "miniprogram/pages/staff/staff.js"), "utf8");
+const staffWxml = await readFile(join(root, "miniprogram/pages/staff/staff.wxml"), "utf8");
 assert(staffJs.includes("/api/staff/storage"), "staff page calls storage create API");
 assert(staffJs.includes("/api/staff/login"), "staff page calls staff login API");
 assert(staffJs.includes("/api/staff/performance/monthly"), "staff page calls monthly performance API");
+assert(staffJs.includes("/api/staff/employees/") && staffJs.includes("/order-qr"), "staff page calls employee order QR API");
+assert(staffJs.includes("showOrderQr") && staffWxml.includes("orderQrPayload"), "staff page displays employee order QR payload");
 assert(staffJs.includes("/confirm"), "staff page calls pickup confirm API");
 assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adjust API");
 assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code API");

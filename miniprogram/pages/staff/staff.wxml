@@ -15,8 +15,10 @@
       <view class="input">{{selectedEmployee.name}} · {{selectedEmployee.role}}</view>
     </picker>
     <view class="row">
-      <view class="row-title">专属二维码参数</view>
-      <view class="muted">employeeId={{selectedEmployee.employeeId}}</view>
+      <view class="row-title">专属点单二维码</view>
+      <view class="muted">{{orderQrPayload}}</view>
+      <view class="muted">{{orderQrHint}}</view>
+      <button size="mini" class="secondary" bindtap="showOrderQr">出示码值</button>
     </view>
   </view>
 

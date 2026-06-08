@@ -9,6 +9,8 @@ Page({
     loginAccount: "anna",
     loginPassword: "demo",
     loginSession: null,
+    orderQrPayload: "",
+    orderQrHint: "",
     products: [],
     storageSkuIndex: 0,
     selectedStorageSku: {},
@@ -48,6 +50,7 @@ Page({
       })
       await this.loadOrders()
       await this.loadPerformance()
+      await this.loadOrderQr()
       await this.loadPickupRequests()
       await this.loadCouponsLotteryAndSeats()
     } catch (error) {
@@ -69,6 +72,15 @@ Page({
     const data = await request(`/api/staff/performance/monthly?employeeId=${this.data.selectedEmployee.employeeId}&months=6`)
     this.setData({
       performanceRows: data.rows.map((item) => ({ ...item, salesText: money(item.sales) }))
+    })
+  },
+
+  async loadOrderQr() {
+    if (!this.data.selectedEmployee.employeeId) return
+    const data = await request(`/api/staff/employees/${this.data.selectedEmployee.employeeId}/order-qr`)
+    this.setData({
+      orderQrPayload: data.qr.qrPayload,
+      orderQrHint: data.qr.hint
     })
   },
 
@@ -97,6 +109,15 @@ Page({
     this.setData({ employeeIndex, selectedEmployee })
     await this.loadOrders()
     await this.loadPerformance()
+    await this.loadOrderQr()
+  },
+
+  showOrderQr() {
+    wx.showModal({
+      title: "专属点单二维码码值",
+      content: this.data.orderQrPayload,
+      showCancel: false
+    })
   },
 
   onLoginAccount(event) {
@@ -116,6 +137,7 @@ Page({
       wx.showToast({ title: "登录成功" })
       await this.loadOrders()
       await this.loadPerformance()
+      await this.loadOrderQr()
     } catch (error) {
       showError(error)
     }

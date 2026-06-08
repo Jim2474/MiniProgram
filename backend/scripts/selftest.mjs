@@ -42,6 +42,9 @@ async function main() {
     const staffLogin = await request(baseUrl, "/api/staff/login", { method: "POST", body: { account: "anna", password: "demo" } });
     assert(staffLogin.employee.employeeId === "emp_anna" && staffLogin.session.sessionId, "员工可用账号密码登录");
     assert(!("passwordHash" in staffLogin.employee), "员工登录结果不暴露密码字段");
+    const staffOrderQr = await request(baseUrl, "/api/staff/employees/emp_anna/order-qr");
+    assert(staffOrderQr.qr.qrPayload === "employee:emp_anna" && staffOrderQr.qr.scene === "employee_qr", "员工端可获取专属点单二维码码值");
+    assert(!("passwordHash" in staffOrderQr.qr.employee), "员工专属点单二维码接口不暴露密码字段");
 
     const productsBefore = await request(baseUrl, "/api/products");
     const bud = productsBefore.products.find((item) => item.skuId === "sku_bud");
@@ -55,7 +58,7 @@ async function main() {
     const naturalOrder = await request(baseUrl, "/api/orders", { method: "POST", body: { userId: newUserId } });
     assert(!naturalOrder.order.employee && naturalOrder.order.source === "natural", "未扫码员工二维码时订单不归属员工");
 
-    const scanBeforeOrder = await request(baseUrl, "/api/scan/employee", { method: "POST", body: { userId: "user_demo", employeeId: "emp_anna", rawCode: "employee:emp_anna" } });
+    const scanBeforeOrder = await request(baseUrl, "/api/scan/employee", { method: "POST", body: { userId: "user_demo", employeeId: "emp_anna", rawCode: staffOrderQr.qr.qrPayload } });
     assert(scanBeforeOrder.employee.employeeId === "emp_anna" && scanBeforeOrder.record.scene === "employee_qr", "客户先扫码员工二维码建立归属");
 
     await request(baseUrl, "/api/cart/items", {

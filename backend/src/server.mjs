@@ -601,6 +601,16 @@ function publicEmployee(employee) {
   return safe;
 }
 
+function employeeOrderQr(employee) {
+  return {
+    scene: "employee_qr",
+    qrPayload: `employee:${employee.employeeId}`,
+    employee: publicEmployee(employee),
+    title: `${employee.name}专属点单码`,
+    hint: "客户扫码后下单，订单、营收和员工业绩归属该员工。",
+  };
+}
+
 function publicTable(store, table) {
   return {
     ...table,
@@ -750,6 +760,11 @@ function createRouter(store) {
     store.log(employee.employeeId, employee.role, "staff_login", "Employee", employee.employeeId, null, session, "员工账号密码登录");
     await store.save();
     return { employee: publicEmployee(employee), session };
+  });
+
+  add("GET", "/api/staff/employees/:employeeId/order-qr", async (_body, params) => {
+    const employee = store.getEmployee(params.employeeId);
+    return { qr: employeeOrderQr(employee) };
   });
 
   add("POST", "/api/user/bind-phone", async (body) => {
@@ -1768,12 +1783,14 @@ function createRouter(store) {
   add("GET", "/api/support/contact", async () => ({ phone: store.data.settings.supportPhone }));
   add("POST", "/api/scan/employee", async (body) => {
     const employee = store.getEmployee(body.employeeId || "emp_anna");
+    const expectedPayload = employeeOrderQr(employee).qrPayload;
+    if (body.rawCode && body.rawCode !== expectedPayload) throw new HttpError(400, "员工二维码码值不匹配");
     const record = {
       recordId: newId("scan"),
       userId: body.userId || "user_demo",
       employeeId: employee.employeeId,
       scene: "employee_qr",
-      rawCode: body.rawCode || `employee:${employee.employeeId}`,
+      rawCode: body.rawCode || expectedPayload,
       createdAt: now(),
     };
     store.data.scanRecords.unshift(record);

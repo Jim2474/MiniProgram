@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V13
+# 德扑棋牌门店小程序 V14
 
 本仓库包含：
 
@@ -60,10 +60,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V13 验收状态
+## V14 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V14.md`
 - `docs/ACCEPTANCE-V13.md`
 - `docs/ACCEPTANCE-V12.md`
 - `docs/ACCEPTANCE-V11.md`
@@ -78,10 +79,17 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：115 项。
-- 小程序结构与 API 调用校验：107 项。
+- 后端业务自验收：117 项。
+- 小程序结构与 API 调用校验：109 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V14 新增能力
+
+- 后端新增员工专属点单码接口 `/api/staff/employees/:employeeId/order-qr`。
+- 员工端从后端读取并展示 `employee:<employeeId>` 专属点单二维码码值。
+- 员工端可弹窗出示专属点单码，客户扫码后建立订单归属。
+- 客户扫码接口校验员工 id 与二维码码值一致，避免错配归属。
 
 ## V13 新增能力
 
