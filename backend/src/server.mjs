@@ -209,6 +209,7 @@ function seedData() {
     stockLedgers: [],
     stockRequests: [],
     scanRecords: [],
+    staffSessions: [],
     customerStorage: [
       {
         storageId: "storage_demo",
@@ -219,6 +220,11 @@ function seedData() {
         quantity: 1,
         expireAt: addDays(45),
         status: "available",
+        handledAt: null,
+        handledBy: null,
+        expiredHandledAt: null,
+        expiredHandledBy: null,
+        expiredHandlingNote: "",
         createdAt,
       },
     ],
@@ -234,6 +240,8 @@ function seedData() {
         type: "普通卡座",
         capacity: 9,
         imageUrl: "",
+        occupiedStartedAt: null,
+        consumptionAmount: 0,
         status: "available",
       },
       {
@@ -244,6 +252,8 @@ function seedData() {
         type: "VIP卡座",
         capacity: 9,
         imageUrl: "",
+        occupiedStartedAt: null,
+        consumptionAmount: 0,
         status: "reserved",
       },
     ],
@@ -282,6 +292,7 @@ function seedData() {
       { prizeId: "prize_points", name: "积分 30", winRate: 50, status: "active", createdAt },
     ],
     lotteryRecords: [],
+    voiceEvents: [],
     memberLevels: [
       { levelId: "level_normal", name: "普通会员", minPoints: 0, status: "active" },
       { levelId: "level_gold", name: "黄金会员", minPoints: 500, status: "active" },
@@ -342,6 +353,19 @@ class Store {
     this.data = JSON.parse(await readFile(this.filePath, "utf8"));
     this.data.stockRequests ||= [];
     this.data.scanRecords ||= [];
+    this.data.staffSessions ||= [];
+    this.data.voiceEvents ||= [];
+    for (const table of this.data.tables || []) {
+      table.occupiedStartedAt ||= null;
+      table.consumptionAmount ||= 0;
+    }
+    for (const storage of this.data.customerStorage || []) {
+      storage.handledAt ||= null;
+      storage.handledBy ||= null;
+      storage.expiredHandledAt ||= null;
+      storage.expiredHandledBy ||= null;
+      storage.expiredHandlingNote ||= "";
+    }
     return this.data;
   }
 
@@ -536,6 +560,34 @@ function publicStockRequest(store, request) {
   };
 }
 
+function publicEmployee(employee) {
+  if (!employee) return null;
+  const { passwordHash: _passwordHash, ...safe } = employee;
+  return safe;
+}
+
+function publicTable(store, table) {
+  return {
+    ...table,
+    reservations: store.data.reservations.filter((reservation) => reservation.tableId === table.tableId && reservation.status === "confirmed"),
+  };
+}
+
+function createVoiceEvent(store, game, eventType, message) {
+  const event = {
+    eventId: newId("voice"),
+    gameId: game.gameId,
+    eventType,
+    message,
+    level: game.level,
+    smallBlind: game.smallBlind,
+    bigBlind: game.bigBlind,
+    createdAt: now(),
+  };
+  store.data.voiceEvents.unshift(event);
+  return event;
+}
+
 async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -621,6 +673,23 @@ function createRouter(store) {
       await store.save();
     }
     return { user };
+  });
+
+  add("POST", "/api/staff/login", async (body) => {
+    const employee = store.data.employees.find((item) => item.loginAccount === body.account || item.phone === body.account);
+    if (!employee || employee.passwordHash !== (body.password || "")) throw new HttpError(401, "账号或密码错误");
+    if (employee.status !== "active") throw new HttpError(403, "员工账号已停用");
+    const session = {
+      sessionId: newId("session"),
+      employeeId: employee.employeeId,
+      role: employee.role,
+      createdAt: now(),
+      expiresAt: addDays(7),
+    };
+    store.data.staffSessions.unshift(session);
+    store.log(employee.employeeId, employee.role, "staff_login", "Employee", employee.employeeId, null, session, "员工账号密码登录");
+    await store.save();
+    return { employee: publicEmployee(employee), session };
   });
 
   add("POST", "/api/user/bind-phone", async (body) => {
@@ -1010,7 +1079,48 @@ function createRouter(store) {
     return { request };
   });
 
-  add("GET", "/api/tables", async () => ({ tables: store.data.tables }));
+  add("POST", "/api/admin/storage/:storageId/expire-handle", async (body, params) => {
+    const storage = store.getStorage(params.storageId);
+    if (storage.status !== "expired" && new Date(storage.expireAt).getTime() >= Date.now()) {
+      throw new HttpError(400, "存酒尚未过期");
+    }
+    const before = deepClone(storage);
+    const action = body.action === "extend" ? "extend" : "dispose";
+    if (action === "extend") {
+      storage.status = "available";
+      storage.expireAt = body.expireAt || addDays(Number(body.extendDays || 30));
+    } else {
+      storage.status = "disposed";
+      storage.quantity = 0;
+    }
+    storage.expiredHandledBy = body.operatorId || "emp_admin";
+    storage.expiredHandledAt = now();
+    storage.expiredHandlingNote = body.note || (action === "extend" ? "人工确认延期" : "人工确认过期处理");
+    store.data.customerStorageLedgers.unshift({
+      ledgerId: newId("storageLedger"),
+      storageId: storage.storageId,
+      userId: storage.userId,
+      skuId: storage.skuId,
+      changeQty: action === "dispose" ? -before.quantity : 0,
+      quantityAfter: storage.quantity,
+      actionType: action === "extend" ? "expired_extend" : "expired_dispose",
+      operatorId: body.operatorId || "emp_admin",
+      reason: storage.expiredHandlingNote,
+      createdAt: now(),
+    });
+    store.log(body.operatorId || "emp_admin", "admin", "handle_expired_storage", "CustomerStorage", storage.storageId, before, storage, storage.expiredHandlingNote);
+    await store.save();
+    return { storage };
+  });
+
+  add("GET", "/api/tables", async (_body, _params, query) => {
+    let tables = store.data.tables;
+    const keyword = query.get("keyword");
+    const status = query.get("status");
+    if (keyword) tables = tables.filter((table) => `${table.name}${table.type}`.includes(keyword));
+    if (status) tables = tables.filter((table) => table.status === status);
+    return { tables: tables.map((table) => publicTable(store, table)) };
+  });
 
   add("POST", "/api/reservations", async (body) => {
     const user = store.getUser(body.userId || "user_demo");
@@ -1034,6 +1144,30 @@ function createRouter(store) {
     return { reservation };
   });
 
+  add("GET", "/api/reservations", async (_body, _params, query) => {
+    const userId = query.get("userId") || "user_demo";
+    return {
+      reservations: store.data.reservations
+        .filter((reservation) => reservation.userId === userId)
+        .map((reservation) => ({ ...reservation, table: store.data.tables.find((table) => table.tableId === reservation.tableId) })),
+    };
+  });
+
+  add("POST", "/api/reservations/:reservationId/cancel", async (body, params) => {
+    const reservation = store.data.reservations.find((item) => item.reservationId === params.reservationId);
+    if (!reservation) throw new HttpError(404, "预约不存在");
+    if (reservation.status !== "pending" && reservation.status !== "confirmed") throw new HttpError(400, "预约不可取消");
+    const before = deepClone(reservation);
+    reservation.status = "cancelled";
+    reservation.cancelledAt = now();
+    reservation.cancelReason = body.reason || "客户取消预约";
+    const table = store.data.tables.find((item) => item.tableId === reservation.tableId);
+    if (table && table.status === "reserved") table.status = "available";
+    store.log(reservation.userId, "customer", "cancel_reservation", "Reservation", reservation.reservationId, before, reservation, reservation.cancelReason);
+    await store.save();
+    return { reservation, table };
+  });
+
   add("GET", "/api/admin/reservations", async () => ({
     reservations: store.data.reservations.map((reservation) => ({
       ...reservation,
@@ -1049,6 +1183,8 @@ function createRouter(store) {
     reservation.status = body.status || reservation.status;
     const table = store.data.tables.find((item) => item.tableId === reservation.tableId);
     if (table && reservation.status === "confirmed") table.status = "reserved";
+    if (table && (reservation.status === "cancelled" || reservation.status === "expired")) table.status = "available";
+    if (reservation.status === "expired") reservation.expiredAt = now();
     store.log(body.operatorId || "emp_admin", "admin", "update_reservation", "Reservation", reservation.reservationId, before, reservation, body.reason || "处理预约");
     await store.save();
     return { reservation, table };
@@ -1228,6 +1364,9 @@ function createRouter(store) {
       level: 1,
       status: "running",
       voiceEnabled: body.voiceEnabled !== false,
+      levelStartedAt: now(),
+      remainingSecondsOverride: null,
+      lastVoiceMarks: [],
       createdAt: now(),
       updatedAt: now(),
     };
@@ -1243,16 +1382,27 @@ function createRouter(store) {
     const before = deepClone(game);
     const action = body.action;
     if (action === "pause") game.status = "paused";
-    if (action === "resume") game.status = "running";
+    if (action === "pause" && body.remainingSeconds !== undefined) game.remainingSecondsOverride = Number(body.remainingSeconds);
+    if (action === "resume") {
+      game.status = "running";
+      game.levelStartedAt = now();
+    }
     if (action === "next_level") {
       game.level += 1;
       game.smallBlind *= 2;
       game.bigBlind *= 2;
+      game.levelStartedAt = now();
+      game.remainingSecondsOverride = null;
+      game.lastVoiceMarks = [];
+      if (game.voiceEnabled) createVoiceEvent(store, game, "level_up", `升盲！当前盲注 ${game.smallBlind}/${game.bigBlind}`);
     }
     if (action === "prev_level" && game.level > 1) {
       game.level -= 1;
       game.smallBlind = Math.max(1, Math.floor(game.smallBlind / 2));
       game.bigBlind = Math.max(2, Math.floor(game.bigBlind / 2));
+      game.levelStartedAt = now();
+      game.remainingSecondsOverride = null;
+      game.lastVoiceMarks = [];
     }
     if (action === "eliminate") game.currentPlayers = Math.max(1, game.currentPlayers - 1);
     if (action === "restore") game.currentPlayers = Math.min(game.initialPlayers, game.currentPlayers + 1);
@@ -1262,6 +1412,9 @@ function createRouter(store) {
       game.level = 1;
       game.currentPlayers = game.initialPlayers;
       game.buyinCount = 0;
+      game.levelStartedAt = now();
+      game.remainingSecondsOverride = null;
+      game.lastVoiceMarks = [];
     }
     game.updatedAt = now();
     store.log(body.operatorId || game.operatorId, "dealer", "update_blind_game", "BlindGame", game.gameId, before, game, action || "更新升盲游戏");
@@ -1270,6 +1423,36 @@ function createRouter(store) {
   });
 
   add("GET", "/api/staff/blind-games", async () => ({ games: store.data.blindGames }));
+
+  add("GET", "/api/staff/blind-games/:gameId/timer", async (_body, params) => {
+    const game = store.data.blindGames.find((item) => item.gameId === params.gameId);
+    if (!game) throw new HttpError(404, "升盲游戏不存在");
+    const totalSeconds = Math.max(60, Number(game.intervalMinutes || 10) * 60);
+    const elapsed = game.status === "running" ? Math.floor((Date.now() - new Date(game.levelStartedAt || game.createdAt).getTime()) / 1000) : 0;
+    let remainingSeconds = game.remainingSecondsOverride ?? Math.max(0, totalSeconds - elapsed);
+    const events = [];
+    game.lastVoiceMarks ||= [];
+    for (const mark of [30, 10]) {
+      if (game.voiceEnabled && remainingSeconds <= mark && !game.lastVoiceMarks.includes(mark) && remainingSeconds > 0) {
+        game.lastVoiceMarks.push(mark);
+        events.push(createVoiceEvent(store, game, `remaining_${mark}`, `还有${mark}秒升盲`));
+      }
+    }
+    if (game.status === "running" && remainingSeconds <= 0) {
+      const before = deepClone(game);
+      game.level += 1;
+      game.smallBlind *= 2;
+      game.bigBlind *= 2;
+      game.levelStartedAt = now();
+      game.remainingSecondsOverride = null;
+      game.lastVoiceMarks = [];
+      remainingSeconds = totalSeconds;
+      if (game.voiceEnabled) events.push(createVoiceEvent(store, game, "level_up", `升盲！当前盲注 ${game.smallBlind}/${game.bigBlind}`));
+      store.log(game.operatorId, "dealer", "auto_next_level", "BlindGame", game.gameId, before, game, "倒计时结束自动升盲");
+    }
+    await store.save();
+    return { game, timer: { totalSeconds, remainingSeconds, elapsedSeconds: Math.max(0, totalSeconds - remainingSeconds), events, latestEvents: store.data.voiceEvents.filter((event) => event.gameId === game.gameId).slice(0, 6) } };
+  });
 
   add("GET", "/api/user/profile", async (_body, _params, query) => {
     const user = store.getUser(query.get("userId") || "user_demo");
@@ -1316,6 +1499,31 @@ function createRouter(store) {
   add("GET", "/api/coupons", async (_body, _params, query) => {
     const userId = query.get("userId") || "user_demo";
     return { coupons: store.data.coupons.filter((coupon) => coupon.userId === userId).map((coupon) => publicCoupon(store, coupon)), records: store.data.couponRecords.filter((record) => record.userId === userId) };
+  });
+
+  add("POST", "/api/coupons/exchange", async (body) => {
+    const user = store.getUser(body.userId || "user_demo");
+    const count = Math.max(1, Number(body.count || 1));
+    const cost = Number(store.data.settings.couponExchangePoints || 100) * count;
+    if (user.pointsBalance < cost) throw new HttpError(400, "积分不足，无法兑换酒水券");
+    const sku = body.skuId ? store.getSku(body.skuId) : store.data.products.find((item) => item.storageDays > 0) || store.data.products[0];
+    store.createPointsLedger(user, -cost, `积分兑换${count}张酒水券`, "coupon_exchange", sku.skuId, "system");
+    const coupons = Array.from({ length: count }, () => ({
+      couponId: newId("coupon"),
+      userId: user.userId,
+      title: `${sku.name}兑换券`,
+      skuId: sku.skuId,
+      quantity: 1,
+      status: "available",
+      createdAt: now(),
+    }));
+    store.data.coupons.unshift(...coupons);
+    for (const coupon of coupons) {
+      store.data.couponRecords.unshift({ recordId: newId("couponRecord"), couponId: coupon.couponId, userId: user.userId, action: "points_exchange", status: "available", operatorId: "system", createdAt: now() });
+    }
+    store.log(user.userId, "customer", "coupon_points_exchange", "Coupon", coupons.map((coupon) => coupon.couponId).join(","), null, coupons, `积分兑换酒水券，消耗${cost}`);
+    await store.save();
+    return { user, coupons: coupons.map((coupon) => publicCoupon(store, coupon)), costPoints: cost };
   });
 
   add("POST", "/api/coupons/:couponId/redeem-request", async (body, params) => {
@@ -1565,6 +1773,48 @@ function createRouter(store) {
     store.data.tableTypes.push(type);
     await store.save();
     return { type };
+  });
+  add("GET", "/api/admin/tables", async (_body, _params, query) => {
+    let tables = store.data.tables;
+    const keyword = query.get("keyword");
+    const status = query.get("status");
+    if (keyword) tables = tables.filter((table) => `${table.name}${table.type}`.includes(keyword));
+    if (status) tables = tables.filter((table) => table.status === status);
+    return { tables: tables.map((table) => publicTable(store, table)), tableTypes: store.data.tableTypes };
+  });
+  add("POST", "/api/admin/tables", async (body) => {
+    const table = {
+      tableId: newId("table"),
+      merchantId: store.data.settings.merchantId,
+      storeId: store.data.settings.storeId,
+      name: body.name || "新桌台",
+      type: body.type || store.data.tableTypes[0]?.name || "普通卡座",
+      capacity: Number(body.capacity || 9),
+      imageUrl: body.imageUrl || "",
+      occupiedStartedAt: null,
+      consumptionAmount: 0,
+      status: body.status || "available",
+    };
+    store.data.tables.push(table);
+    store.log(body.operatorId || "emp_admin", "admin", "create_table", "Table", table.tableId, null, table, "新增座台信息");
+    await store.save();
+    return { table: publicTable(store, table) };
+  });
+  add("PATCH", "/api/admin/tables/:tableId", async (body, params) => {
+    const table = store.data.tables.find((item) => item.tableId === params.tableId);
+    if (!table) throw new HttpError(404, "桌台不存在");
+    const before = deepClone(table);
+    if (body.name !== undefined) table.name = body.name;
+    if (body.type !== undefined) table.type = body.type;
+    if (body.capacity !== undefined) table.capacity = Number(body.capacity);
+    if (body.status !== undefined) table.status = body.status;
+    if (body.imageUrl !== undefined) table.imageUrl = body.imageUrl;
+    if (body.consumptionAmount !== undefined) table.consumptionAmount = Number(body.consumptionAmount || 0);
+    if (table.status === "occupied" && !table.occupiedStartedAt) table.occupiedStartedAt = now();
+    if (table.status !== "occupied") table.occupiedStartedAt = null;
+    store.log(body.operatorId || "emp_admin", "admin", "update_table", "Table", table.tableId, before, table, body.reason || "编辑座台信息");
+    await store.save();
+    return { table: publicTable(store, table) };
   });
   add("POST", "/api/admin/employees", async (body) => {
     const employee = { employeeId: newId("emp"), merchantId: store.data.settings.merchantId, storeId: store.data.settings.storeId, name: body.name, phone: body.phone, role: body.role || "staff", loginAccount: body.loginAccount || body.phone, passwordHash: body.password || "demo", status: "active", createdAt: now() };

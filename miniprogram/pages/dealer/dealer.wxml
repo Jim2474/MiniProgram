@@ -21,8 +21,10 @@
     <view wx:if="{{game}}" class="row">
       <view class="row-title">Level {{game.level}} · {{game.smallBlind}}/{{game.bigBlind}}</view>
       <view class="muted">{{game.statusText}} · 剩余 {{game.currentPlayers}}/{{game.initialPlayers}} 人{{game.headsUpText}}</view>
+      <view class="muted" wx:if="{{timer}}">倒计时 {{timer.remainingText}}</view>
       <view class="muted">代入 {{game.buyinCount}} 手 · 总代入 {{game.buyinTotalText}}</view>
       <view class="btn-row">
+        <button size="mini" class="primary" bindtap="loadTimer">刷新计时</button>
         <button size="mini" class="secondary" data-action="pause" bindtap="gameAction">暂停</button>
         <button size="mini" class="secondary" data-action="resume" bindtap="gameAction">继续</button>
         <button size="mini" class="primary" data-action="next_level" bindtap="gameAction">升盲</button>
@@ -32,6 +34,7 @@
         <button size="mini" class="secondary" data-action="buyin" bindtap="gameAction">+1手</button>
         <button size="mini" class="dark" data-action="reset" bindtap="gameAction">重开</button>
       </view>
+      <view wx:for="{{voiceEvents}}" wx:key="eventId" class="muted">{{item.eventType}} · {{item.message}}</view>
     </view>
   </view>
 

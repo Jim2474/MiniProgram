@@ -34,6 +34,9 @@ async function main() {
     const boot = await request(baseUrl, "/api/bootstrap");
     assert(boot.user.phone === "13800000000", "微信登录种子会员存在");
 
+    const staffLogin = await request(baseUrl, "/api/staff/login", { method: "POST", body: { account: "anna", password: "demo" } });
+    assert(staffLogin.employee.employeeId === "emp_anna" && staffLogin.session.sessionId, "员工可用账号密码登录");
+
     const productsBefore = await request(baseUrl, "/api/products");
     const bud = productsBefore.products.find((item) => item.skuId === "sku_bud");
     const whisky = productsBefore.products.find((item) => item.skuId === "sku_whisky");
@@ -97,6 +100,24 @@ async function main() {
     });
     assert(confirmedReservation.reservation.status === "confirmed", "后台可确认预约");
     assert(confirmedReservation.table.status === "reserved", "确认预约后桌位变为预订");
+    const cancelReservation = await request(baseUrl, "/api/reservations", {
+      method: "POST",
+      body: { userId: "user_demo", tableId: "table_vip", reservationTime: new Date().toISOString() },
+    });
+    const cancelledReservation = await request(baseUrl, `/api/reservations/${cancelReservation.reservation.reservationId}/cancel`, {
+      method: "POST",
+      body: { reason: "客户临时取消" },
+    });
+    assert(cancelledReservation.reservation.status === "cancelled", "客户可取消预约");
+    const expireReservation = await request(baseUrl, "/api/reservations", {
+      method: "POST",
+      body: { userId: "user_demo", tableId: "table_vip", reservationTime: new Date().toISOString() },
+    });
+    const expiredReservation = await request(baseUrl, `/api/admin/reservations/${expireReservation.reservation.reservationId}`, {
+      method: "PATCH",
+      body: { status: "expired", operatorId: "emp_admin", reason: "超时未到店" },
+    });
+    assert(expiredReservation.reservation.status === "expired", "后台可将预约标记失效");
 
     const game = await request(baseUrl, "/api/staff/blind-games", {
       method: "POST",
@@ -113,6 +134,8 @@ async function main() {
       body: { action: "eliminate", operatorId: "emp_dealer" },
     });
     assert(eliminated.game.currentPlayers === 8, "淘汰动作减少在桌人数");
+    const timer = await request(baseUrl, `/api/staff/blind-games/${game.game.gameId}/timer`);
+    assert(typeof timer.timer.remainingSeconds === "number" && Array.isArray(timer.timer.latestEvents), "荷官升盲计时器返回剩余时间和语音事件");
 
     let stockError = "";
     try {
@@ -162,6 +185,9 @@ async function main() {
     assert(rechargeRecords.records.length === 1, "充值记录可查询");
     assert(rechargeRecords.configs.some((config) => config.configId === rechargeConfig.config.configId), "充值中心返回可选配置");
 
+    const exchangedCoupons = await request(baseUrl, "/api/coupons/exchange", { method: "POST", body: { userId: "user_demo", count: 1, skuId: "sku_bud" } });
+    assert(exchangedCoupons.coupons.length === 1 && exchangedCoupons.costPoints === 100, "客户可用积分兑换酒水券");
+
     const couponsBefore = await request(baseUrl, "/api/coupons?userId=user_demo");
     const coupon = couponsBefore.coupons.find((item) => item.status === "available");
     const couponRequest = await request(baseUrl, `/api/coupons/${coupon.couponId}/redeem-request`, { method: "POST", body: { userId: "user_demo" } });
@@ -208,6 +234,23 @@ async function main() {
     const rejectedRequest = await request(baseUrl, `/api/admin/stock-requests/${rejectRequest.request.requestId}/reject`, { method: "POST", body: { operatorId: "emp_admin", reason: "单据错误" } });
     assert(rejectedRequest.request.status === "rejected", "出入库申请可驳回");
 
+    const expiredStorage = await request(baseUrl, "/api/staff/storage", {
+      method: "POST",
+      body: { operatorId: "emp_anna", phone: "13800000000", skuId: "sku_bud", quantity: 1, agreementAccepted: true, expireAt: "2000-01-01T00:00:00.000Z" },
+    });
+    let expiredPickupError = "";
+    try {
+      await request(baseUrl, `/api/storage/${expiredStorage.storage.storageId}/pickup-requests`, { method: "POST", body: { quantity: 1 } });
+    } catch (error) {
+      expiredPickupError = error.message;
+    }
+    assert(expiredPickupError.includes("存酒已过期"), "过期存酒取酒前进入人工处理");
+    const handledExpiredStorage = await request(baseUrl, `/api/admin/storage/${expiredStorage.storage.storageId}/expire-handle`, {
+      method: "POST",
+      body: { operatorId: "emp_admin", action: "dispose", note: "过期人工确认作废" },
+    });
+    assert(handledExpiredStorage.storage.status === "disposed" && handledExpiredStorage.storage.quantity === 0, "后台可人工确认处理过期存酒");
+
     const employee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "新员工", phone: "13900009999", role: "staff" } });
     assert(employee.employee.status === "active", "后台可新增工作人员");
     const disabledEmployee = await request(baseUrl, `/api/admin/employees/${employee.employee.employeeId}`, { method: "PATCH", body: { status: "disabled", resetPassword: "123456" } });
@@ -232,6 +275,13 @@ async function main() {
 
     const tableType = await request(baseUrl, "/api/admin/table-types", { method: "POST", body: { name: "超级VIP卡", capacity: 9 } });
     assert(tableType.type.name === "超级VIP卡", "后台可新增咖位类型");
+    const table = await request(baseUrl, "/api/admin/tables", { method: "POST", body: { name: "B2 超级桌", type: "超级VIP卡", capacity: 9 } });
+    assert(table.table.name === "B2 超级桌", "后台可新增座台信息");
+    const occupiedTable = await request(baseUrl, `/api/admin/tables/${table.table.tableId}`, {
+      method: "PATCH",
+      body: { status: "occupied", consumptionAmount: 688, reason: "开台占用" },
+    });
+    assert(occupiedTable.table.status === "occupied" && occupiedTable.table.occupiedStartedAt && occupiedTable.table.consumptionAmount === 688, "后台可设置座台占用与消费金额");
 
     const blindSettings = await request(baseUrl, "/api/admin/blind-settings", { method: "PATCH", body: { theme: "neon", fontSize: 56, registrationStatus: "stopped" } });
     assert(blindSettings.settings.theme === "neon" && blindSettings.settings.registrationStatus === "stopped", "后台可配置升盲样式和报名状态");

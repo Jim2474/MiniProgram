@@ -16,6 +16,7 @@ Page({
     points: { balance: 0, ledgers: [] },
     storage: [],
     tables: [],
+    reservations: [],
     profile: {},
     leaderboard: [],
     myRank: null,
@@ -48,7 +49,7 @@ Page({
         selectedEmployee,
         employeeIndex: Math.max(0, employees.findIndex((item) => item.employeeId === selectedEmployee.employeeId))
       })
-      await Promise.all([this.loadProducts(), this.loadCart(), this.loadOrders(), this.loadPoints(), this.loadStorage(), this.loadTables(), this.loadMarketing()])
+      await Promise.all([this.loadProducts(), this.loadCart(), this.loadOrders(), this.loadPoints(), this.loadStorage(), this.loadTables(), this.loadReservations(), this.loadMarketing()])
     } catch (error) {
       showError(error)
     }
@@ -108,6 +109,17 @@ Page({
     const data = await request("/api/tables")
     this.setData({
       tables: data.tables.map((item) => ({ ...item, statusText: statusText(item.status) }))
+    })
+  },
+
+  async loadReservations() {
+    const data = await request(`/api/reservations?userId=${app.globalData.userId}`)
+    this.setData({
+      reservations: data.reservations.map((item) => ({
+        ...item,
+        statusText: statusText(item.status),
+        reservationDate: item.reservationTime.slice(0, 16)
+      }))
     })
   },
 
@@ -251,11 +263,23 @@ Page({
         }
       })
       wx.showToast({ title: "已预约" })
+      await this.loadReservations()
     } catch (error) {
       showError(error)
     }
-  }
-,
+  },
+
+  async cancelReservation(event) {
+    try {
+      await request(`/api/reservations/${event.currentTarget.dataset.id}/cancel`, { method: "POST", data: { reason: "客户小程序取消" } })
+      wx.showToast({ title: "已取消" })
+      await this.loadReservations()
+      await this.loadTables()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
   async checkin() {
     try {
       await request("/api/checkin", { method: "POST", data: { userId: app.globalData.userId } })
@@ -307,6 +331,17 @@ Page({
     try {
       await request(`/api/coupons/${event.currentTarget.dataset.id}/redeem-request`, { method: "POST", data: { userId: app.globalData.userId } })
       wx.showToast({ title: "已申请兑换" })
+      await this.loadMarketing()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async exchangeCoupon() {
+    try {
+      await request("/api/coupons/exchange", { method: "POST", data: { userId: app.globalData.userId, count: 1, skuId: "sku_bud" } })
+      wx.showToast({ title: "已兑换酒水券" })
+      await this.loadPoints()
       await this.loadMarketing()
     } catch (error) {
       showError(error)

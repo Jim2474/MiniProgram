@@ -10,6 +10,8 @@ Page({
       buyinAmount: 100
     },
     game: null,
+    timer: null,
+    voiceEvents: [],
     blindSettings: { titleMap: {} },
     seats: []
   },
@@ -58,6 +60,7 @@ Page({
         }
       })
       this.setData({ game: this.decorateGame(data.game) })
+      await this.loadTimer()
       wx.showToast({ title: "已开始" })
     } catch (error) {
       showError(error)
@@ -75,6 +78,24 @@ Page({
         }
       })
       this.setData({ game: this.decorateGame(data.game) })
+      await this.loadTimer()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async loadTimer() {
+    if (!this.data.game) return
+    try {
+      const data = await request(`/api/staff/blind-games/${this.data.game.gameId}/timer`)
+      this.setData({
+        game: this.decorateGame(data.game),
+        timer: {
+          ...data.timer,
+          remainingText: `${Math.floor(data.timer.remainingSeconds / 60)}:${String(data.timer.remainingSeconds % 60).padStart(2, "0")}`
+        },
+        voiceEvents: data.timer.latestEvents || []
+      })
     } catch (error) {
       showError(error)
     }

@@ -48,6 +48,8 @@ function statusText(status) {
     available: "可取",
     empty: "已取完",
     expired: "已过期",
+    disposed: "已作废",
+    cancelled: "已取消",
     confirmed: "已确认",
     rejected: "已拒绝",
     reserved: "预订",

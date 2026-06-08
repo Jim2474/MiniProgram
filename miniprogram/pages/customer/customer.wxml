@@ -117,7 +117,10 @@
     <view class="row">
       <view class="row-title">酒水券</view>
       <view wx:for="{{coupons}}" wx:key="couponId" class="muted">{{item.title}} · {{item.statusText}}</view>
-      <button wx:if="{{redeemableCouponId}}" size="mini" class="primary" data-id="{{redeemableCouponId}}" bindtap="requestCouponRedeem">申请兑换</button>
+      <view class="btn-row">
+        <button size="mini" class="secondary" bindtap="exchangeCoupon">积分兑换酒水券</button>
+        <button wx:if="{{redeemableCouponId}}" size="mini" class="primary" data-id="{{redeemableCouponId}}" bindtap="requestCouponRedeem">申请兑换</button>
+      </view>
       <view wx:for="{{couponRecords}}" wx:key="recordId" class="muted">{{item.action}} · {{item.statusText}}</view>
     </view>
     <view class="row">
@@ -141,6 +144,11 @@
       <view class="row-title">{{item.name}} · {{item.capacity}}人</view>
       <view class="muted">{{item.type}} · {{item.statusText}}</view>
       <button size="mini" class="secondary" data-id="{{item.tableId}}" bindtap="createReservation">提交预约</button>
+    </view>
+    <view wx:for="{{reservations}}" wx:key="reservationId" class="row">
+      <view class="row-title">{{item.table.name}} · {{item.reservationDate}}</view>
+      <view class="muted">{{item.statusText}} · {{item.contactPhone}}</view>
+      <button wx:if="{{item.status === 'pending' || item.status === 'confirmed'}}" size="mini" class="secondary" data-id="{{item.reservationId}}" bindtap="cancelReservation">取消预约</button>
     </view>
   </view>
 </view>

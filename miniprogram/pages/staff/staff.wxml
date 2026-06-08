@@ -7,6 +7,10 @@
 
   <view class="section">
     <view class="section-title">当前员工</view>
+    <input class="input" value="{{loginAccount}}" bindinput="onLoginAccount" placeholder="员工账号" />
+    <input class="input" password="true" value="{{loginPassword}}" bindinput="onLoginPassword" placeholder="员工密码" />
+    <button class="primary" bindtap="staffLogin">账号密码登录</button>
+    <view wx:if="{{loginSession}}" class="muted">已登录：{{selectedEmployee.name}} · 会话 {{loginSession.sessionId}}</view>
     <picker range="{{employees}}" range-key="name" value="{{employeeIndex}}" bindchange="onEmployeeChange">
       <view class="input">{{selectedEmployee.name}} · {{selectedEmployee.role}}</view>
     </picker>

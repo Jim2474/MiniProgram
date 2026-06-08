@@ -74,6 +74,7 @@
     <view wx:for="{{storage}}" wx:key="storageId" class="row">
       <view class="row-title">{{item.user.phone}} · {{item.product.name}}</view>
       <view class="muted">{{item.statusText}} · 数量 {{item.quantity}} · 到期 {{item.expireDate}}</view>
+      <button wx:if="{{item.status === 'expired'}}" size="mini" class="primary" data-id="{{item.storageId}}" bindtap="handleExpiredStorage">人工处理过期</button>
     </view>
   </view>
 
@@ -83,7 +84,25 @@
     <view wx:for="{{reservations}}" wx:key="reservationId" class="row">
       <view class="row-title">{{item.table.name}} · {{item.user.phone}}</view>
       <view class="muted">{{item.statusText}} · {{item.reservationDate}}</view>
-      <button wx:if="{{item.status === 'pending'}}" size="mini" class="primary" data-id="{{item.reservationId}}" bindtap="confirmReservation">确认预约</button>
+      <view wx:if="{{item.status === 'pending'}}" class="btn-row">
+        <button size="mini" class="primary" data-id="{{item.reservationId}}" bindtap="confirmReservation">确认预约</button>
+        <button size="mini" class="secondary" data-id="{{item.reservationId}}" bindtap="expireReservation">标记失效</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">咖位管理</view>
+    <input class="input" value="{{tableForm.name}}" bindinput="onTableName" placeholder="桌台名称" />
+    <input class="input" type="number" value="{{tableForm.capacity}}" bindinput="onTableCapacity" placeholder="人数" />
+    <button size="mini" class="primary" bindtap="createTable">新增座台</button>
+    <view wx:for="{{tables}}" wx:key="tableId" class="row">
+      <view class="row-title">{{item.name}} · {{item.capacity}}人</view>
+      <view class="muted">{{item.type}} · {{item.statusText}} · 消费 {{item.consumptionText}}</view>
+      <view class="btn-row">
+        <button size="mini" class="secondary" data-id="{{item.tableId}}" bindtap="occupyTable">开台占用</button>
+        <button size="mini" class="secondary" data-id="{{item.tableId}}" bindtap="disableTable">设为维护</button>
+      </view>
     </view>
   </view>
 

@@ -61,11 +61,13 @@ assert(customerJs.includes("/api/cart/items"), "customer page calls cart API");
 assert(customerJs.includes("/api/orders") && customerJs.includes("/pay"), "customer page calls order pay API");
 assert(customerJs.includes("/api/storage/") && customerJs.includes("pickup-requests"), "customer page calls pickup request API");
 assert(customerJs.includes("/api/reservations"), "customer page calls reservation API");
+assert(customerJs.includes("/cancel"), "customer page calls reservation cancel API");
 assert(customerJs.includes("/api/checkin"), "customer page calls checkin API");
 assert(customerJs.includes("/api/recharge"), "customer page calls recharge API");
 assert(customerJs.includes("/api/lottery/draw"), "customer page calls lottery API");
 assert(customerJs.includes("/api/leaderboard/points"), "customer page calls leaderboard API");
 assert(customerJs.includes("/api/coupons/"), "customer page calls coupon API");
+assert(customerJs.includes("/api/coupons/exchange"), "customer page calls coupon exchange API");
 assert(customerJs.includes("wx.scanCode"), "customer page uses WeChat scanCode");
 assert(customerJs.includes("wx.openLocation"), "customer page uses WeChat openLocation");
 assert(customerJs.includes("wx.makePhoneCall"), "customer page uses WeChat makePhoneCall");
@@ -74,6 +76,7 @@ assert(customerJs.includes("/api/lottery/records/") && customerJs.includes("rede
 
 const staffJs = await readFile(join(root, "miniprogram/pages/staff/staff.js"), "utf8");
 assert(staffJs.includes("/api/staff/storage"), "staff page calls storage create API");
+assert(staffJs.includes("/api/staff/login"), "staff page calls staff login API");
 assert(staffJs.includes("/confirm"), "staff page calls pickup confirm API");
 assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adjust API");
 assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code API");
@@ -87,6 +90,7 @@ assert(adminJs.includes("/refund"), "admin page calls refund API");
 assert(adminJs.includes("/transfer-storage"), "admin page calls transfer storage API");
 assert(adminJs.includes("/api/admin/stock/adjust"), "admin page calls stock adjust API");
 assert(adminJs.includes("/api/admin/stock-requests"), "admin page calls stock request workflow API");
+assert(adminJs.includes("/api/admin/storage/") && adminJs.includes("expire-handle"), "admin page calls expired storage handling API");
 assert(adminJs.includes("/api/admin/stock-ledgers"), "admin page calls stock ledger API");
 assert(adminJs.includes("/api/admin/categories"), "admin page calls category create API");
 assert(adminJs.includes("/api/admin/products") && adminJs.includes("createProduct"), "admin page supports product create API");
@@ -97,12 +101,14 @@ assert(adminJs.includes("/api/admin/consumption-records"), "admin page calls con
 assert(adminJs.includes("/api/admin/member-levels"), "admin page calls member level API");
 assert(adminJs.includes("/api/admin/lottery/"), "admin page calls lottery admin API");
 assert(adminJs.includes("/api/admin/scan-records"), "admin page calls scan records API");
+assert(adminJs.includes("/api/admin/tables"), "admin page calls table management API");
 assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind settings API");
 assert(adminJs.includes("/api/admin/system-settings"), "admin page calls system settings API");
 
 const dealerJs = await readFile(join(root, "miniprogram/pages/dealer/dealer.js"), "utf8");
 const dealerWxml = await readFile(join(root, "miniprogram/pages/dealer/dealer.wxml"), "utf8");
 assert(dealerJs.includes("/api/staff/blind-games"), "dealer page calls blind game API");
+assert(dealerJs.includes("/timer"), "dealer page calls blind timer API");
 assert(dealerWxml.includes("next_level"), "dealer page supports next level action");
 assert(dealerJs.includes("/api/admin/blind-settings"), "dealer page reads blind settings API");
 

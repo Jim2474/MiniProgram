@@ -6,6 +6,9 @@ Page({
     employees: [],
     employeeIndex: 0,
     selectedEmployee: {},
+    loginAccount: "anna",
+    loginPassword: "demo",
+    loginSession: null,
     products: [],
     storageSkuIndex: 0,
     selectedStorageSku: {},
@@ -82,6 +85,27 @@ Page({
     app.globalData.selectedEmployeeId = selectedEmployee.employeeId
     this.setData({ employeeIndex, selectedEmployee })
     await this.loadOrders()
+  },
+
+  onLoginAccount(event) {
+    this.setData({ loginAccount: event.detail.value })
+  },
+
+  onLoginPassword(event) {
+    this.setData({ loginPassword: event.detail.value })
+  },
+
+  async staffLogin() {
+    try {
+      const data = await request("/api/staff/login", { method: "POST", data: { account: this.data.loginAccount, password: this.data.loginPassword } })
+      const employeeIndex = Math.max(0, this.data.employees.findIndex((item) => item.employeeId === data.employee.employeeId))
+      app.globalData.selectedEmployeeId = data.employee.employeeId
+      this.setData({ selectedEmployee: data.employee, employeeIndex, loginSession: data.session })
+      wx.showToast({ title: "登录成功" })
+      await this.loadOrders()
+    } catch (error) {
+      showError(error)
+    }
   },
 
   onStoragePhone(event) {

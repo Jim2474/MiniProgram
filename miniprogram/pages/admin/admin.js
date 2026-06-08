@@ -9,6 +9,8 @@ Page({
     productKeyword: "",
     storage: [],
     reservations: [],
+    tables: [],
+    tableTypes: [],
     logs: [],
     stockRequests: [],
     stockLedgers: [],
@@ -29,6 +31,11 @@ Page({
       name: "气泡水",
       price: 18,
       stockQty: 12
+    },
+    tableForm: {
+      name: "B2 新桌",
+      type: "普通卡座",
+      capacity: 9
     }
   },
 
@@ -38,7 +45,7 @@ Page({
 
   async loadAll() {
     try {
-      await Promise.all([this.loadDashboard(), this.loadOrders(), this.loadProducts(), this.loadStorage(), this.loadReservations(), this.loadLogs(), this.loadV3Admin()])
+      await Promise.all([this.loadDashboard(), this.loadOrders(), this.loadProducts(), this.loadStorage(), this.loadReservations(), this.loadTables(), this.loadLogs(), this.loadV3Admin()])
     } catch (error) {
       showError(error)
     }
@@ -92,6 +99,14 @@ Page({
         statusText: statusText(item.status),
         reservationDate: item.reservationTime.slice(0, 16)
       }))
+    })
+  },
+
+  async loadTables() {
+    const data = await request("/api/admin/tables")
+    this.setData({
+      tables: data.tables.map((item) => ({ ...item, statusText: statusText(item.status), consumptionText: money(item.consumptionAmount) })),
+      tableTypes: data.tableTypes
     })
   },
 
@@ -295,6 +310,74 @@ Page({
     }
   }
 ,
+  async expireReservation(event) {
+    try {
+      await request(`/api/admin/reservations/${event.currentTarget.dataset.id}`, {
+        method: "PATCH",
+        data: { status: "expired", reason: "小程序后台标记失效" }
+      })
+      wx.showToast({ title: "已失效" })
+      await this.loadReservations()
+      await this.loadTables()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async handleExpiredStorage(event) {
+    try {
+      await request(`/api/admin/storage/${event.currentTarget.dataset.id}/expire-handle`, {
+        method: "POST",
+        data: { operatorId: "emp_admin", action: "dispose", note: "后台人工确认过期作废" }
+      })
+      wx.showToast({ title: "已处理" })
+      await this.loadStorage()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  onTableName(event) {
+    this.setData({ "tableForm.name": event.detail.value })
+  },
+
+  onTableCapacity(event) {
+    this.setData({ "tableForm.capacity": Number(event.detail.value || 1) })
+  },
+
+  async createTable() {
+    try {
+      await request("/api/admin/tables", { method: "POST", data: { ...this.data.tableForm, operatorId: "emp_admin" } })
+      wx.showToast({ title: "桌台已新增" })
+      await this.loadTables()
+      await this.loadDashboard()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async occupyTable(event) {
+    try {
+      await request(`/api/admin/tables/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status: "occupied", consumptionAmount: 388, reason: "后台开台" } })
+      wx.showToast({ title: "已开台" })
+      await this.loadTables()
+      await this.loadDashboard()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async disableTable(event) {
+    try {
+      await request(`/api/admin/tables/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status: "maintenance", reason: "后台维护" } })
+      wx.showToast({ title: "已维护" })
+      await this.loadTables()
+      await this.loadDashboard()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
   async createRechargeConfig() {
     try {
       await request("/api/admin/recharge-configs", { method: "POST", data: { amount: 300, giftAmount: 30 } })
