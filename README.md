@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V27
+# 德扑棋牌门店小程序 V28
 
 本仓库包含：
 
@@ -71,10 +71,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V27 验收状态
+## V28 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V28.md`
 - `docs/ACCEPTANCE-V27.md`
 - `docs/ACCEPTANCE-V26.md`
 - `docs/ACCEPTANCE-V25.md`
@@ -105,10 +106,18 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：144 项。
+- 后端业务自验收：147 项。
 - 小程序结构与 API 调用校验：123 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V28 新增能力
+
+- 微信支付回调 `/api/payments/wechat/notify` 支持微信支付 V3 请求头 RSA-SHA256 验签。
+- 支持使用 `WECHAT_PAY_API_V3_KEY` 对回调 `resource` 做 AES-256-GCM 解密。
+- 回调从解密交易通知读取订单号、微信交易号、交易状态和分单位金额。
+- 生产环境不允许 `signatureVerified` 测试字段绕过验签。
+- `.env.example` 补充微信支付平台证书和平台证书序列号配置。
 
 ## V27 新增能力
 

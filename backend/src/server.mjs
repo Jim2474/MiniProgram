@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { existsSync, createReadStream } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createSign, randomBytes } from "node:crypto";
+import { createDecipheriv, createSign, createVerify, randomBytes } from "node:crypto";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const rootDir = resolve(__dirname, "..");
@@ -27,9 +27,11 @@ const requiredWechatPayEnv = [
   "WECHAT_MCH_ID",
   "WECHAT_PAY_SERIAL_NO",
   "WECHAT_PAY_PRIVATE_KEY",
+  "WECHAT_PAY_API_V3_KEY",
+  "WECHAT_PAY_PLATFORM_CERTIFICATE",
   "WECHAT_PAY_NOTIFY_URL",
 ];
-const requiredWechatEnv = [...new Set([...requiredWechatLoginEnv, ...requiredWechatPayEnv, "WECHAT_PAY_API_V3_KEY"])];
+const requiredWechatEnv = [...new Set([...requiredWechatLoginEnv, ...requiredWechatPayEnv])];
 const deploymentChecks = () => {
   const missingWechatEnv = requiredWechatEnv.filter((key) => !process.env[key]);
   const missingWechatLoginEnv = requiredWechatLoginEnv.filter((key) => !process.env[key]);
@@ -142,6 +144,12 @@ function normalizePrivateKey(value) {
   return key;
 }
 
+function normalizeCertificate(value) {
+  const certificate = (value || "").replace(/\\n/g, "\n").trim();
+  if (!certificate) throw new HttpError(501, "微信支付回调缺少配置：WECHAT_PAY_PLATFORM_CERTIFICATE");
+  return certificate;
+}
+
 function createNonce() {
   return randomBytes(16).toString("hex");
 }
@@ -164,6 +172,57 @@ function buildWechatRequestPaymentParams(prepayId) {
   const packageValue = `prepay_id=${prepayId}`;
   const paySign = signRsaSha256(`${process.env.WECHAT_APPID}\n${timeStamp}\n${nonceStr}\n${packageValue}\n`);
   return { timeStamp, nonceStr, package: packageValue, signType: "RSA", paySign };
+}
+
+function verifyWechatPayNotifySignature(ctx) {
+  const timestamp = ctx.headers["wechatpay-timestamp"];
+  const nonce = ctx.headers["wechatpay-nonce"];
+  const signature = ctx.headers["wechatpay-signature"];
+  const serial = ctx.headers["wechatpay-serial"];
+  if (!timestamp || !nonce || !signature || !serial) throw new HttpError(400, "微信支付回调缺少验签请求头");
+  if (process.env.WECHAT_PAY_PLATFORM_SERIAL_NO && serial !== process.env.WECHAT_PAY_PLATFORM_SERIAL_NO) {
+    throw new HttpError(400, "微信支付平台证书序列号不匹配");
+  }
+  const message = `${timestamp}\n${nonce}\n${ctx.rawBody}\n`;
+  const verifier = createVerify("RSA-SHA256");
+  verifier.update(message);
+  verifier.end();
+  const ok = verifier.verify(normalizeCertificate(process.env.WECHAT_PAY_PLATFORM_CERTIFICATE), signature, "base64");
+  if (!ok) throw new HttpError(400, "微信支付回调验签失败");
+}
+
+function decryptWechatPayResource(resource) {
+  if (!resource?.ciphertext || !resource.nonce) throw new HttpError(400, "微信支付回调资源格式错误");
+  const apiKey = process.env.WECHAT_PAY_API_V3_KEY || "";
+  if (Buffer.byteLength(apiKey) !== 32) throw new HttpError(501, "微信支付 API V3 Key 必须为 32 字节");
+  const ciphertext = Buffer.from(resource.ciphertext, "base64");
+  const authTag = ciphertext.subarray(ciphertext.length - 16);
+  const data = ciphertext.subarray(0, ciphertext.length - 16);
+  const decipher = createDecipheriv("aes-256-gcm", Buffer.from(apiKey), Buffer.from(resource.nonce));
+  if (resource.associated_data) decipher.setAAD(Buffer.from(resource.associated_data));
+  decipher.setAuthTag(authTag);
+  const decrypted = Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
+  return JSON.parse(decrypted);
+}
+
+function resolveWechatPayNotify(body, ctx) {
+  if (body.signatureVerified && (mockWechatEnabled() || process.env.WECHAT_PAY_DRY_RUN === "true")) {
+    return {
+      orderId: body.orderId,
+      amount: Number(body.amount),
+      transactionId: body.transactionId || "",
+      verifiedBy: "trusted_test_flag",
+    };
+  }
+  verifyWechatPayNotifySignature(ctx);
+  const transaction = decryptWechatPayResource(body.resource);
+  return {
+    orderId: transaction.out_trade_no,
+    amount: Number(transaction.amount?.total || 0) / 100,
+    transactionId: transaction.transaction_id || "",
+    tradeState: transaction.trade_state,
+    verifiedBy: "wechat_pay_v3",
+  };
 }
 
 async function createWechatJsapiPrepay(order, user) {
@@ -924,11 +983,11 @@ function resolveVerificationCode(store, value) {
 async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
-  if (!chunks.length) return {};
+  if (!chunks.length) return { parsed: {}, raw: "" };
   const raw = Buffer.concat(chunks).toString("utf8");
-  if (!raw) return {};
+  if (!raw) return { parsed: {}, raw: "" };
   try {
-    return JSON.parse(raw);
+    return { parsed: JSON.parse(raw), raw };
   } catch {
     throw new HttpError(400, "请求体不是有效 JSON");
   }
@@ -1222,13 +1281,17 @@ function createRouter(store) {
     return { order: publicOrder(store, order), payment, paymentProvider: "mock_wechat" };
   });
 
-  add("POST", "/api/payments/wechat/notify", async (body) => {
-    if (!body.signatureVerified) throw new HttpError(501, "微信支付回调验签待接入");
-    const order = store.getOrder(body.orderId);
+  add("POST", "/api/payments/wechat/notify", async (body, _params, _query, ctx) => {
+    const notification = resolveWechatPayNotify(body, ctx);
+    if (notification.tradeState && notification.tradeState !== "SUCCESS") {
+      return { ok: true, ignored: true, tradeState: notification.tradeState };
+    }
+    const order = store.getOrder(notification.orderId);
     const payment = getOrCreatePayment(store, order, "wechat_pay");
     if (order.payStatus === "paid") return { ok: true, idempotent: true, order: publicOrder(store, order), payment };
-    if (Number(body.amount) !== order.amount) throw new HttpError(400, "支付回调金额不匹配");
-    markOrderPaid(store, order, payment, body.transactionId || `wx_${order.orderId}`, "微信支付回调确认");
+    if (Number(notification.amount) !== order.amount) throw new HttpError(400, "支付回调金额不匹配");
+    markOrderPaid(store, order, payment, notification.transactionId || `wx_${order.orderId}`, "微信支付回调确认");
+    payment.notifyVerifiedBy = notification.verifiedBy;
     await store.save();
     return { ok: true, order: publicOrder(store, order), payment };
   });
@@ -2532,12 +2595,13 @@ function createRouter(store) {
       if (route.method !== req.method) continue;
       const params = matchRoute(req.method, path, route.pattern);
       if (!params) continue;
-      const body = req.method === "GET" ? {} : await readBody(req);
+      const bodyData = req.method === "GET" ? { parsed: {}, raw: "" } : await readBody(req);
+      const body = bodyData.parsed;
       const previousRequest = requestQueue.catch(() => {});
       const operation = previousRequest.then(async () => {
         const roles = route.options.roles || defaultRolesForPath(path);
         if (roles) requireStaffAccess(store, req, roles);
-        const result = await route.handler(body, params, query);
+        const result = await route.handler(body, params, query, { req, rawBody: bodyData.raw, headers: req.headers });
         await store.save();
         return result;
       });

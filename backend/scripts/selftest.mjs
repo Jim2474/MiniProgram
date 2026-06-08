@@ -1,6 +1,6 @@
 import { rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import { generateKeyPairSync } from "node:crypto";
+import { createCipheriv, createSign, generateKeyPairSync, randomBytes } from "node:crypto";
 import { createApp } from "../src/server.mjs";
 
 const rootDir = resolve(new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
@@ -14,14 +14,37 @@ function assert(condition, message) {
 }
 
 async function request(baseUrl, path, options = {}) {
+  const body = options.rawBody !== undefined ? options.rawBody : options.body ? JSON.stringify(options.body) : undefined;
   const res = await fetch(`${baseUrl}${path}`, {
     method: options.method || "GET",
     headers: { "content-type": "application/json", ...(options.headers || {}) },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body,
   });
   const data = await res.json();
   if (!res.ok) throw new Error(`${path}: ${data.error || res.statusText}`);
   return data;
+}
+
+function signWechatPayBody(privateKey, timestamp, nonce, rawBody) {
+  const sign = createSign("RSA-SHA256");
+  sign.update(`${timestamp}\n${nonce}\n${rawBody}\n`);
+  sign.end();
+  return sign.sign(privateKey, "base64");
+}
+
+function encryptWechatPayResource(apiKey, plaintext) {
+  const nonce = randomBytes(12).toString("hex").slice(0, 12);
+  const associatedData = "transaction";
+  const cipher = createCipheriv("aes-256-gcm", Buffer.from(apiKey), Buffer.from(nonce));
+  cipher.setAAD(Buffer.from(associatedData));
+  const encrypted = Buffer.concat([cipher.update(JSON.stringify(plaintext), "utf8"), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  return {
+    algorithm: "AEAD_AES_256_GCM",
+    associated_data: associatedData,
+    nonce,
+    ciphertext: Buffer.concat([encrypted, authTag]).toString("base64"),
+  };
 }
 
 async function main() {
@@ -478,6 +501,8 @@ async function main() {
       "WECHAT_PAY_SERIAL_NO",
       "WECHAT_PAY_PRIVATE_KEY",
       "WECHAT_PAY_API_V3_KEY",
+      "WECHAT_PAY_PLATFORM_CERTIFICATE",
+      "WECHAT_PAY_PLATFORM_SERIAL_NO",
       "WECHAT_PAY_NOTIFY_URL",
       "WECHAT_LOGIN_DRY_RUN",
       "WECHAT_PAY_DRY_RUN",
@@ -519,7 +544,7 @@ async function main() {
         } catch (error) {
           notifyError = error.message;
         }
-        assert(notifyError.includes("微信支付回调验签待接入"), "微信支付回调未验签时拒绝处理");
+        assert(notifyError.includes("微信支付回调缺少验签请求头"), "微信支付回调未验签时拒绝处理");
         let unauthAdminError = "";
         try {
           await request(blockedBaseUrl, "/api/admin/dashboard");
@@ -554,12 +579,16 @@ async function main() {
       }
 
       const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+      const { privateKey: platformPrivateKey, publicKey: platformPublicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+      const apiV3Key = "0123456789abcdef0123456789abcdef";
       process.env.WECHAT_APPID = "wx_dryrun_appid";
       process.env.WECHAT_APP_SECRET = "dryrun_secret";
       process.env.WECHAT_MCH_ID = "1900000001";
       process.env.WECHAT_PAY_SERIAL_NO = "DRYRUNSERIAL";
       process.env.WECHAT_PAY_PRIVATE_KEY = privateKey.export({ type: "pkcs8", format: "pem" });
-      process.env.WECHAT_PAY_API_V3_KEY = "0123456789abcdef0123456789abcdef";
+      process.env.WECHAT_PAY_API_V3_KEY = apiV3Key;
+      process.env.WECHAT_PAY_PLATFORM_CERTIFICATE = platformPublicKey.export({ type: "spki", format: "pem" });
+      process.env.WECHAT_PAY_PLATFORM_SERIAL_NO = "PLATFORMSERIAL";
       process.env.WECHAT_PAY_NOTIFY_URL = "https://example.com/api/payments/wechat/notify";
       process.env.WECHAT_LOGIN_DRY_RUN = "true";
       process.env.WECHAT_PAY_DRY_RUN = "true";
@@ -584,13 +613,55 @@ async function main() {
         assert(prepay.order.payStatus === "unpaid", "微信预支付不会提前标记订单已支付");
         const dryProductsAfterPrepay = await request(dryRunBaseUrl, "/api/products");
         assert(dryProductsAfterPrepay.products.find((item) => item.skuId === "sku_bud").stockQty === dryBudBefore.stockQty, "微信预支付不会提前扣减库存");
-        const dryNotify = await request(dryRunBaseUrl, "/api/payments/wechat/notify", {
+        const dryNotifyByFlag = await request(dryRunBaseUrl, "/api/payments/wechat/notify", {
           method: "POST",
           body: { signatureVerified: true, orderId: dryOrder.order.orderId, amount: dryOrder.order.amount, transactionId: "wx_dryrun_tx" },
         });
+        assert(dryNotifyByFlag.order.payStatus === "paid" && dryNotifyByFlag.payment.notifyVerifiedBy === "trusted_test_flag", "dry-run 允许测试标记确认微信支付回调");
+        const dryProductsAfterNotifyByFlag = await request(dryRunBaseUrl, "/api/products");
+        assert(dryProductsAfterNotifyByFlag.products.find((item) => item.skuId === "sku_bud").stockQty === dryBudBefore.stockQty - 1, "dry-run 支付回调确认后扣减库存");
+
+        delete process.env.WECHAT_PAY_DRY_RUN;
+        await request(dryRunBaseUrl, "/api/cart/items", { method: "POST", body: { userId: wxUser.user.userId, skuId: "sku_bud", quantity: 1 } });
+        const signedOrder = await request(dryRunBaseUrl, "/api/orders", { method: "POST", body: { userId: wxUser.user.userId } });
+        let unverifiedNotifyError = "";
+        try {
+          await request(dryRunBaseUrl, "/api/payments/wechat/notify", {
+            method: "POST",
+            body: { signatureVerified: true, orderId: signedOrder.order.orderId, amount: signedOrder.order.amount, transactionId: "wx_unverified_tx" },
+          });
+        } catch (error) {
+          unverifiedNotifyError = error.message;
+        }
+        assert(unverifiedNotifyError.includes("微信支付回调缺少验签请求头"), "生产环境不允许 signatureVerified 绕过微信支付回调验签");
+        const notifyBody = {
+          id: "notify_test",
+          create_time: new Date().toISOString(),
+          event_type: "TRANSACTION.SUCCESS",
+          resource_type: "encrypt-resource",
+          summary: "支付成功",
+          resource: encryptWechatPayResource(apiV3Key, {
+            out_trade_no: signedOrder.order.orderId,
+            transaction_id: "wx_signed_tx",
+            trade_state: "SUCCESS",
+            amount: { total: Math.round(signedOrder.order.amount * 100), currency: "CNY" },
+          }),
+        };
+        const rawNotifyBody = JSON.stringify(notifyBody);
+        const notifyTimestamp = Math.floor(Date.now() / 1000).toString();
+        const notifyNonce = "notify-nonce";
+        const dryNotify = await request(dryRunBaseUrl, "/api/payments/wechat/notify", {
+          method: "POST",
+          rawBody: rawNotifyBody,
+          headers: {
+            "wechatpay-timestamp": notifyTimestamp,
+            "wechatpay-nonce": notifyNonce,
+            "wechatpay-serial": "PLATFORMSERIAL",
+            "wechatpay-signature": signWechatPayBody(platformPrivateKey, notifyTimestamp, notifyNonce, rawNotifyBody),
+          },
+        });
         assert(dryNotify.order.payStatus === "paid" && dryNotify.payment.status === "paid", "微信支付回调确认后订单进入已支付");
-        const dryProductsAfterNotify = await request(dryRunBaseUrl, "/api/products");
-        assert(dryProductsAfterNotify.products.find((item) => item.skuId === "sku_bud").stockQty === dryBudBefore.stockQty - 1, "微信支付回调确认后扣减库存");
+        assert(dryNotify.payment.wxTransactionId === "wx_signed_tx" && dryNotify.payment.notifyVerifiedBy === "wechat_pay_v3", "微信支付回调通过平台证书验签和资源解密");
       } finally {
         await new Promise((resolveClose) => dryRunServer.close(resolveClose));
         await rm(dryRunDataFile, { force: true });
