@@ -5,6 +5,14 @@
     <view class="subtitle">订单、库存、存酒、预约、员工业绩与操作日志集中管理。</view>
   </view>
 
+  <view class="section">
+    <view class="section-title">管理员登录</view>
+    <input class="input" value="{{loginAccount}}" bindinput="onLoginAccount" placeholder="管理员账号" />
+    <input class="input" password="true" value="{{loginPassword}}" bindinput="onLoginPassword" placeholder="密码" />
+    <button size="mini" class="primary" bindtap="adminLogin">登录后台</button>
+    <view wx:if="{{loginSession}}" class="muted">已登录后台会话 {{loginSession.sessionId}}</view>
+  </view>
+
   <view class="metrics">
     <view class="metric"><view class="metric-value">{{dashboard.todayRevenueText}}</view><view class="metric-label">今日营业额</view></view>
     <view class="metric"><view class="metric-value">{{dashboard.revenueDeltaText}}</view><view class="metric-label">较昨日营收</view></view>

@@ -1,7 +1,11 @@
 const { request, showError, money, statusText } = require("../../utils/api")
+const app = getApp()
 
 Page({
   data: {
+    loginAccount: "admin",
+    loginPassword: "demo",
+    loginSession: null,
     dashboard: {},
     staffSales: [],
     orders: [],
@@ -79,6 +83,28 @@ Page({
 
   onShow() {
     this.loadAll()
+  },
+
+  onLoginAccount(event) {
+    this.setData({ loginAccount: event.detail.value })
+  },
+
+  onLoginPassword(event) {
+    this.setData({ loginPassword: event.detail.value })
+  },
+
+  async adminLogin() {
+    try {
+      const data = await request("/api/staff/login", { method: "POST", data: { account: this.data.loginAccount, password: this.data.loginPassword } })
+      if (data.employee.role !== "admin") throw new Error("当前账号不是管理员")
+      app.globalData.staffSessionId = data.session.sessionId
+      app.globalData.selectedEmployeeId = data.employee.employeeId
+      this.setData({ loginSession: data.session })
+      wx.showToast({ title: "登录成功" })
+      await this.loadAll()
+    } catch (error) {
+      showError(error)
+    }
   },
 
   async loadAll() {

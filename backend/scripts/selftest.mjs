@@ -15,7 +15,7 @@ function assert(condition, message) {
 async function request(baseUrl, path, options = {}) {
   const res = await fetch(`${baseUrl}${path}`, {
     method: options.method || "GET",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...(options.headers || {}) },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
   const data = await res.json();
@@ -456,6 +456,24 @@ async function main() {
         prodLoginError = error.message;
       }
       assert(prodLoginError.includes("生产环境禁止使用模拟接口"), "生产环境未显式允许时拦截模拟微信登录");
+      let unauthAdminError = "";
+      try {
+        await request(blockedBaseUrl, "/api/admin/dashboard");
+      } catch (error) {
+        unauthAdminError = error.message;
+      }
+      assert(unauthAdminError.includes("请先登录员工账号"), "生产环境后台接口要求员工会话");
+      const staffSession = await request(blockedBaseUrl, "/api/staff/login", { method: "POST", body: { account: "anna", password: "demo" } });
+      let forbiddenAdminError = "";
+      try {
+        await request(blockedBaseUrl, "/api/admin/dashboard", { headers: { "x-staff-session": staffSession.session.sessionId } });
+      } catch (error) {
+        forbiddenAdminError = error.message;
+      }
+      assert(forbiddenAdminError.includes("无权限"), "普通员工会话不能访问后台接口");
+      const adminSession = await request(blockedBaseUrl, "/api/staff/login", { method: "POST", body: { account: "admin", password: "demo" } });
+      const authedDashboard = await request(blockedBaseUrl, "/api/admin/dashboard", { headers: { "x-staff-session": adminSession.session.sessionId } });
+      assert(typeof authedDashboard.todayRevenue === "number", "管理员会话可访问后台接口");
     } finally {
       await new Promise((resolveClose) => blockedServer.close(resolveClose));
       await rm(blockedDataFile, { force: true });

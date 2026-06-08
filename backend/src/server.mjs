@@ -19,10 +19,12 @@ const addDays = (days) => {
 };
 const currentAppEnv = () => process.env.APP_ENV || process.env.NODE_ENV || "development";
 const mockWechatEnabled = () => process.env.ALLOW_MOCK_WECHAT === "true" || currentAppEnv() !== "production";
+const authRequired = () => process.env.REQUIRE_AUTH === "true" || currentAppEnv() === "production";
 const runtimeInfo = () => ({
   appEnv: currentAppEnv(),
   mockWechatEnabled: mockWechatEnabled(),
   paymentProvider: mockWechatEnabled() ? "mock_wechat" : "wechat_pay_required",
+  authRequired: authRequired(),
 });
 function requireMockWechat(feature) {
   if (!mockWechatEnabled()) throw new HttpError(501, `${feature}需要接入真实微信能力，生产环境禁止使用模拟接口`);
@@ -698,7 +700,7 @@ function sendJson(res, status, value) {
     "content-type": "application/json; charset=utf-8",
     "access-control-allow-origin": "*",
     "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
-    "access-control-allow-headers": "content-type",
+    "access-control-allow-headers": "content-type,authorization,x-staff-session",
   });
   res.end(JSON.stringify(value));
 }
@@ -733,10 +735,45 @@ function matchRoute(method, path, pattern) {
   return params;
 }
 
+function sessionFromRequest(store, req) {
+  const headerValue = req.headers["x-staff-session"] || req.headers.authorization || "";
+  const token = String(Array.isArray(headerValue) ? headerValue[0] : headerValue).replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+  const session = store.data.staffSessions.find((item) => item.sessionId === token);
+  if (!session) throw new HttpError(401, "员工会话不存在或已失效");
+  if (new Date(session.expiresAt).getTime() < Date.now()) throw new HttpError(401, "员工会话已过期，请重新登录");
+  const employee = store.getEmployee(session.employeeId);
+  if (employee.status !== "active") throw new HttpError(403, "员工账号已停用");
+  return { session, employee };
+}
+
+function roleAllowed(employee, roles) {
+  if (!roles.length) return true;
+  if (employee.role === "admin") return true;
+  return roles.includes(employee.role);
+}
+
+function requireStaffAccess(store, req, roles = []) {
+  const auth = sessionFromRequest(store, req);
+  if (!auth) {
+    if (authRequired()) throw new HttpError(401, "请先登录员工账号");
+    return null;
+  }
+  if (!roleAllowed(auth.employee, roles)) throw new HttpError(403, "无权限访问该接口");
+  return auth;
+}
+
+function defaultRolesForPath(path) {
+  if (path === "/api/staff/login") return null;
+  if (path.startsWith("/api/admin/")) return ["admin"];
+  if (path.startsWith("/api/staff/")) return ["staff", "dealer", "admin"];
+  return null;
+}
+
 function createRouter(store) {
   const routes = [];
   let requestQueue = Promise.resolve();
-  const add = (method, pattern, handler) => routes.push({ method, pattern, handler });
+  const add = (method, pattern, handler, options = {}) => routes.push({ method, pattern, handler, options });
 
   add("GET", "/api/health", async () => ({ ok: true, time: now(), runtime: runtimeInfo() }));
   add("GET", "/api/bootstrap", async () => ({
@@ -2178,6 +2215,8 @@ function createRouter(store) {
       const body = req.method === "GET" ? {} : await readBody(req);
       const previousRequest = requestQueue.catch(() => {});
       const operation = previousRequest.then(async () => {
+        const roles = route.options.roles || defaultRolesForPath(path);
+        if (roles) requireStaffAccess(store, req, roles);
         const result = await route.handler(body, params, query);
         await store.save();
         return result;

@@ -130,6 +130,7 @@ Page({
       const data = await request("/api/staff/login", { method: "POST", data: { account: this.data.loginAccount, password: this.data.loginPassword } })
       const employeeIndex = Math.max(0, this.data.employees.findIndex((item) => item.employeeId === data.employee.employeeId))
       app.globalData.selectedEmployeeId = data.employee.employeeId
+      app.globalData.staffSessionId = data.session.sessionId
       this.setData({ selectedEmployee: data.employee, employeeIndex, loginSession: data.session })
       wx.showToast({ title: "登录成功" })
       await this.loadOrders()

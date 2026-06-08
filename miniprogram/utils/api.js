@@ -5,14 +5,18 @@ function baseUrl() {
 }
 
 function request(path, options = {}) {
+  const header = {
+    "content-type": "application/json"
+  }
+  if (app.globalData.staffSessionId) {
+    header["x-staff-session"] = app.globalData.staffSessionId
+  }
   return new Promise((resolve, reject) => {
     wx.request({
       url: `${baseUrl()}${path}`,
       method: options.method || "GET",
       data: options.data || {},
-      header: {
-        "content-type": "application/json"
-      },
+      header,
       success(res) {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data)

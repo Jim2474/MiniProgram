@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V21
+# 德扑棋牌门店小程序 V22
 
 本仓库包含：
 
@@ -25,6 +25,7 @@ http://localhost:3000
 APP_ENV=development  # 默认，允许本地模拟微信登录/支付/退款
 APP_ENV=production   # 默认禁止模拟微信能力
 ALLOW_MOCK_WECHAT=true  # 仅用于生产前沙箱演示，显式允许模拟微信能力
+REQUIRE_AUTH=true       # 开发/沙箱环境也强制后台和员工接口校验员工会话
 ```
 
 健康检查：
@@ -68,10 +69,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V21 验收状态
+## V22 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V22.md`
 - `docs/ACCEPTANCE-V21.md`
 - `docs/ACCEPTANCE-V20.md`
 - `docs/ACCEPTANCE-V19.md`
@@ -94,10 +96,18 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：116 项。
-- 小程序结构与 API 调用校验：111 项。
+- 后端业务自验收：119 项。
+- 小程序结构与 API 调用校验：115 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V22 新增能力
+
+- 健康检查返回 `authRequired`，生产环境默认强制后台/员工接口鉴权。
+- 后端支持 `x-staff-session` / `Authorization: Bearer` 员工会话校验。
+- `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
+- 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
+- 后台端新增管理员登录入口。
 
 ## V21 新增能力
 

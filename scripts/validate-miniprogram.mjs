@@ -48,6 +48,7 @@ assert(projectConfig.miniprogramRoot === "./", "miniprogram root configured");
 const apiSource = await readFile(join(root, "miniprogram/utils/api.js"), "utf8");
 assert(apiSource.includes("http://localhost:3000"), "api util points to local backend");
 assert(apiSource.includes("wx.request"), "api util uses wx.request");
+assert(apiSource.includes("x-staff-session") && apiSource.includes("staffSessionId"), "api util sends staff session header");
 
 for (const page of ["customer", "staff", "admin", "dealer"]) {
   const js = await readFile(join(root, `miniprogram/pages/${page}/${page}.js`), "utf8");
@@ -86,6 +87,7 @@ const staffJs = await readFile(join(root, "miniprogram/pages/staff/staff.js"), "
 const staffWxml = await readFile(join(root, "miniprogram/pages/staff/staff.wxml"), "utf8");
 assert(staffJs.includes("/api/staff/storage"), "staff page calls storage create API");
 assert(staffJs.includes("/api/staff/login"), "staff page calls staff login API");
+assert(staffJs.includes("app.globalData.staffSessionId = data.session.sessionId"), "staff page stores staff session after login");
 assert(staffJs.includes("/api/staff/performance/monthly"), "staff page calls monthly performance API");
 assert(staffJs.includes("commissionText") && staffWxml.includes("预估提成"), "staff page displays commission amount");
 assert(staffJs.includes("/api/staff/employees/") && staffJs.includes("/order-qr"), "staff page calls employee order QR API");
@@ -102,6 +104,8 @@ assert(!staffJs.includes("/api/staff/lottery-records/") && !staffJs.includes("/a
 const adminJs = await readFile(join(root, "miniprogram/pages/admin/admin.js"), "utf8");
 const adminWxml = await readFile(join(root, "miniprogram/pages/admin/admin.wxml"), "utf8");
 assert(adminJs.includes("/api/admin/dashboard"), "admin page calls dashboard API");
+assert(adminJs.includes("/api/staff/login") && adminWxml.includes("管理员登录"), "admin page supports admin login");
+assert(adminJs.includes("app.globalData.staffSessionId = data.session.sessionId"), "admin page stores admin session after login");
 assert(adminJs.includes("staffSales") && adminWxml.includes("员工销售提成"), "admin page displays staff sales commissions");
 assert(adminJs.includes("/refund"), "admin page calls refund API");
 assert(adminJs.includes("/transfer-storage"), "admin page calls transfer storage API");
