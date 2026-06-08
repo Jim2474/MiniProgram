@@ -65,7 +65,7 @@
   </view>
 
   <view class="section">
-    <view class="section-title">出入库申请与流水</view>
+    <view class="section-title">两套账：库存与存酒</view>
     <view wx:for="{{stockRequests}}" wx:key="requestId" class="row">
       <view class="row-title">{{item.directionText}} · {{item.product.name}} x {{item.quantity}}</view>
       <view class="muted">{{item.statusText}} · {{item.reason}}</view>
@@ -74,9 +74,21 @@
         <button size="mini" class="secondary" data-id="{{item.requestId}}" bindtap="rejectStockRequest">驳回</button>
       </view>
     </view>
+    <view class="row">
+      <view class="row-title">商家库存流水</view>
+      <view class="muted">记录采购入库、销售扣减、退款恢复、盘点调整和出库。</view>
+    </view>
     <view wx:for="{{stockLedgers}}" wx:key="ledgerId" class="row">
       <view class="row-title">{{item.product.name}} · {{item.changeType}}</view>
       <view class="muted">变动 {{item.changeQty}} · 库存 {{item.stockAfter}} · {{item.reason}}</view>
+    </view>
+    <view class="row">
+      <view class="row-title">客户存酒流水</view>
+      <view class="muted">记录订单转存、手工存酒、取酒核销和过期人工处理。</view>
+    </view>
+    <view wx:for="{{storageLedgers}}" wx:key="ledgerId" class="row">
+      <view class="row-title">{{item.userPhone}} · {{item.productName}} · {{item.actionType}}</view>
+      <view class="muted">变动 {{item.changeQty}} · 存酒余量 {{item.quantityAfter}} · {{item.reason}}</view>
     </view>
   </view>
 

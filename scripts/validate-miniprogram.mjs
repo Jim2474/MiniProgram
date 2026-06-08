@@ -98,6 +98,7 @@ assert(adminJs.includes("/api/admin/stock/adjust"), "admin page calls stock adju
 assert(adminJs.includes("/api/admin/stock-requests"), "admin page calls stock request workflow API");
 assert(adminJs.includes("/api/admin/storage/") && adminJs.includes("expire-handle"), "admin page calls expired storage handling API");
 assert(adminJs.includes("/api/admin/stock-ledgers"), "admin page calls stock ledger API");
+assert(adminJs.includes("/api/admin/storage-ledgers") && adminJs.includes("storageLedgers"), "admin page calls customer storage ledger API");
 assert(adminJs.includes("/api/admin/categories"), "admin page calls category create API");
 assert(adminJs.includes("/api/admin/categories/"), "admin page calls category update API");
 assert(adminJs.includes("/api/admin/products") && adminJs.includes("createProduct"), "admin page supports product create API");

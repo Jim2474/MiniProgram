@@ -86,6 +86,8 @@ async function main() {
       body: { skuId: "sku_whisky", quantity: 1, operatorId: "emp_admin" },
     });
     assert(transfer.storage.quantity === 1 && transfer.storage.status === "available", "订单转存生成客户存酒");
+    const storageLedgerAfterTransfer = await request(baseUrl, `/api/admin/storage-ledgers?storageId=${transfer.storage.storageId}`);
+    assert(storageLedgerAfterTransfer.ledgers.some((ledger) => ledger.actionType === "from_order" && ledger.product.skuId === "sku_whisky" && ledger.user.userId === "user_demo"), "客户存酒账记录订单转存入账");
 
     const pickup = await request(baseUrl, `/api/storage/${transfer.storage.storageId}/pickup-requests`, {
       method: "POST",
@@ -98,6 +100,8 @@ async function main() {
       body: { operatorId: "emp_anna" },
     });
     assert(confirmedPickup.storage.quantity === 0 && confirmedPickup.storage.status === "empty", "员工确认取酒后扣减客户存酒");
+    const storageLedgerAfterPickup = await request(baseUrl, `/api/admin/storage-ledgers?storageId=${transfer.storage.storageId}&actionType=pickup_confirm`);
+    assert(storageLedgerAfterPickup.ledgers.length === 1 && storageLedgerAfterPickup.ledgers[0].quantityAfter === 0, "客户存酒账记录取酒确认出账");
 
     const reservation = await request(baseUrl, "/api/reservations", {
       method: "POST",
@@ -291,6 +295,9 @@ async function main() {
     const stockOutRequest = await request(baseUrl, "/api/admin/stock-requests", { method: "POST", body: { skuId: product.product.skuId, direction: "out", quantity: 2, operatorId: "emp_admin" } });
     const stockOutConfirm = await request(baseUrl, `/api/admin/stock-requests/${stockOutRequest.request.requestId}/confirm`, { method: "POST", body: { operatorId: "emp_admin" } });
     assert(stockOutConfirm.product.stockQty === 8 && stockOutConfirm.ledger.changeType === "stock_out", "确认出库后写入库存账");
+    const stockLedgerQuery = await request(baseUrl, "/api/admin/stock-ledgers");
+    const storageLedgerQuery = await request(baseUrl, "/api/admin/storage-ledgers");
+    assert(stockLedgerQuery.ledgers.some((ledger) => ledger.changeType === "stock_out") && storageLedgerQuery.ledgers.some((ledger) => ledger.actionType === "pickup_confirm"), "后台可分别查询商家库存账和客户存酒账");
     const rejectRequest = await request(baseUrl, "/api/admin/stock-requests", { method: "POST", body: { skuId: product.product.skuId, direction: "in", quantity: 1, operatorId: "emp_admin" } });
     const rejectedRequest = await request(baseUrl, `/api/admin/stock-requests/${rejectRequest.request.requestId}/reject`, { method: "POST", body: { operatorId: "emp_admin", reason: "单据错误" } });
     assert(rejectedRequest.request.status === "rejected", "出入库申请可驳回");
@@ -314,6 +321,8 @@ async function main() {
       body: { operatorId: "emp_admin", action: "dispose", note: "过期人工确认作废" },
     });
     assert(handledExpiredStorage.storage.status === "disposed" && handledExpiredStorage.storage.quantity === 0, "后台可人工确认处理过期存酒");
+    const storageLedgerAfterExpired = await request(baseUrl, `/api/admin/storage-ledgers?storageId=${expiredStorage.storage.storageId}&actionType=expired_dispose`);
+    assert(storageLedgerAfterExpired.ledgers.length === 1 && storageLedgerAfterExpired.ledgers[0].reason.includes("过期人工确认"), "客户存酒账记录过期人工处理");
 
     const employee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "新员工", phone: "13900009999", role: "staff" } });
     assert(employee.employee.status === "active" && !("passwordHash" in employee.employee), "后台可新增工作人员且不返回密码字段");

@@ -26,6 +26,7 @@ Page({
     logs: [],
     stockRequests: [],
     stockLedgers: [],
+    storageLedgers: [],
     finance: {},
     businessDetails: [],
     rechargeConfigs: [],
@@ -164,7 +165,7 @@ Page({
   },
 
   async loadV3Admin() {
-    const [finance, business, recharge, rechargeRecords, consumptionRecords, levels, pointsConfig, lotteryOverview, lotteryPrizes, stockRequests, stockLedgers, scanRecords, system, blind] = await Promise.all([
+    const [finance, business, recharge, rechargeRecords, consumptionRecords, levels, pointsConfig, lotteryOverview, lotteryPrizes, stockRequests, stockLedgers, storageLedgers, scanRecords, system, blind] = await Promise.all([
       request("/api/admin/finance/overview"),
       request("/api/admin/business-details"),
       request("/api/admin/recharge-configs"),
@@ -176,6 +177,7 @@ Page({
       request("/api/admin/lottery/prizes"),
       request("/api/admin/stock-requests"),
       request("/api/admin/stock-ledgers"),
+      request("/api/admin/storage-ledgers"),
       request("/api/admin/scan-records"),
       request("/api/admin/system-settings"),
       request("/api/admin/blind-settings")
@@ -198,6 +200,7 @@ Page({
       lotterySettings: lotteryPrizes.settings,
       stockRequests: stockRequests.requests.map((item) => ({ ...item, statusText: statusText(item.status), directionText: item.direction === "in" ? "入库" : "出库" })),
       stockLedgers: stockLedgers.ledgers.slice(0, 8),
+      storageLedgers: storageLedgers.ledgers.slice(0, 8).map((item) => ({ ...item, productName: item.product ? item.product.name : item.skuId, userPhone: item.user ? item.user.phone : item.userId })),
       scanRecords: scanRecords.records.slice(0, 8),
       systemSettings: system.settings,
       blindSettings: blind.settings,
