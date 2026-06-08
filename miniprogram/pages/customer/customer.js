@@ -17,6 +17,7 @@ Page({
     historyOrders: [],
     points: { balance: 0, ledgers: [] },
     pointsVisible: true,
+    checkinEnabled: true,
     storage: [],
     storageLedgers: [],
     pickupRecords: [],
@@ -172,6 +173,7 @@ Page({
         displayPhone: isLoggedIn && profile.user.phone ? profile.user.phone : "待绑定"
       },
       pointsVisible: profile.pointsVisible !== false,
+      checkinEnabled: profile.pointsVisible !== false && checkin.settings?.enabled !== false,
       isLoggedIn,
       currentUserId: profile.user.userId,
       loginPhone: profile.user.phone || this.data.loginPhone,

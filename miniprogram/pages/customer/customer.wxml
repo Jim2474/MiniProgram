@@ -75,7 +75,7 @@
     </view>
     <view class="row">
       <view class="row-title">合计：{{cartTotalText}}</view>
-      <view class="muted">预计赠送 {{cartTotal}} 积分</view>
+      <view wx:if="{{pointsVisible}}" class="muted">预计赠送 {{cartTotal}} 积分</view>
     </view>
     <view class="btn-row">
       <button class="primary" bindtap="createOrder">创建订单</button>
@@ -144,16 +144,16 @@
 
   <view class="section">
     <view class="section-title">会员营销</view>
-    <view class="metrics">
+    <view wx:if="{{pointsVisible}}" class="metrics">
       <view class="metric">
         <view class="metric-value">{{profile.levelName}}</view>
         <view class="metric-label">会员等级</view>
       </view>
     </view>
-    <view class="btn-row">
+    <view wx:if="{{checkinEnabled}}" class="btn-row">
       <button size="mini" class="primary" bindtap="checkin">签到送积分</button>
     </view>
-    <view class="row">
+    <view wx:if="{{checkinEnabled}}" class="row">
       <view class="row-title">签到记录</view>
       <view class="checkin-calendar">
         <view wx:for="{{checkinCalendar}}" wx:key="date" class="checkin-day {{item.signed ? 'signed' : ''}} {{item.isToday ? 'today' : ''}}">{{item.day}}</view>

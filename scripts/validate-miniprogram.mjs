@@ -71,6 +71,7 @@ assert(customerJs.includes("isLoggedIn") && customerJs.includes("customerLoggedI
 assert(customerJs.includes("/api/user/bind-phone"), "customer page calls bind phone API");
 assert(customerWxml.includes('open-type="getPhoneNumber"') && customerJs.includes("bindWechatPhone") && customerJs.includes("event.detail.code"), "customer page supports WeChat phone authorization code");
 assert(customerJs.includes("pointsVisible: profile.pointsVisible !== false") && customerWxml.includes('wx:if="{{pointsVisible}}"') && customerWxml.includes("<text wx:if=\"{{pointsVisible}}\">· 赠送"), "customer page respects backend points visibility setting");
+assert(customerJs.includes("checkinEnabled: profile.pointsVisible !== false && checkin.settings?.enabled !== false") && customerWxml.includes('wx:if="{{checkinEnabled}}"') && customerWxml.includes("预计赠送 {{cartTotal}} 积分"), "customer page hides checkin and projected points when points are disabled");
 assert(customerJs.includes("/api/orders") && customerJs.includes("/pay"), "customer page calls order pay API");
 assert(customerJs.includes("wx.requestPayment") && customerJs.includes("data.prepay"), "customer page can invoke WeChat requestPayment from prepay params");
 assert(customerWxml.includes("微信支付"), "customer page labels WeChat pay action");
