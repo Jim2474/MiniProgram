@@ -102,9 +102,15 @@ Page({
       phone: "13900009999",
       loginAccount: "newstaff",
       password: "demo123",
+      roleIndex: 0,
       role: "staff",
       commissionRate: 0.05
     },
+    employeeRoleOptions: [
+      { label: "员工", value: "staff" },
+      { label: "荷官", value: "dealer" },
+      { label: "库房", value: "warehouse" }
+    ],
     blindSettings: {},
     blindForm: {
       theme: "classic",
@@ -359,6 +365,7 @@ Page({
       scanRecords: scanRecords.records.slice(0, 8),
       employees: employees.employees.map((item) => ({
         ...item,
+        roleLabel: this.employeeRoleLabel(item.role),
         statusText: statusText(item.status),
         commissionRateText: `${Math.round((item.commissionRate || 0) * 10000) / 100}%`,
         deletedText: item.deletedAt ? item.deletedAt.slice(0, 16) : "未删除"
@@ -1072,8 +1079,15 @@ Page({
     this.setData({ "employeeForm.password": event.detail.value })
   },
 
-  onEmployeeRole(event) {
-    this.setData({ "employeeForm.role": event.detail.value })
+  onEmployeeRoleChange(event) {
+    const roleIndex = Number(event.detail.value || 0)
+    const role = this.data.employeeRoleOptions[roleIndex] || this.data.employeeRoleOptions[0]
+    this.setData({ "employeeForm.roleIndex": roleIndex, "employeeForm.role": role.value })
+  },
+
+  employeeRoleLabel(role) {
+    const option = this.data.employeeRoleOptions.find((item) => item.value === role)
+    return option ? option.label : role
   },
 
   onEmployeeCommissionRate(event) {

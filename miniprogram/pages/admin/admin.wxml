@@ -335,13 +335,15 @@
       <input class="input" value="{{employeeForm.phone}}" bindinput="onEmployeePhone" placeholder="员工手机号" />
       <input class="input" value="{{employeeForm.loginAccount}}" bindinput="onEmployeeLoginAccount" placeholder="登录账号" />
       <input class="input" password="true" value="{{employeeForm.password}}" bindinput="onEmployeePassword" placeholder="初始密码" />
-      <input class="input" value="{{employeeForm.role}}" bindinput="onEmployeeRole" placeholder="角色 staff/dealer/warehouse" />
+      <picker mode="selector" range="{{employeeRoleOptions}}" range-key="label" value="{{employeeForm.roleIndex}}" bindchange="onEmployeeRoleChange">
+        <view class="input">岗位角色：{{employeeRoleOptions[employeeForm.roleIndex].label}}</view>
+      </picker>
       <input class="input" type="digit" value="{{employeeForm.commissionRate}}" bindinput="onEmployeeCommissionRate" placeholder="提成率，如 0.05" />
       <input class="input" value="{{operationForm.employeeDeleteReason}}" data-field="employeeDeleteReason" bindinput="onOperationReason" placeholder="删除/停用员工原因" />
       <button size="mini" class="primary" bindtap="createEmployee">新增员工</button>
     </view>
     <view wx:for="{{employees}}" wx:key="employeeId" class="row">
-      <view class="row-title">{{item.name}} · {{item.role}}</view>
+      <view class="row-title">{{item.name}} · {{item.roleLabel}}</view>
       <view class="muted">{{item.phone}} · {{item.loginAccount}} · {{item.statusText}} · 提成 {{item.commissionRateText}} · 删除 {{item.deletedText}}</view>
       <view class="btn-row">
         <button size="mini" class="secondary" data-id="{{item.employeeId}}" data-status="{{item.status}}" bindtap="toggleEmployee">启停员工</button>

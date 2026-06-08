@@ -486,13 +486,17 @@ async function main() {
 
     const employee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "新员工", phone: "13900009999", role: "staff", commissionRate: 0.06 } });
     assert(employee.employee.status === "active" && employee.employee.commissionRate === 0.06 && !("passwordHash" in employee.employee), "后台可新增工作人员并配置提成且不返回密码字段");
+    await expectHttpError(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "非法岗位", phone: "13900007777", role: "admin" } }, 400, "员工岗位不支持");
     assert(store.data.employees.find((item) => item.employeeId === employee.employee.employeeId).passwordHash.startsWith("scrypt$"), "后台新增员工密码以强哈希形式保存");
     const employeesList = await request(baseUrl, "/api/admin/employees");
     assert(employeesList.employees.every((item) => !("passwordHash" in item)), "后台人员列表不暴露密码字段");
-    const disabledEmployee = await request(baseUrl, `/api/admin/employees/${employee.employee.employeeId}`, { method: "PATCH", body: { status: "disabled", resetPassword: "123456", passwordHash: "malicious-raw" } });
+    const disabledEmployee = await request(baseUrl, `/api/admin/employees/${employee.employee.employeeId}`, { method: "PATCH", body: { status: "disabled", role: "dealer", resetPassword: "123456", passwordHash: "malicious-raw", operatorId: "emp_admin" } });
     assert(disabledEmployee.employee.status === "disabled" && !("passwordHash" in disabledEmployee.employee), "后台可禁用员工并重置密码但不返回密码字段");
     const disabledStoredEmployee = store.data.employees.find((item) => item.employeeId === employee.employee.employeeId);
     assert(disabledStoredEmployee.passwordHash.startsWith("scrypt$") && disabledStoredEmployee.passwordHash !== "123456" && disabledStoredEmployee.passwordHash !== "malicious-raw", "后台重置密码不会保存明文或接受 passwordHash 覆盖");
+    assert(disabledStoredEmployee.role === "dealer" && !("operatorId" in disabledStoredEmployee), "后台员工更新仅写入允许字段并支持岗位调整");
+    await expectHttpError(baseUrl, `/api/admin/employees/${employee.employee.employeeId}`, { method: "PATCH", body: { role: "boss" } }, 400, "员工岗位不支持");
+    await expectHttpError(baseUrl, "/api/admin/employees/emp_admin", { method: "PATCH", body: { role: "staff" } }, 400, "管理员岗位不能修改");
     const deletableEmployee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "待删除员工", phone: "13900008888", role: "staff", operatorId: "emp_admin" } });
     const deletedEmployee = await request(baseUrl, `/api/admin/employees/${deletableEmployee.employee.employeeId}`, { method: "DELETE", body: { operatorId: "emp_admin", reason: "验收删除工作人员" } });
     assert(deletedEmployee.employee.status === "disabled" && deletedEmployee.employee.deletedAt && !("passwordHash" in deletedEmployee.employee), "后台可软删除工作人员并脱敏返回");

@@ -34,6 +34,7 @@ const requiredWechatPayEnv = [
   "WECHAT_PAY_PLATFORM_CERTIFICATE",
   "WECHAT_PAY_NOTIFY_URL",
 ];
+const assignableEmployeeRoles = ["staff", "dealer", "warehouse"];
 const requiredWechatEnv = [...new Set([...requiredWechatLoginEnv, ...requiredWechatPayEnv])];
 const deploymentChecks = () => {
   const missingWechatEnv = requiredWechatEnv.filter((key) => !process.env[key]);
@@ -1180,6 +1181,12 @@ function publicEmployee(employee) {
   if (!employee) return null;
   const { passwordHash: _passwordHash, resetPassword: _resetPassword, ...safe } = employee;
   return safe;
+}
+
+function normalizedAssignableEmployeeRole(role) {
+  const value = role || "staff";
+  if (!assignableEmployeeRoles.includes(value)) throw new HttpError(400, "员工岗位不支持");
+  return value;
 }
 
 async function employeeOrderQr(employee) {
@@ -3007,7 +3014,7 @@ function createRouter(store) {
     return { table: publicTable(store, table) };
   });
   add("POST", "/api/admin/employees", async (body) => {
-    const employee = { employeeId: newId("emp"), merchantId: store.data.settings.merchantId, storeId: store.data.settings.storeId, name: body.name, phone: body.phone, role: body.role || "staff", loginAccount: body.loginAccount || body.phone, passwordHash: hashPassword(body.password || "demo"), commissionRate: Number(body.commissionRate ?? 0.05), status: "active", createdAt: now() };
+    const employee = { employeeId: newId("emp"), merchantId: store.data.settings.merchantId, storeId: store.data.settings.storeId, name: body.name, phone: body.phone, role: normalizedAssignableEmployeeRole(body.role), loginAccount: body.loginAccount || body.phone, passwordHash: hashPassword(body.password || "demo"), commissionRate: Number(body.commissionRate ?? 0.05), status: "active", createdAt: now() };
     store.data.employees.push(employee);
     store.log(body.operatorId || "emp_admin", "admin", "create_employee", "Employee", employee.employeeId, null, employee, "新增工作人员");
     await store.save();
@@ -3016,8 +3023,12 @@ function createRouter(store) {
   add("PATCH", "/api/admin/employees/:employeeId", async (body, params) => {
     const employee = store.getEmployee(params.employeeId);
     const before = deepClone(employee);
-    const { resetPassword: _resetPassword, passwordHash: _passwordHash, ...updates } = body;
-    Object.assign(employee, updates);
+    if (body.role !== undefined && employee.role === "admin") throw new HttpError(400, "管理员岗位不能修改");
+    if (body.name !== undefined) employee.name = body.name;
+    if (body.phone !== undefined) employee.phone = body.phone;
+    if (body.loginAccount !== undefined) employee.loginAccount = body.loginAccount;
+    if (body.status !== undefined) employee.status = body.status;
+    if (body.role !== undefined) employee.role = normalizedAssignableEmployeeRole(body.role);
     if (body.commissionRate !== undefined) employee.commissionRate = Number(body.commissionRate);
     if (body.resetPassword) {
       employee.passwordHash = hashPassword(body.resetPassword);
