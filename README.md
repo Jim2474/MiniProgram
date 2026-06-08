@@ -78,6 +78,7 @@ node scripts/validate-miniprogram.mjs
 验收记录：
 
 - `docs/ACCEPTANCE-V71.md`
+- `docs/REQUIREMENTS-AUDIT-V71.md`
 - `docs/ACCEPTANCE-V70.md`
 - `docs/ACCEPTANCE-V69.md`
 - `docs/ACCEPTANCE-V68.md`
@@ -287,6 +288,7 @@ node scripts/validate-miniprogram.mjs
 - 后台新增/编辑 SKU 会记录创建时间和更新时间。
 - 后台 SKU 列表展示状态和上架/创建时间，对齐 Excel 中商品列表需显示状态、上架时间等字段。
 - 自动验收覆盖 SKU 时间字段和后台列表展示。
+- 新增 V71 需求审计矩阵，同步 V61-V71 迭代后的 Excel 覆盖证据。
 
 ## V70 新增能力
 
