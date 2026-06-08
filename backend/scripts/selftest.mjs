@@ -269,6 +269,8 @@ async function main() {
       method: "POST",
       body: { operatorId: "emp_dealer", initialPlayers: 3, smallBlind: 1, bigBlind: 2 },
     });
+    const startTimer = await request(baseUrl, `/api/staff/blind-games/${headsUpGame.game.gameId}/timer`);
+    assert(startTimer.timer.latestEvents.some((event) => event.eventType === "start" && event.message.includes("开始")), "荷官创建本局时生成开始语音事件");
     await request(baseUrl, `/api/staff/blind-games/${headsUpGame.game.gameId}`, {
       method: "PATCH",
       body: { action: "eliminate", operatorId: "emp_dealer" },
@@ -281,6 +283,7 @@ async function main() {
     });
     const championTimer = await request(baseUrl, `/api/staff/blind-games/${headsUpGame.game.gameId}/timer`);
     assert(championTimer.game.currentPlayers === 1 && championTimer.timer.latestEvents.some((event) => event.eventType === "champion" && event.message.includes("冠军产生")), "荷官淘汰到剩余1人时提示冠军产生");
+    assert(championTimer.timer.latestEvents.some((event) => event.eventType === "end" && event.message.includes("结束")), "冠军产生时生成结束语音事件");
     const silentHeadsUpGame = await request(baseUrl, "/api/staff/blind-games", {
       method: "POST",
       body: { operatorId: "emp_dealer", initialPlayers: 3, smallBlind: 1, bigBlind: 2, voiceEnabled: false },
@@ -630,6 +633,8 @@ async function main() {
       method: "POST",
       body: { operatorId: "emp_dealer", intervalMinutes: 10, initialPlayers: 9, buyinAmount: 100 },
     });
+    const customStartTimer = await request(baseUrl, `/api/staff/blind-games/${customGame.game.gameId}/timer`);
+    assert(customStartTimer.timer.latestEvents.some((event) => event.eventType === "start" && event.message === "比赛开始"), "自定义开始语音文案用于本局开始事件");
     const customNext = await request(baseUrl, `/api/staff/blind-games/${customGame.game.gameId}`, { method: "PATCH", body: { action: "next_level", operatorId: "emp_dealer" } });
     assert(customNext.game.smallBlind === 3 && customNext.game.bigBlind === 6 && customNext.game.ante === 1, "荷官升盲按后台自定义规则序列推进");
 

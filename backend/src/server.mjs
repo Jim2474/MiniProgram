@@ -1344,6 +1344,22 @@ function createVoiceEvent(store, game, eventType, message) {
   return event;
 }
 
+function blindVoiceText(store, key, fallback) {
+  const settings = store.data.blindSettings || {};
+  const value = settings[key];
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function createBlindStartEvent(store, game) {
+  if (!game.voiceEnabled) return null;
+  return createVoiceEvent(store, game, "start", blindVoiceText(store, "voiceStartText", "比赛开始"));
+}
+
+function createBlindEndEvent(store, game) {
+  if (!game.voiceEnabled) return null;
+  return createVoiceEvent(store, game, "end", blindVoiceText(store, "voiceEndText", "本局结束"));
+}
+
 function maybeCreateHeadsUpEvent(store, game, beforePlayers) {
   if (game.voiceEnabled && beforePlayers > 2 && game.currentPlayers === 2) {
     return createVoiceEvent(store, game, "heads_up", "剩余2人，进入单挑阶段");
@@ -1353,7 +1369,9 @@ function maybeCreateHeadsUpEvent(store, game, beforePlayers) {
 
 function maybeCreateChampionEvent(store, game, beforePlayers) {
   if (game.voiceEnabled && beforePlayers > 1 && game.currentPlayers === 1) {
-    return createVoiceEvent(store, game, "champion", "剩余1人，冠军产生");
+    const champion = createVoiceEvent(store, game, "champion", "剩余1人，冠军产生");
+    createBlindEndEvent(store, game);
+    return champion;
   }
   return null;
 }
@@ -2417,6 +2435,7 @@ function createRouter(store) {
       updatedAt: now(),
     };
     store.data.blindGames.unshift(game);
+    createBlindStartEvent(store, game);
     store.log(employee.employeeId, employee.role, "create_blind_game", "BlindGame", game.gameId, null, game, "创建升盲游戏");
     await store.save();
     return { game };
@@ -2445,6 +2464,7 @@ function createRouter(store) {
       game.levelStartedAt = now();
       game.remainingSecondsOverride = null;
       game.lastVoiceMarks = [];
+      createBlindStartEvent(store, game);
     }
     if (action === "eliminate") {
       const beforePlayers = game.currentPlayers;

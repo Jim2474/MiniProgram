@@ -73,10 +73,12 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V90 验收状态
+## V91 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V91.md`
+- `docs/REQUIREMENTS-AUDIT-V91.md`
 - `docs/ACCEPTANCE-V90.md`
 - `docs/REQUIREMENTS-AUDIT-V90.md`
 - `docs/ACCEPTANCE-V89.md`
@@ -187,10 +189,17 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：232 项。
+- 后端业务自验收：235 项。
 - 小程序结构与 API 调用校验：206 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V91 新增能力
+
+- 创建升盲本局时生成 `start` 语音事件。
+- 重开本局时重新生成 `start` 语音事件。
+- 冠军产生时生成 `end` 语音事件。
+- 开始/结束事件使用后台配置的自定义语音文案。
 
 ## V90 新增能力
 
