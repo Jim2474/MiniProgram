@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V49
+# 德扑棋牌门店小程序 V50
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V49 验收状态
+## V50 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V50.md`
 - `docs/ACCEPTANCE-V49.md`
 - `docs/ACCEPTANCE-V48.md`
 - `docs/ACCEPTANCE-V47.md`
@@ -255,6 +256,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V50 新增能力
+
+- 员工端积分调整新增客户手机号输入。
+- `/api/staff/points/adjust` 支持按手机号定位会员后手动增减积分。
+- 移除员工端“调整示例客户积分”的演示式文案。
 
 ## V49 新增能力
 

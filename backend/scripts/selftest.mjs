@@ -400,6 +400,8 @@ async function main() {
 
     const pointsConfig = await request(baseUrl, "/api/admin/points-config", { method: "PATCH", body: { checkinPoints: 12, pointExpireDays: 180, pointsVisible: true } });
     assert(pointsConfig.config.checkinPoints === 12 && pointsConfig.config.pointExpireDays === 180 && pointsConfig.config.pointsVisible === true, "后台可配置积分明细显示和有效期规则");
+    const phonePointAdjust = await request(baseUrl, "/api/staff/points/adjust", { method: "POST", body: { operatorId: "emp_anna", phone: "13800000000", amount: 5, reason: "按手机号补积分" } });
+    assert(phonePointAdjust.user.userId === "user_demo" && phonePointAdjust.ledger.reason === "按手机号补积分", "员工可按手机号手动调整客户积分");
 
     const expiredStorage = await request(baseUrl, "/api/staff/storage", {
       method: "POST",

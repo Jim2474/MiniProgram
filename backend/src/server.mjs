@@ -1436,7 +1436,10 @@ function createRouter(store) {
   });
 
   add("POST", "/api/user/bind-phone", async (body) => {
-    const user = store.getUser(body.userId || "user_demo");
+    const user = body.userId
+      ? store.getUser(body.userId)
+      : store.data.users.find((item) => item.phone === body.phone);
+    if (!user) throw new HttpError(404, "会员不存在");
     const before = deepClone(user);
     let phoneProvider = "manual";
     let phone = body.phone;

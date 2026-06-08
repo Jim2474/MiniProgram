@@ -17,6 +17,7 @@ Page({
     selectedStorageSku: {},
     storagePhone: "13800000000",
     storageQty: 1,
+    pointPhone: "13800000000",
     pointAmount: 20,
     pointReason: "现场服务补偿",
     orders: [],
@@ -173,6 +174,10 @@ Page({
     this.setData({ pointAmount: Number(event.detail.value || 0) })
   },
 
+  onPointPhone(event) {
+    this.setData({ pointPhone: event.detail.value })
+  },
+
   onPointReason(event) {
     this.setData({ pointReason: event.detail.value })
   },
@@ -228,7 +233,7 @@ Page({
         method: "POST",
         data: {
           operatorId: this.data.selectedEmployee.employeeId,
-          userId: app.globalData.userId,
+          phone: this.data.pointPhone,
           amount: this.data.pointAmount,
           reason: this.data.pointReason
         }

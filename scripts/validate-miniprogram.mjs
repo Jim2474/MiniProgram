@@ -111,6 +111,7 @@ assert(staffJs.includes("showOrderQr") && staffWxml.includes("orderQrPayload"), 
 assert(staffJs.includes("orderQrImageUrl") && staffWxml.includes("qr-image"), "staff page displays employee order QR image");
 assert(staffJs.includes("/confirm"), "staff page calls pickup confirm API");
 assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adjust API");
+assert(staffJs.includes("pointPhone") && staffWxml.includes("客户手机号") && staffWxml.includes("调整客户积分") && !staffWxml.includes("调整示例客户积分"), "staff page adjusts customer points by phone");
 assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code API");
 assert(staffJs.includes("/api/staff/verification-codes/scan"), "staff page calls QR scan verification API");
 assert(staffJs.includes("/api/staff/verification-codes/") && staffJs.includes("/confirm"), "staff page calls QR confirm API");
