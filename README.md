@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V72 验收状态
+## V73 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V73.md`
 - `docs/ACCEPTANCE-V72.md`
 - `docs/ACCEPTANCE-V71.md`
 - `docs/REQUIREMENTS-AUDIT-V71.md`
@@ -282,6 +283,13 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V73 新增能力
+
+- 后端新增咖位类型名称校验、创建时间和操作日志。
+- 后台咖位管理新增咖位类型表单，可配置类型名称和默认人数。
+- 后台新增座台时可从已配置咖位类型中选择，并自动带入默认人数。
+- 自动验收覆盖咖位类型校验、操作日志、小程序类型配置表单和座台类型选择。
 
 ## V72 新增能力
 

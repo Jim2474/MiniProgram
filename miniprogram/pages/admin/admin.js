@@ -19,6 +19,10 @@ Page({
     reservations: [],
     tables: [],
     tableTypes: [],
+    tableTypeForm: {
+      name: "超级VIP卡",
+      capacity: 9
+    },
     tableKeyword: "",
     tableStatusOptions: [
       { label: "全部", value: "" },
@@ -148,7 +152,7 @@ Page({
     },
     tableForm: {
       name: "B2 新桌",
-      type: "普通卡座",
+      typeIndex: 0,
       capacity: 9,
       imageUrl: "https://dummyimage.com/640x360/183026/f4d9a6&text=Poker+Table"
     },
@@ -281,6 +285,7 @@ Page({
         occupiedStartedText: item.occupiedStartedAt ? item.occupiedStartedAt.slice(0, 16) : "未占用"
       })),
       tableTypes: data.tableTypes,
+      "tableForm.typeIndex": Math.min(this.data.tableForm.typeIndex, Math.max(0, data.tableTypes.length - 1)),
       tablePagination: data.pagination,
       tableSummary: data.summary
     })
@@ -752,6 +757,23 @@ Page({
     this.setData({ "tableForm.imageUrl": event.detail.value })
   },
 
+  onTableTypeName(event) {
+    this.setData({ "tableTypeForm.name": event.detail.value })
+  },
+
+  onTableTypeCapacity(event) {
+    this.setData({ "tableTypeForm.capacity": Number(event.detail.value || 1) })
+  },
+
+  onTableTypeChange(event) {
+    const typeIndex = Number(event.detail.value)
+    const tableType = this.data.tableTypes[typeIndex]
+    this.setData({
+      "tableForm.typeIndex": typeIndex,
+      "tableForm.capacity": tableType ? tableType.capacity : this.data.tableForm.capacity
+    })
+  },
+
   onTableOccupyAmount(event) {
     this.setData({ "tableOccupyForm.consumptionAmount": Number(event.detail.value || 0) })
   },
@@ -788,10 +810,33 @@ Page({
 
   async createTable() {
     try {
-      await request("/api/admin/tables", { method: "POST", data: { ...this.data.tableForm, operatorId: "emp_admin" } })
+      const tableType = this.data.tableTypes[this.data.tableForm.typeIndex] || this.data.tableTypes[0]
+      await request("/api/admin/tables", {
+        method: "POST",
+        data: {
+          name: this.data.tableForm.name,
+          type: tableType ? tableType.name : "普通卡座",
+          capacity: this.data.tableForm.capacity,
+          imageUrl: this.data.tableForm.imageUrl,
+          operatorId: "emp_admin"
+        }
+      })
       wx.showToast({ title: "桌台已新增" })
       await this.loadTables()
       await this.loadDashboard()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async createTableType() {
+    try {
+      await request("/api/admin/table-types", {
+        method: "POST",
+        data: { ...this.data.tableTypeForm, operatorId: "emp_admin", reason: "后台新增咖位类型" }
+      })
+      wx.showToast({ title: "类型已新增" })
+      await this.loadTables()
     } catch (error) {
       showError(error)
     }

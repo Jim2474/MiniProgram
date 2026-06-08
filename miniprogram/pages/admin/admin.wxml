@@ -219,6 +219,19 @@
       <button size="mini" class="secondary" bindtap="nextTablePage">下一页</button>
     </view>
     <view class="muted">第 {{tablePagination.page}} / {{tablePagination.pageCount}} 页 · 共 {{tablePagination.total}} 条</view>
+    <view class="row">
+      <view class="row-title">咖位类型表单</view>
+      <input class="input" value="{{tableTypeForm.name}}" bindinput="onTableTypeName" placeholder="类型名称，如 VIP 卡座" />
+      <input class="input" type="number" value="{{tableTypeForm.capacity}}" bindinput="onTableTypeCapacity" placeholder="默认人数" />
+      <button size="mini" class="secondary" bindtap="createTableType">新增咖位类型</button>
+    </view>
+    <view wx:for="{{tableTypes}}" wx:key="typeId" class="row">
+      <view class="row-title">{{item.name}}</view>
+      <view class="muted">默认 {{item.capacity}} 人 · {{item.status}}</view>
+    </view>
+    <picker range="{{tableTypes}}" range-key="name" value="{{tableForm.typeIndex}}" bindchange="onTableTypeChange">
+      <view class="input">座台类型：{{tableTypes[tableForm.typeIndex].name || '选择咖位类型'}}</view>
+    </picker>
     <input class="input" value="{{tableForm.name}}" bindinput="onTableName" placeholder="桌台名称" />
     <input class="input" type="number" value="{{tableForm.capacity}}" bindinput="onTableCapacity" placeholder="人数" />
     <input class="input" value="{{tableForm.imageUrl}}" bindinput="onTableImage" placeholder="桌台图片 URL" />

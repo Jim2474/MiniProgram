@@ -2888,8 +2888,10 @@ function createRouter(store) {
   });
   add("GET", "/api/admin/table-types", async () => ({ tableTypes: store.data.tableTypes }));
   add("POST", "/api/admin/table-types", async (body) => {
-    const type = { typeId: newId("tableType"), name: body.name, capacity: Number(body.capacity || 1), status: body.status || "active" };
+    if (!body.name) throw new HttpError(400, "咖位类型名称不能为空");
+    const type = { typeId: newId("tableType"), name: body.name, capacity: Number(body.capacity || 1), status: body.status || "active", createdAt: now() };
     store.data.tableTypes.push(type);
+    store.log(body.operatorId || "emp_admin", "admin", "create_table_type", "TableType", type.typeId, null, type, body.reason || "新增咖位类型");
     await store.save();
     return { type };
   });

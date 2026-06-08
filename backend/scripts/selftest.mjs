@@ -539,7 +539,9 @@ async function main() {
     assert(seatRestore.seat.eliminated === false && seatRestore.seat.status === "occupied", "员工可恢复座位");
 
     const tableType = await request(baseUrl, "/api/admin/table-types", { method: "POST", body: { name: "超级VIP卡", capacity: 9 } });
-    assert(tableType.type.name === "超级VIP卡", "后台可新增咖位类型");
+    assert(tableType.type.name === "超级VIP卡" && tableType.type.capacity === 9 && tableType.type.createdAt, "后台可新增咖位类型");
+    assert(store.data.operationLogs.some((log) => log.action === "create_table_type" && log.targetId === tableType.type.typeId), "新增咖位类型写入操作日志");
+    await expectHttpError(baseUrl, "/api/admin/table-types", { method: "POST", body: { capacity: 6 } }, 400, "新增咖位类型必须填写名称");
     const table = await request(baseUrl, "/api/admin/tables", { method: "POST", body: { name: "B2 超级桌", type: "超级VIP卡", capacity: 9 } });
     assert(table.table.name === "B2 超级桌", "后台可新增座台信息");
     const occupiedTable = await request(baseUrl, `/api/admin/tables/${table.table.tableId}`, {
