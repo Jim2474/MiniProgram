@@ -233,14 +233,15 @@ async function main() {
     }
     assert(duplicateCheckin.includes("今日已签到"), "同日重复签到被拦截");
 
-    const rechargeConfig = await request(baseUrl, "/api/admin/recharge-configs", { method: "POST", body: { amount: 300, giftAmount: 30 } });
-    const recharge = await request(baseUrl, "/api/recharge", { method: "POST", body: { userId: "user_demo", configId: rechargeConfig.config.configId } });
-    assert(recharge.user.balance === 330, "客户充值后余额增加含赠送金额");
+    let rechargeError = "";
+    try {
+      await request(baseUrl, "/api/recharge", { method: "POST", body: { userId: "user_demo", amount: 300, giftAmount: 30 } });
+    } catch (error) {
+      rechargeError = error.message;
+    }
+    assert(rechargeError.includes("余额充值暂未开放"), "客户余额充值入口暂不开放");
     const rechargeRecords = await request(baseUrl, "/api/recharge-records?userId=user_demo");
-    assert(rechargeRecords.records.length === 1, "充值记录可查询");
-    assert(rechargeRecords.configs.some((config) => config.configId === rechargeConfig.config.configId), "充值中心返回可选配置");
-    const disabledRechargeConfig = await request(baseUrl, `/api/admin/recharge-configs/${rechargeConfig.config.configId}`, { method: "PATCH", body: { status: "disabled" } });
-    assert(disabledRechargeConfig.config.status === "disabled", "后台可停用充值配置");
+    assert(rechargeRecords.records.length === 0 && rechargeRecords.configs.length === 0 && rechargeRecords.featureEnabled === false, "充值中心不返回可用充值配置");
 
     const exchangedCoupons = await request(baseUrl, "/api/coupons/exchange", { method: "POST", body: { userId: "user_demo", count: 1, skuId: "sku_bud" } });
     assert(exchangedCoupons.coupons.length === 1 && exchangedCoupons.costPoints === 100, "客户可用积分兑换酒水券");

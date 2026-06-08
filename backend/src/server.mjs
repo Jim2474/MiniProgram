@@ -269,10 +269,7 @@ function seedData() {
       eliminated: false,
       updatedAt: createdAt,
     })),
-    rechargeConfigs: [
-      { configId: "recharge_500", amount: 500, giftAmount: 50, status: "active", createdAt },
-      { configId: "recharge_1000", amount: 1000, giftAmount: 120, status: "active", createdAt },
-    ],
+    rechargeConfigs: [],
     rechargeRecords: [],
     coupons: [
       {
@@ -1761,22 +1758,11 @@ function createRouter(store) {
 
   add("GET", "/api/recharge-records", async (_body, _params, query) => {
     const userId = query.get("userId") || "user_demo";
-    return { records: store.data.rechargeRecords.filter((record) => record.userId === userId), configs: store.data.rechargeConfigs.filter((config) => config.status === "active") };
+    return { records: store.data.rechargeRecords.filter((record) => record.userId === userId), configs: [], featureEnabled: false };
   });
 
-  add("POST", "/api/recharge", async (body) => {
-    const user = store.getUser(body.userId || "user_demo");
-    const config = body.configId ? store.data.rechargeConfigs.find((item) => item.configId === body.configId) : null;
-    const amount = Number(body.amount || config?.amount || 0);
-    const giftAmount = Number(body.giftAmount ?? config?.giftAmount ?? 0);
-    if (amount <= 0) throw new HttpError(400, "充值金额必须大于 0");
-    const before = deepClone(user);
-    user.balance = Number(user.balance || 0) + amount + giftAmount;
-    const record = { recordId: newId("recharge"), userId: user.userId, amount, giftAmount, balanceAfter: user.balance, payMethod: "mock_wechat", status: "paid", createdAt: now() };
-    store.data.rechargeRecords.unshift(record);
-    store.log(user.userId, "customer", "recharge", "User", user.userId, before, user, `充值${amount}赠送${giftAmount}`);
-    await store.save();
-    return { user, record };
+  add("POST", "/api/recharge", async () => {
+    throw new HttpError(400, "余额充值暂未开放，请使用微信支付点单");
   });
 
   add("GET", "/api/store/location", async () => ({ location: store.data.settings.location, store: store.data.stores[0] }));
@@ -1993,7 +1979,7 @@ function createRouter(store) {
     return {
       todayRevenue: paid.filter((order) => order.paidAt?.startsWith(today)).reduce((sum, order) => sum + order.amount, 0),
       monthRevenue: paid.filter((order) => monthKey(order.paidAt || order.createdAt) === currentMonth).reduce((sum, order) => sum + order.amount, 0),
-      rechargeRevenue: store.data.rechargeRecords.reduce((sum, record) => sum + record.amount, 0),
+      wechatPayRevenue: paid.reduce((sum, order) => sum + order.amount, 0),
       trend: Array.from({ length: 7 }, (_, index) => {
         const date = new Date();
         date.setDate(date.getDate() - (6 - index));
@@ -2004,26 +1990,12 @@ function createRouter(store) {
   });
 
   add("GET", "/api/admin/business-details", async () => ({ details: store.data.orders.filter((order) => order.payStatus === "paid").map((order) => publicOrder(store, order)).reverse() }));
-  add("GET", "/api/admin/recharge-configs", async () => ({ configs: store.data.rechargeConfigs }));
-  add("POST", "/api/admin/recharge-configs", async (body) => {
-    const config = { configId: newId("rechargeConfig"), amount: Number(body.amount), giftAmount: Number(body.giftAmount || 0), status: body.status || "active", createdAt: now() };
-    if (config.amount <= 0) throw new HttpError(400, "充值金额必须大于 0");
-    store.data.rechargeConfigs.unshift(config);
-    store.log(body.operatorId || "emp_admin", "admin", "create_recharge_config", "RechargeConfig", config.configId, null, config, "新增充值配置");
-    await store.save();
-    return { config };
+  add("GET", "/api/admin/recharge-configs", async () => ({ configs: [], featureEnabled: false }));
+  add("POST", "/api/admin/recharge-configs", async () => {
+    throw new HttpError(400, "余额充值暂未开放，请使用微信支付点单");
   });
-  add("PATCH", "/api/admin/recharge-configs/:configId", async (body, params) => {
-    const config = store.data.rechargeConfigs.find((item) => item.configId === params.configId);
-    if (!config) throw new HttpError(404, "充值配置不存在");
-    const before = deepClone(config);
-    if (body.amount !== undefined) config.amount = Number(body.amount);
-    if (body.giftAmount !== undefined) config.giftAmount = Number(body.giftAmount);
-    if (body.status !== undefined) config.status = body.status;
-    config.updatedAt = now();
-    store.log(body.operatorId || "emp_admin", "admin", "update_recharge_config", "RechargeConfig", config.configId, before, config, "修改充值配置");
-    await store.save();
-    return { config };
+  add("PATCH", "/api/admin/recharge-configs/:configId", async () => {
+    throw new HttpError(400, "余额充值暂未开放，请使用微信支付点单");
   });
   add("GET", "/api/admin/recharge-records", async () => ({ records: store.data.rechargeRecords }));
   add("GET", "/api/admin/member-levels", async () => ({ levels: store.data.memberLevels }));

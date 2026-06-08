@@ -31,10 +31,6 @@ Page({
     coupons: [],
     couponRecords: [],
     redeemableCouponId: "",
-    rechargeConfigs: [],
-    rechargeConfigIndex: 0,
-    rechargeConfigLabel: "充500送50",
-    rechargeRecords: [],
     checkinRecords: [],
     lotteryRecords: [],
     redeemableLotteryId: "",
@@ -153,24 +149,21 @@ Page({
   },
 
   async loadMarketing() {
-    const [profile, leaderboard, coupons, location, support, rechargeRecords, checkin, lotteryRecords, verificationCodes] = await Promise.all([
+    const [profile, leaderboard, coupons, location, support, checkin, lotteryRecords, verificationCodes] = await Promise.all([
       request(`/api/user/profile?userId=${app.globalData.userId}`),
       request(`/api/leaderboard/points?userId=${app.globalData.userId}`),
       request(`/api/coupons?userId=${app.globalData.userId}`),
       request("/api/store/location"),
       request("/api/support/contact"),
-      request(`/api/recharge-records?userId=${app.globalData.userId}`),
       request(`/api/checkin?userId=${app.globalData.userId}`),
       request(`/api/lottery/records?userId=${app.globalData.userId}`),
       request(`/api/verification-codes?userId=${app.globalData.userId}`)
     ])
-    const rechargeConfigs = rechargeRecords.configs || []
     const lotteryList = lotteryRecords.records || []
     this.setData({
       profile: {
         ...profile,
-        levelName: profile.level ? profile.level.name : "普通会员",
-        balanceText: money(profile.user.balance || 0)
+        levelName: profile.level ? profile.level.name : "普通会员"
       },
       currentUserId: profile.user.userId,
       loginPhone: profile.user.phone || this.data.loginPhone,
@@ -180,9 +173,6 @@ Page({
       coupons: coupons.coupons.map((item) => ({ ...item, statusText: statusText(item.status) })),
       couponRecords: coupons.records.map((item) => ({ ...item, statusText: statusText(item.status) })),
       redeemableCouponId: (coupons.coupons.find((item) => item.status === "available") || {}).couponId || "",
-      rechargeConfigs: rechargeConfigs.map((item) => ({ ...item, label: `充${item.amount}送${item.giftAmount}` })),
-      rechargeConfigLabel: rechargeConfigs[this.data.rechargeConfigIndex] ? `充${rechargeConfigs[this.data.rechargeConfigIndex].amount}送${rechargeConfigs[this.data.rechargeConfigIndex].giftAmount}` : "充500送50",
-      rechargeRecords: rechargeRecords.records.map((item) => ({ ...item, amountText: money(item.amount), giftText: money(item.giftAmount), balanceText: money(item.balanceAfter) })),
       checkinRecords: checkin.records,
       lotteryRecords: lotteryList.map((item) => ({ ...item, statusText: statusText(item.status) })),
       redeemableLotteryId: (lotteryList.find((item) => item.status === "won") || {}).recordId || "",
@@ -355,23 +345,6 @@ Page({
     } catch (error) {
       showError(error)
     }
-  },
-
-  async recharge() {
-    try {
-      const config = this.data.rechargeConfigs[this.data.rechargeConfigIndex]
-      await request("/api/recharge", { method: "POST", data: { userId: app.globalData.userId, configId: config ? config.configId : undefined, amount: config ? undefined : 500, giftAmount: config ? undefined : 50 } })
-      wx.showToast({ title: "充值成功" })
-      await this.loadMarketing()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  onRechargeConfigChange(event) {
-    const rechargeConfigIndex = Number(event.detail.value)
-    const config = this.data.rechargeConfigs[rechargeConfigIndex]
-    this.setData({ rechargeConfigIndex, rechargeConfigLabel: config ? config.label : "充500送50" })
   },
 
   async drawLottery() {

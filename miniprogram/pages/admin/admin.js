@@ -29,8 +29,6 @@ Page({
     storageLedgers: [],
     finance: {},
     businessDetails: [],
-    rechargeConfigs: [],
-    rechargeRecords: [],
     consumptionRecords: [],
     memberLevels: [],
     lotteryOverview: {},
@@ -165,11 +163,9 @@ Page({
   },
 
   async loadV3Admin() {
-    const [finance, business, recharge, rechargeRecords, consumptionRecords, levels, pointsConfig, lotteryOverview, lotteryPrizes, stockRequests, stockLedgers, storageLedgers, scanRecords, system, blind] = await Promise.all([
+    const [finance, business, consumptionRecords, levels, pointsConfig, lotteryOverview, lotteryPrizes, stockRequests, stockLedgers, storageLedgers, scanRecords, system, blind] = await Promise.all([
       request("/api/admin/finance/overview"),
       request("/api/admin/business-details"),
-      request("/api/admin/recharge-configs"),
-      request("/api/admin/recharge-records"),
       request("/api/admin/consumption-records"),
       request("/api/admin/member-levels"),
       request("/api/admin/points-config"),
@@ -187,11 +183,9 @@ Page({
         ...finance,
         todayRevenueText: money(finance.todayRevenue),
         monthRevenueText: money(finance.monthRevenue),
-        rechargeRevenueText: money(finance.rechargeRevenue)
+        wechatPayRevenueText: money(finance.wechatPayRevenue)
       },
       businessDetails: business.details,
-      rechargeConfigs: recharge.configs,
-      rechargeRecords: rechargeRecords.records.map((item) => ({ ...item, amountText: money(item.amount), giftText: money(item.giftAmount), balanceText: money(item.balanceAfter) })),
       consumptionRecords: consumptionRecords.records.map((item) => ({ ...item, amountText: money(item.amount), statusText: statusText(item.orderStatus) })),
       memberLevels: levels.levels,
       pointsConfig: pointsConfig.config,
@@ -493,26 +487,6 @@ Page({
       wx.showToast({ title: "已维护" })
       await this.loadTables()
       await this.loadDashboard()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  async createRechargeConfig() {
-    try {
-      await request("/api/admin/recharge-configs", { method: "POST", data: { amount: 300, giftAmount: 30 } })
-      wx.showToast({ title: "已新增配置" })
-      await this.loadV3Admin()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  async disableRechargeConfig(event) {
-    try {
-      await request(`/api/admin/recharge-configs/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status: "disabled", operatorId: "emp_admin" } })
-      wx.showToast({ title: "配置已停用" })
-      await this.loadV3Admin()
     } catch (error) {
       showError(error)
     }

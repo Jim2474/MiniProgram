@@ -68,7 +68,7 @@ assert(customerJs.includes("/api/storage-records"), "customer page calls storage
 assert(customerJs.includes("/api/reservations"), "customer page calls reservation API");
 assert(customerJs.includes("/cancel"), "customer page calls reservation cancel API");
 assert(customerJs.includes("/api/checkin"), "customer page calls checkin API");
-assert(customerJs.includes("/api/recharge"), "customer page calls recharge API");
+assert(!customerJs.includes("/api/recharge") && !customerWxml.includes("微信支付充值"), "customer page hides balance recharge flow");
 assert(customerJs.includes("/api/lottery/draw"), "customer page calls lottery API");
 assert(customerJs.includes("/api/leaderboard/points"), "customer page calls leaderboard API");
 assert(customerJs.includes("/api/coupons/"), "customer page calls coupon API");
@@ -112,9 +112,8 @@ assert(adminJs.includes("/api/admin/products") && adminJs.includes("createProduc
 assert(adminJs.includes("/api/admin/products/"), "admin page calls product update API");
 assert(adminJs.includes("storageDays") && adminJs.includes("warningQty"), "admin page supports SKU warning stock and storage days");
 assert(adminJs.includes("/api/admin/finance/overview"), "admin page calls finance API");
-assert(adminJs.includes("/api/admin/recharge-configs"), "admin page calls recharge config API");
-assert(adminJs.includes("/api/admin/recharge-configs/"), "admin page calls recharge config update API");
-assert(adminJs.includes("/api/admin/recharge-records"), "admin page calls recharge records API");
+const adminWxml = await readFile(join(root, "miniprogram/pages/admin/admin.wxml"), "utf8");
+assert(!adminJs.includes("/api/admin/recharge-configs") && !adminWxml.includes("新增充值"), "admin page hides recharge config operations");
 assert(adminJs.includes("/api/admin/consumption-records"), "admin page calls consumption records API");
 assert(adminJs.includes("/api/admin/member-levels"), "admin page calls member level API");
 assert(adminJs.includes("/api/admin/member-levels/"), "admin page calls member level update API");

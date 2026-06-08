@@ -2,7 +2,7 @@
   <view class="hero">
     <view class="eyebrow">CUSTOMER ORDER</view>
     <view class="title">扫码点单与会员权益</view>
-    <view class="subtitle">选择员工代表二维码来源，支付后自动扣库存、发积分并归属业绩。</view>
+    <view class="subtitle">扫码员工二维码后点单，微信支付成功自动扣库存、发积分并归属业绩。</view>
   </view>
 
   <view class="section">
@@ -135,26 +135,14 @@
         <view class="metric-value">{{profile.levelName}}</view>
         <view class="metric-label">会员等级</view>
       </view>
-      <view class="metric">
-        <view class="metric-value">{{profile.balanceText}}</view>
-        <view class="metric-label">余额</view>
-      </view>
     </view>
-    <picker range="{{rechargeConfigs}}" range-key="label" value="{{rechargeConfigIndex}}" bindchange="onRechargeConfigChange">
-      <view class="input">{{rechargeConfigLabel}}</view>
-    </picker>
     <view class="btn-row">
       <button size="mini" class="primary" bindtap="checkin">签到送积分</button>
-      <button size="mini" class="secondary" bindtap="recharge">微信支付充值</button>
       <button size="mini" class="secondary" bindtap="drawLottery">积分抽奖</button>
     </view>
     <view class="row">
       <view class="row-title">签到记录</view>
       <view wx:for="{{checkinRecords}}" wx:key="checkinId" class="muted">{{item.date}} · +{{item.points}}</view>
-    </view>
-    <view class="row">
-      <view class="row-title">充值记录</view>
-      <view wx:for="{{rechargeRecords}}" wx:key="recordId" class="muted">{{item.amountText}} + {{item.giftText}} · 余额 {{item.balanceText}}</view>
     </view>
     <view class="row">
       <view class="row-title">积分排行榜</view>

@@ -159,7 +159,7 @@
     <view class="metrics">
       <view class="metric"><view class="metric-value">{{finance.todayRevenueText}}</view><view class="metric-label">今日营收</view></view>
       <view class="metric"><view class="metric-value">{{finance.monthRevenueText}}</view><view class="metric-label">本月营收</view></view>
-      <view class="metric"><view class="metric-value">{{finance.rechargeRevenueText}}</view><view class="metric-label">充值收入</view></view>
+      <view class="metric"><view class="metric-value">{{finance.wechatPayRevenueText}}</view><view class="metric-label">微信支付营收</view></view>
       <view class="metric"><view class="metric-value">{{businessDetails.length}}</view><view class="metric-label">营业明细</view></view>
     </view>
     <view wx:for="{{consumptionRecords}}" wx:key="orderId" class="row">
@@ -169,18 +169,8 @@
   </view>
 
   <view class="section">
-    <view class="section-title">充值与会员等级</view>
-    <button size="mini" class="primary" bindtap="createRechargeConfig">新增充值300送30</button>
+    <view class="section-title">会员等级与积分配置</view>
     <button size="mini" class="secondary" bindtap="createMemberLevel">新增黑金会员</button>
-    <view wx:for="{{rechargeConfigs}}" wx:key="configId" class="row">
-      <view class="row-title">充 {{item.amount}} 送 {{item.giftAmount}}</view>
-      <view class="muted">{{item.status}}</view>
-      <button size="mini" class="secondary" data-id="{{item.configId}}" bindtap="disableRechargeConfig">停用配置</button>
-    </view>
-    <view wx:for="{{rechargeRecords}}" wx:key="recordId" class="row">
-      <view class="row-title">{{item.amountText}} + {{item.giftText}}</view>
-      <view class="muted">{{item.status}} · 余额 {{item.balanceText}}</view>
-    </view>
     <view wx:for="{{memberLevels}}" wx:key="levelId" class="row">
       <view class="row-title">{{item.name}}</view>
       <view class="muted">最低积分 {{item.minPoints}} · {{item.status}}</view>
