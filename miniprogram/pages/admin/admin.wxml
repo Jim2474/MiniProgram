@@ -111,6 +111,7 @@
       <view wx:if="{{item.status === 'pending'}}" class="btn-row">
         <button size="mini" class="primary" data-id="{{item.requestId}}" bindtap="confirmStockRequest">确认入账</button>
         <button size="mini" class="secondary" data-id="{{item.requestId}}" bindtap="rejectStockRequest">驳回</button>
+        <button size="mini" class="secondary" data-id="{{item.requestId}}" bindtap="cancelStockRequest">取消</button>
       </view>
     </view>
     <view class="row">

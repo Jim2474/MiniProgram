@@ -136,6 +136,7 @@ assert(adminJs.includes("/transfer-storage"), "admin page calls transfer storage
 assert(adminJs.includes("/api/admin/stock-counts"), "admin page calls stock count API");
 assert(adminJs.includes("/api/admin/stock-requests"), "admin page calls stock request workflow API");
 assert(adminJs.includes("stockRequestForm") && adminJs.includes("onStockRequestQty") && adminWxml.includes("出入库数量") && adminWxml.includes("出入库原因") && !adminJs.includes("quantity: 3,"), "admin page supports real stock request input");
+assert(adminJs.includes("cancelStockRequest") && adminJs.includes("/cancel") && adminWxml.includes("取消"), "admin page supports stock request cancellation");
 assert(adminJs.includes("/api/admin/storage/") && adminJs.includes("expire-handle"), "admin page calls expired storage handling API");
 assert(adminJs.includes("/api/admin/stock-ledgers"), "admin page calls stock ledger API");
 assert(adminJs.includes("/api/admin/storage-ledgers") && adminJs.includes("storageLedgers"), "admin page calls customer storage ledger API");

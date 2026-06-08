@@ -2231,6 +2231,19 @@ function createRouter(store) {
     await store.save();
     return { request: publicStockRequest(store, request) };
   });
+  add("POST", "/api/admin/stock-requests/:requestId/cancel", async (body, params) => {
+    const request = store.data.stockRequests.find((item) => item.requestId === params.requestId);
+    if (!request) throw new HttpError(404, "出入库申请不存在");
+    if (request.status !== "pending") throw new HttpError(400, "出入库申请已处理");
+    const before = deepClone(request);
+    request.status = "cancelled";
+    request.handledBy = body.operatorId || "emp_admin";
+    request.handledAt = now();
+    request.reason = body.reason || request.reason;
+    store.log(body.operatorId || "emp_admin", "admin", "cancel_stock_request", "StockRequest", request.requestId, before, request, request.reason);
+    await store.save();
+    return { request: publicStockRequest(store, request) };
+  });
   add("GET", "/api/admin/customer-storage", async () => ({
     storage: store.data.customerStorage.map((item) => ({ ...item, user: store.data.users.find((user) => user.userId === item.userId), product: store.getSku(item.skuId) })),
     pickupRequests: store.data.storagePickupRequests,

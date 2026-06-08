@@ -584,6 +584,16 @@ Page({
     }
   },
 
+  async cancelStockRequest(event) {
+    try {
+      await request(`/api/admin/stock-requests/${event.currentTarget.dataset.id}/cancel`, { method: "POST", data: { operatorId: "emp_admin", reason: "后台取消" } })
+      wx.showToast({ title: "已取消" })
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
   async confirmReservation(event) {
     try {
       await request(`/api/admin/reservations/${event.currentTarget.dataset.id}`, {

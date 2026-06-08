@@ -398,6 +398,10 @@ async function main() {
     const rejectRequest = await request(baseUrl, "/api/admin/stock-requests", { method: "POST", body: { skuId: product.product.skuId, direction: "in", quantity: 1, operatorId: "emp_admin" } });
     const rejectedRequest = await request(baseUrl, `/api/admin/stock-requests/${rejectRequest.request.requestId}/reject`, { method: "POST", body: { operatorId: "emp_admin", reason: "单据错误" } });
     assert(rejectedRequest.request.status === "rejected", "出入库申请可驳回");
+    const cancelRequest = await request(baseUrl, "/api/admin/stock-requests", { method: "POST", body: { skuId: product.product.skuId, direction: "out", quantity: 1, operatorId: "emp_admin" } });
+    const stockBeforeCancel = store.getSku(product.product.skuId).stockQty;
+    const cancelledRequest = await request(baseUrl, `/api/admin/stock-requests/${cancelRequest.request.requestId}/cancel`, { method: "POST", body: { operatorId: "emp_admin", reason: "暂不出库" } });
+    assert(cancelledRequest.request.status === "cancelled" && store.getSku(product.product.skuId).stockQty === stockBeforeCancel, "出入库申请可取消且不改变库存");
 
     const raceProduct = await request(baseUrl, "/api/admin/products", {
       method: "POST",
