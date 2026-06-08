@@ -32,6 +32,8 @@
         <button size="mini" class="secondary" data-action="eliminate" bindtap="gameAction">淘汰</button>
         <button size="mini" class="secondary" data-action="restore" bindtap="gameAction">恢复</button>
         <button size="mini" class="secondary" data-action="buyin" bindtap="gameAction">+1手</button>
+        <button size="mini" class="secondary" data-action="buyin_minus" bindtap="gameAction">-1手</button>
+        <button size="mini" class="secondary" data-action="set_buyin_amount" bindtap="gameAction">同步买入金额</button>
         <button size="mini" class="dark" data-action="reset" bindtap="gameAction">重开</button>
       </view>
       <view wx:for="{{voiceEvents}}" wx:key="eventId" class="muted">{{item.eventType}} · {{item.message}}</view>
@@ -56,6 +58,10 @@
       <view wx:for="{{seats}}" wx:key="seatNo" class="seat">
         <view class="row-title">{{item.seatNo}}号位</view>
         <view class="muted">{{item.statusText}}</view>
+        <view class="btn-row">
+          <button size="mini" data-seat="{{item.seatNo}}" data-action="eliminate" bindtap="gameSeatAction">淘汰</button>
+          <button size="mini" data-seat="{{item.seatNo}}" data-action="restore" bindtap="gameSeatAction">恢复</button>
+        </view>
       </view>
     </view>
   </view>

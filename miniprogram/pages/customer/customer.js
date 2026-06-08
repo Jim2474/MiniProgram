@@ -17,7 +17,11 @@ Page({
     storage: [],
     tables: [],
     reservations: [],
-    profile: {},
+    profile: { user: {} },
+    loginPhone: "13800000000",
+    loginNickname: "德扑客人",
+    bindPhoneValue: "13800000000",
+    currentUserId: "user_demo",
     leaderboard: [],
     myRank: null,
     coupons: [],
@@ -49,7 +53,8 @@ Page({
       this.setData({
         employees,
         selectedEmployee,
-        employeeIndex: Math.max(0, employees.findIndex((item) => item.employeeId === selectedEmployee.employeeId))
+        employeeIndex: Math.max(0, employees.findIndex((item) => item.employeeId === selectedEmployee.employeeId)),
+        currentUserId: app.globalData.userId
       })
       await Promise.all([this.loadProducts(), this.loadCart(), this.loadOrders(), this.loadPoints(), this.loadStorage(), this.loadTables(), this.loadReservations(), this.loadMarketing()])
     } catch (error) {
@@ -145,6 +150,9 @@ Page({
         levelName: profile.level ? profile.level.name : "普通会员",
         balanceText: money(profile.user.balance || 0)
       },
+      currentUserId: profile.user.userId,
+      loginPhone: profile.user.phone || this.data.loginPhone,
+      bindPhoneValue: profile.user.phone || this.data.bindPhoneValue,
       leaderboard: leaderboard.top10,
       myRank: leaderboard.mine,
       coupons: coupons.coupons.map((item) => ({ ...item, statusText: statusText(item.status) })),
@@ -168,6 +176,46 @@ Page({
     app.globalData.selectedEmployeeId = selectedEmployee.employeeId
     this.setData({ employeeIndex, selectedEmployee })
     await this.loadCart()
+  },
+
+  onLoginPhone(event) {
+    this.setData({ loginPhone: event.detail.value })
+  },
+
+  onLoginNickname(event) {
+    this.setData({ loginNickname: event.detail.value })
+  },
+
+  onBindPhone(event) {
+    this.setData({ bindPhoneValue: event.detail.value })
+  },
+
+  async loginCustomer() {
+    try {
+      const data = await request("/api/wechat/login", {
+        method: "POST",
+        data: { phone: this.data.loginPhone, nickname: this.data.loginNickname }
+      })
+      app.globalData.userId = data.user.userId
+      this.setData({ currentUserId: data.user.userId, bindPhoneValue: data.user.phone || this.data.bindPhoneValue })
+      wx.showToast({ title: "登录成功" })
+      await this.loadAll()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async bindPhone() {
+    try {
+      await request("/api/user/bind-phone", {
+        method: "POST",
+        data: { userId: app.globalData.userId, phone: this.data.bindPhoneValue }
+      })
+      wx.showToast({ title: "手机号已绑定" })
+      await this.loadMarketing()
+    } catch (error) {
+      showError(error)
+    }
   },
 
   async scanEmployeeCode() {

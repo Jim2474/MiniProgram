@@ -6,6 +6,31 @@
   </view>
 
   <view class="section">
+    <view class="section-title">个人中心</view>
+    <view class="metrics">
+      <view class="metric">
+        <view class="metric-value">{{profile.user.nickname || '未登录'}}</view>
+        <view class="metric-label">微信昵称</view>
+      </view>
+      <view class="metric">
+        <view class="metric-value">{{profile.user.phone || '待绑定'}}</view>
+        <view class="metric-label">手机号</view>
+      </view>
+    </view>
+    <view class="row">
+      <view class="row-title">当前会员 {{currentUserId}}</view>
+      <view class="muted">头像 {{profile.user.avatar || '默认头像'}} · 等级 {{profile.levelName}}</view>
+      <input class="input" value="{{loginPhone}}" bindinput="onLoginPhone" placeholder="登录手机号" />
+      <input class="input" value="{{loginNickname}}" bindinput="onLoginNickname" placeholder="微信昵称" />
+      <input class="input" value="{{bindPhoneValue}}" bindinput="onBindPhone" placeholder="绑定手机号" />
+      <view class="btn-row">
+        <button size="mini" class="primary" bindtap="loginCustomer">微信登录/切换会员</button>
+        <button size="mini" class="secondary" bindtap="bindPhone">绑定手机号</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
     <view class="section-title">扫码员工</view>
     <picker range="{{employees}}" range-key="name" value="{{employeeIndex}}" bindchange="onEmployeeChange">
       <view class="input">{{selectedEmployee.name || '自然订单'}}</view>

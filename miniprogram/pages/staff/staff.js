@@ -18,6 +18,7 @@ Page({
     pointReason: "现场服务补偿",
     orders: [],
     salesText: "¥0",
+    performanceRows: [],
     pickupRequests: [],
     verifyResult: null,
     qrPayload: "",
@@ -46,6 +47,7 @@ Page({
         selectedStorageSku: productsData.products[0]
       })
       await this.loadOrders()
+      await this.loadPerformance()
       await this.loadPickupRequests()
       await this.loadCouponsLotteryAndSeats()
     } catch (error) {
@@ -60,6 +62,13 @@ Page({
     this.setData({
       salesText: money(sales),
       orders: data.orders.map((item) => ({ ...item, statusText: statusText(item.orderStatus), amountText: money(item.amount) }))
+    })
+  },
+
+  async loadPerformance() {
+    const data = await request(`/api/staff/performance/monthly?employeeId=${this.data.selectedEmployee.employeeId}&months=6`)
+    this.setData({
+      performanceRows: data.rows.map((item) => ({ ...item, salesText: money(item.sales) }))
     })
   },
 
@@ -87,6 +96,7 @@ Page({
     app.globalData.selectedEmployeeId = selectedEmployee.employeeId
     this.setData({ employeeIndex, selectedEmployee })
     await this.loadOrders()
+    await this.loadPerformance()
   },
 
   onLoginAccount(event) {
@@ -105,6 +115,7 @@ Page({
       this.setData({ selectedEmployee: data.employee, employeeIndex, loginSession: data.session })
       wx.showToast({ title: "登录成功" })
       await this.loadOrders()
+      await this.loadPerformance()
     } catch (error) {
       showError(error)
     }

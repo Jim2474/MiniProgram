@@ -32,6 +32,14 @@
   </view>
 
   <view class="section">
+    <view class="section-title">近六个月业绩</view>
+    <view wx:for="{{performanceRows}}" wx:key="month" class="row">
+      <view class="row-title">{{item.month}} · {{item.salesText}}</view>
+      <view class="muted">订单 {{item.orderCount}} 笔</view>
+    </view>
+  </view>
+
+  <view class="section">
     <view class="section-title">个人订单</view>
     <view wx:if="{{orders.length === 0}}" class="muted">暂无订单。</view>
     <view wx:for="{{orders}}" wx:key="orderId" class="row">

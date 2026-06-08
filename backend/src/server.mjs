@@ -357,6 +357,10 @@ class Store {
     this.data.verificationCodes ||= [];
     this.data.staffSessions ||= [];
     this.data.voiceEvents ||= [];
+    for (const user of this.data.users || []) {
+      user.balance ||= 0;
+      user.memberLevel ||= "普通会员";
+    }
     for (const table of this.data.tables || []) {
       table.occupiedStartedAt ||= null;
       table.consumptionAmount ||= 0;
@@ -377,6 +381,8 @@ class Store {
   }
 
   log(operatorId, role, action, targetType, targetId, beforeValue, afterValue, reason = "") {
+    const safeBefore = targetType === "Employee" ? publicEmployee(beforeValue) : beforeValue;
+    const safeAfter = targetType === "Employee" ? publicEmployee(afterValue) : afterValue;
     this.data.operationLogs.unshift({
       logId: newId("log"),
       merchantId: this.data.settings.merchantId,
@@ -386,8 +392,8 @@ class Store {
       action,
       targetType,
       targetId,
-      beforeJson: beforeValue ? JSON.stringify(beforeValue) : "",
-      afterJson: afterValue ? JSON.stringify(afterValue) : "",
+      beforeJson: safeBefore ? JSON.stringify(safeBefore) : "",
+      afterJson: safeAfter ? JSON.stringify(safeAfter) : "",
       reason,
       createdAt: now(),
     });
@@ -502,7 +508,7 @@ function publicOrder(store, order) {
   const items = store.data.orderItems
     .filter((item) => item.orderId === order.orderId)
     .map((item) => ({ ...item, product: store.data.products.find((sku) => sku.skuId === item.skuId) }));
-  const employee = order.employeeId ? store.data.employees.find((item) => item.employeeId === order.employeeId) : null;
+  const employee = order.employeeId ? publicEmployee(store.data.employees.find((item) => item.employeeId === order.employeeId)) : null;
   const user = store.data.users.find((item) => item.userId === order.userId);
   return { ...order, items, employee, user };
 }
@@ -573,14 +579,14 @@ function publicStockRequest(store, request) {
   return {
     ...request,
     product: store.data.products.find((sku) => sku.skuId === request.skuId),
-    operator: store.data.employees.find((employee) => employee.employeeId === request.operatorId),
-    handledByEmployee: request.handledBy ? store.data.employees.find((employee) => employee.employeeId === request.handledBy) : null,
+    operator: publicEmployee(store.data.employees.find((employee) => employee.employeeId === request.operatorId)),
+    handledByEmployee: request.handledBy ? publicEmployee(store.data.employees.find((employee) => employee.employeeId === request.handledBy)) : null,
   };
 }
 
 function publicEmployee(employee) {
   if (!employee) return null;
-  const { passwordHash: _passwordHash, ...safe } = employee;
+  const { passwordHash: _passwordHash, resetPassword: _resetPassword, ...safe } = employee;
   return safe;
 }
 
@@ -691,7 +697,7 @@ function createRouter(store) {
     settings: store.data.settings,
     store: store.data.stores[0],
     user: store.getUser(),
-    employees: store.data.employees,
+    employees: store.data.employees.map(publicEmployee),
     seats: store.data.seats,
   }));
 
@@ -708,6 +714,8 @@ function createRouter(store) {
         avatar: "",
         phone,
         pointsBalance: 0,
+        balance: 0,
+        memberLevel: "普通会员",
         createdAt: now(),
       };
       store.data.users.push(user);
@@ -1055,6 +1063,8 @@ function createRouter(store) {
         avatar: "",
         phone: body.phone,
         pointsBalance: 0,
+        balance: 0,
+        memberLevel: "普通会员",
         createdAt: now(),
       };
       store.data.users.push(user);
@@ -1396,7 +1406,7 @@ function createRouter(store) {
     if (userId) orders = orders.filter((order) => order.userId === userId);
     return { records: orders.map((order) => publicOrder(store, order)).reverse() };
   });
-  add("GET", "/api/admin/employees", async () => ({ employees: store.data.employees }));
+  add("GET", "/api/admin/employees", async () => ({ employees: store.data.employees.map(publicEmployee) }));
   add("GET", "/api/admin/scan-records", async () => ({ records: store.data.scanRecords }));
   add("GET", "/api/admin/operation-logs", async () => ({ logs: store.data.operationLogs }));
 
@@ -1469,9 +1479,37 @@ function createRouter(store) {
       game.remainingSecondsOverride = null;
       game.lastVoiceMarks = [];
     }
-    if (action === "eliminate") game.currentPlayers = Math.max(1, game.currentPlayers - 1);
-    if (action === "restore") game.currentPlayers = Math.min(game.initialPlayers, game.currentPlayers + 1);
+    if (action === "eliminate") {
+      if (body.seatNo !== undefined) {
+        const seat = store.data.seats.find((item) => item.seatNo === Number(body.seatNo));
+        if (!seat) throw new HttpError(404, "座位不存在");
+        if (!seat.eliminated) game.currentPlayers = Math.max(1, game.currentPlayers - 1);
+        seat.status = "eliminated";
+        seat.eliminated = true;
+        seat.updatedAt = now();
+      } else {
+        game.currentPlayers = Math.max(1, game.currentPlayers - 1);
+      }
+    }
+    if (action === "restore") {
+      if (body.seatNo !== undefined) {
+        const seat = store.data.seats.find((item) => item.seatNo === Number(body.seatNo));
+        if (!seat) throw new HttpError(404, "座位不存在");
+        if (seat.eliminated) game.currentPlayers = Math.min(game.initialPlayers, game.currentPlayers + 1);
+        seat.status = seat.userId ? "occupied" : "available";
+        seat.eliminated = false;
+        seat.updatedAt = now();
+      } else {
+        game.currentPlayers = Math.min(game.initialPlayers, game.currentPlayers + 1);
+      }
+    }
     if (action === "buyin") game.buyinCount += Number(body.count || 1);
+    if (action === "buyin_minus") game.buyinCount = Math.max(0, game.buyinCount - Number(body.count || 1));
+    if (action === "set_buyin_amount") {
+      const buyinAmount = Number(body.buyinAmount);
+      if (buyinAmount <= 0) throw new HttpError(400, "买入金额必须大于 0");
+      game.buyinAmount = buyinAmount;
+    }
     if (action === "reset") {
       game.status = "running";
       game.level = 1;
@@ -1707,7 +1745,7 @@ function createRouter(store) {
     store.data.scanRecords.unshift(record);
     store.log(record.userId, "customer", "scan_employee_qr", "Employee", employee.employeeId, null, record, "客户扫码点单归属员工");
     await store.save();
-    return { employee, record, scene: "employee_qr" };
+    return { employee: publicEmployee(employee), record, scene: "employee_qr" };
   });
 
   add("POST", "/api/lottery/draw", async (body) => {
@@ -1771,7 +1809,7 @@ function createRouter(store) {
     employee.passwordChangedAt = now();
     store.log(employee.employeeId, employee.role, "change_password", "Employee", employee.employeeId, before, employee, "员工修改密码");
     await store.save();
-    return { employee };
+    return { employee: publicEmployee(employee) };
   });
 
   add("POST", "/api/staff/verify-code", async (body) => {
@@ -1894,7 +1932,7 @@ function createRouter(store) {
       const orders = paid.filter((order) => monthKey(order.paidAt || order.createdAt) === key);
       rows.push({ month: key, orderCount: orders.length, sales: orders.reduce((sum, order) => sum + order.amount, 0) });
     }
-    return { employee: store.getEmployee(employeeId), rows };
+    return { employee: publicEmployee(store.getEmployee(employeeId)), rows };
   });
 
   add("GET", "/api/admin/finance/overview", async () => {
@@ -2066,16 +2104,17 @@ function createRouter(store) {
     store.data.employees.push(employee);
     store.log(body.operatorId || "emp_admin", "admin", "create_employee", "Employee", employee.employeeId, null, employee, "新增工作人员");
     await store.save();
-    return { employee };
+    return { employee: publicEmployee(employee) };
   });
   add("PATCH", "/api/admin/employees/:employeeId", async (body, params) => {
     const employee = store.getEmployee(params.employeeId);
     const before = deepClone(employee);
-    Object.assign(employee, body);
+    const { resetPassword: _resetPassword, ...updates } = body;
+    Object.assign(employee, updates);
     if (body.resetPassword) employee.passwordHash = body.resetPassword;
     store.log(body.operatorId || "emp_admin", "admin", "update_employee", "Employee", employee.employeeId, before, employee, "修改工作人员");
     await store.save();
-    return { employee };
+    return { employee: publicEmployee(employee) };
   });
   add("GET", "/api/admin/blind-settings", async () => ({ settings: store.data.blindSettings }));
   add("PATCH", "/api/admin/blind-settings", async (body) => {

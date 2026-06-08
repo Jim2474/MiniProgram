@@ -25,8 +25,10 @@ Page({
       const data = await request("/api/staff/blind-games")
       const boot = await request("/api/bootstrap")
       const blind = await request("/api/admin/blind-settings")
+      const game = this.decorateGame(data.games[0])
       this.setData({
-        game: this.decorateGame(data.games[0]),
+        game,
+        "form.buyinAmount": game ? game.buyinAmount : this.data.form.buyinAmount,
         seats: (boot.seats || []).map((item) => ({ ...item, statusText: statusText(item.status) })),
         blindSettings: blind.settings
       })
@@ -70,18 +72,48 @@ Page({
   async gameAction(event) {
     if (!this.data.game) return
     try {
+      const action = event.currentTarget.dataset.action
+      const payload = {
+        operatorId: "emp_dealer",
+        action
+      }
+      if (action === "set_buyin_amount") payload.buyinAmount = this.data.form.buyinAmount
+      const data = await request(`/api/staff/blind-games/${this.data.game.gameId}`, {
+        method: "PATCH",
+        data: payload
+      })
+      this.setData({ game: this.decorateGame(data.game) })
+      await this.loadTimer()
+      await this.loadSeats()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async gameSeatAction(event) {
+    if (!this.data.game) return
+    try {
       const data = await request(`/api/staff/blind-games/${this.data.game.gameId}`, {
         method: "PATCH",
         data: {
           operatorId: "emp_dealer",
-          action: event.currentTarget.dataset.action
+          action: event.currentTarget.dataset.action,
+          seatNo: Number(event.currentTarget.dataset.seat)
         }
       })
       this.setData({ game: this.decorateGame(data.game) })
+      await this.loadSeats()
       await this.loadTimer()
     } catch (error) {
       showError(error)
     }
+  },
+
+  async loadSeats() {
+    const boot = await request("/api/bootstrap")
+    this.setData({
+      seats: (boot.seats || []).map((item) => ({ ...item, statusText: statusText(item.status) }))
+    })
   },
 
   async loadTimer() {

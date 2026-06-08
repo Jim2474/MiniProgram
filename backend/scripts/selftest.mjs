@@ -33,9 +33,14 @@ async function main() {
   try {
     const boot = await request(baseUrl, "/api/bootstrap");
     assert(boot.user.phone === "13800000000", "微信登录种子会员存在");
+    assert(boot.employees.every((employee) => !("passwordHash" in employee)), "初始化数据不暴露员工密码字段");
+
+    const loggedInUser = await request(baseUrl, "/api/wechat/login", { method: "POST", body: { phone: "13700001111", nickname: "新会员" } });
+    assert(loggedInUser.user.balance === 0 && loggedInUser.user.memberLevel === "普通会员", "微信登录新会员初始化余额和等级");
 
     const staffLogin = await request(baseUrl, "/api/staff/login", { method: "POST", body: { account: "anna", password: "demo" } });
     assert(staffLogin.employee.employeeId === "emp_anna" && staffLogin.session.sessionId, "员工可用账号密码登录");
+    assert(!("passwordHash" in staffLogin.employee), "员工登录结果不暴露密码字段");
 
     const productsBefore = await request(baseUrl, "/api/products");
     const bud = productsBefore.products.find((item) => item.skuId === "sku_bud");
@@ -52,6 +57,7 @@ async function main() {
     });
     const orderData = await request(baseUrl, "/api/orders", { method: "POST", body: { userId: "user_demo" } });
     assert(orderData.order.employee.employeeId === "emp_anna", "订单按员工二维码归属");
+    assert(!("passwordHash" in orderData.order.employee), "订单归属员工信息不暴露密码字段");
     assert(orderData.order.amount === bud.price * 2 + whisky.price, "订单金额按购物车明细计算");
 
     const paid = await request(baseUrl, `/api/orders/${orderData.order.orderId}/pay`, { method: "POST" });
@@ -71,6 +77,9 @@ async function main() {
     assert(dashboard.todayOrderCount >= 1 && dashboard.todayRevenue >= paid.order.amount, "后台看板统计订单和营收");
     assert(typeof dashboard.revenueDelta === "number" && typeof dashboard.orderCountDelta === "number" && typeof dashboard.newMemberDelta === "number", "后台看板返回较昨日对比数据");
     assert(dashboard.staffSales.some((item) => item.employeeId === "emp_anna" && item.sales >= paid.order.amount), "后台员工业绩统计正确");
+    const monthlyPerformance = await request(baseUrl, "/api/staff/performance/monthly?employeeId=emp_anna&months=6");
+    assert(monthlyPerformance.rows.length === 6 && monthlyPerformance.rows[0].sales >= paid.order.amount, "员工端返回最近六个月业绩");
+    assert(!("passwordHash" in monthlyPerformance.employee), "员工业绩接口不暴露密码字段");
 
     const transfer = await request(baseUrl, `/api/admin/orders/${orderData.order.orderId}/transfer-storage`, {
       method: "POST",
@@ -135,6 +144,30 @@ async function main() {
       body: { action: "eliminate", operatorId: "emp_dealer" },
     });
     assert(eliminated.game.currentPlayers === 8, "淘汰动作减少在桌人数");
+    const seatEliminatedByDealer = await request(baseUrl, `/api/staff/blind-games/${game.game.gameId}`, {
+      method: "PATCH",
+      body: { action: "eliminate", operatorId: "emp_dealer", seatNo: 4 },
+    });
+    assert(seatEliminatedByDealer.game.currentPlayers === 7, "荷官可按座位号淘汰玩家");
+    const seatRestoredByDealer = await request(baseUrl, `/api/staff/blind-games/${game.game.gameId}`, {
+      method: "PATCH",
+      body: { action: "restore", operatorId: "emp_dealer", seatNo: 4 },
+    });
+    assert(seatRestoredByDealer.game.currentPlayers === 8, "荷官可按座位号恢复玩家");
+    const buyinAdded = await request(baseUrl, `/api/staff/blind-games/${game.game.gameId}`, {
+      method: "PATCH",
+      body: { action: "buyin", operatorId: "emp_dealer", count: 2 },
+    });
+    const buyinMinus = await request(baseUrl, `/api/staff/blind-games/${game.game.gameId}`, {
+      method: "PATCH",
+      body: { action: "buyin_minus", operatorId: "emp_dealer" },
+    });
+    assert(buyinAdded.game.buyinCount === 2 && buyinMinus.game.buyinCount === 1, "荷官可增减代入手数");
+    const buyinAmountChanged = await request(baseUrl, `/api/staff/blind-games/${game.game.gameId}`, {
+      method: "PATCH",
+      body: { action: "set_buyin_amount", operatorId: "emp_dealer", buyinAmount: 150 },
+    });
+    assert(buyinAmountChanged.game.buyinAmount === 150, "荷官可手动调整单手买入金额");
     const timer = await request(baseUrl, `/api/staff/blind-games/${game.game.gameId}/timer`);
     assert(typeof timer.timer.remainingSeconds === "number" && Array.isArray(timer.timer.latestEvents), "荷官升盲计时器返回剩余时间和语音事件");
 
@@ -283,11 +316,15 @@ async function main() {
     assert(handledExpiredStorage.storage.status === "disposed" && handledExpiredStorage.storage.quantity === 0, "后台可人工确认处理过期存酒");
 
     const employee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "新员工", phone: "13900009999", role: "staff" } });
-    assert(employee.employee.status === "active", "后台可新增工作人员");
+    assert(employee.employee.status === "active" && !("passwordHash" in employee.employee), "后台可新增工作人员且不返回密码字段");
+    const employeesList = await request(baseUrl, "/api/admin/employees");
+    assert(employeesList.employees.every((item) => !("passwordHash" in item)), "后台人员列表不暴露密码字段");
     const disabledEmployee = await request(baseUrl, `/api/admin/employees/${employee.employee.employeeId}`, { method: "PATCH", body: { status: "disabled", resetPassword: "123456" } });
-    assert(disabledEmployee.employee.status === "disabled" && disabledEmployee.employee.passwordHash === "123456", "后台可禁用员工并重置密码");
+    assert(disabledEmployee.employee.status === "disabled" && !("passwordHash" in disabledEmployee.employee), "后台可禁用员工并重置密码但不返回密码字段");
     const password = await request(baseUrl, "/api/staff/password", { method: "POST", body: { operatorId: "emp_anna", newPassword: "new-demo" } });
-    assert(password.employee.passwordHash === "new-demo", "员工可修改密码");
+    assert(password.employee.passwordChangedAt && !("passwordHash" in password.employee), "员工可修改密码且不返回密码字段");
+    const safeLogs = await request(baseUrl, "/api/admin/operation-logs");
+    assert(safeLogs.logs.filter((log) => log.targetType === "Employee").every((log) => !log.beforeJson.includes("passwordHash") && !log.afterJson.includes("passwordHash")), "员工操作日志不记录密码字段");
 
     const verifyCode = await request(baseUrl, "/api/staff/verify-code", { method: "POST", body: { userId: "user_demo" } });
     assert(verifyCode.pointsBalance >= 0 && Array.isArray(verifyCode.coupons), "员工核销码可查询客户积分存酒券");

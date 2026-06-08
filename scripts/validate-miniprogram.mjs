@@ -58,6 +58,8 @@ for (const page of ["customer", "staff", "admin", "dealer"]) {
 
 const customerJs = await readFile(join(root, "miniprogram/pages/customer/customer.js"), "utf8");
 assert(customerJs.includes("/api/cart/items"), "customer page calls cart API");
+assert(customerJs.includes("/api/wechat/login"), "customer page calls WeChat login API");
+assert(customerJs.includes("/api/user/bind-phone"), "customer page calls bind phone API");
 assert(customerJs.includes("/api/orders") && customerJs.includes("/pay"), "customer page calls order pay API");
 assert(customerJs.includes("/api/storage/") && customerJs.includes("pickup-requests"), "customer page calls pickup request API");
 assert(customerJs.includes("/api/reservations"), "customer page calls reservation API");
@@ -78,6 +80,7 @@ assert(customerJs.includes("/api/lottery/records/") && customerJs.includes("rede
 const staffJs = await readFile(join(root, "miniprogram/pages/staff/staff.js"), "utf8");
 assert(staffJs.includes("/api/staff/storage"), "staff page calls storage create API");
 assert(staffJs.includes("/api/staff/login"), "staff page calls staff login API");
+assert(staffJs.includes("/api/staff/performance/monthly"), "staff page calls monthly performance API");
 assert(staffJs.includes("/confirm"), "staff page calls pickup confirm API");
 assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adjust API");
 assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code API");
@@ -119,6 +122,9 @@ const dealerWxml = await readFile(join(root, "miniprogram/pages/dealer/dealer.wx
 assert(dealerJs.includes("/api/staff/blind-games"), "dealer page calls blind game API");
 assert(dealerJs.includes("/timer"), "dealer page calls blind timer API");
 assert(dealerWxml.includes("next_level"), "dealer page supports next level action");
+assert(dealerWxml.includes("buyin_minus"), "dealer page supports buyin decrement action");
+assert(dealerWxml.includes("set_buyin_amount"), "dealer page supports buyin amount sync action");
+assert(dealerWxml.includes("gameSeatAction"), "dealer page supports seat-specific game action");
 assert(dealerJs.includes("/api/admin/blind-settings"), "dealer page reads blind settings API");
 
 console.log(`Miniprogram validation passed: ${checks.length} checks`);
