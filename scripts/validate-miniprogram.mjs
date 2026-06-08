@@ -78,6 +78,7 @@ assert(customerJs.includes("/api/storage/") && customerJs.includes("pickup-reque
 assert(customerJs.includes("/api/storage-records"), "customer page calls storage records API");
 assert(customerJs.includes("/api/reservations"), "customer page calls reservation API");
 assert(customerJs.includes("/cancel"), "customer page calls reservation cancel API");
+assert(customerJs.includes("reservationPartySize") && customerJs.includes("onReservationRemark") && customerWxml.includes("预约申请信息"), "customer page supports reservation date, party size and remark form");
 assert(customerWxml.includes("table-image") && customerWxml.includes("item.imageUrl"), "customer reservation list displays table image");
 assert(customerJs.includes("/api/checkin"), "customer page calls checkin API");
 assert(customerJs.includes("checkinCalendar") && customerWxml.includes("checkin-calendar") && customerWxss.includes(".checkin-day.signed"), "customer page displays checkin calendar");
@@ -150,6 +151,7 @@ assert(adminJs.includes("/api/admin/tables"), "admin page calls table management
 assert(adminJs.includes("tablePagination") && adminJs.includes("pageSize") && adminJs.includes("tableSummary"), "admin page supports table pagination and summary");
 assert(adminJs.includes("tableStatusOptions") && adminJs.includes("onTableKeyword"), "admin page supports table status and keyword filtering");
 assert(adminJs.includes("cancelAdminReservation") && adminWxml.includes("取消预约"), "admin page can cancel reservations");
+assert(adminWxml.includes("partySize") && adminWxml.includes("无备注"), "admin page displays reservation party size and remark");
 assert(adminJs.includes("onTableImage") && adminWxml.includes("桌台图片 URL"), "admin page supports table image URL input");
 assert(adminJs.includes("deleteTable") && adminWxml.includes("删除/禁用"), "admin page can delete or disable tables");
 assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind settings API");

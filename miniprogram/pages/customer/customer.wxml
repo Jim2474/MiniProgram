@@ -169,6 +169,17 @@
 
   <view class="section">
     <view class="section-title">桌位预约</view>
+    <view class="row">
+      <view class="row-title">预约申请信息</view>
+      <picker mode="date" value="{{reservationDate}}" bindchange="onReservationDate">
+        <view class="input">日期：{{reservationDate}}</view>
+      </picker>
+      <picker mode="time" value="{{reservationClock}}" bindchange="onReservationClock">
+        <view class="input">时间：{{reservationClock}}</view>
+      </picker>
+      <input class="input" type="number" value="{{reservationPartySize}}" bindinput="onReservationPartySize" placeholder="预约人数" />
+      <input class="input" value="{{reservationRemark}}" bindinput="onReservationRemark" placeholder="备注" />
+    </view>
     <view wx:for="{{tables}}" wx:key="tableId" class="row">
       <image wx:if="{{item.imageUrl}}" mode="aspectFill" src="{{item.imageUrl}}" class="table-image" />
       <view class="row-title">{{item.name}} · {{item.capacity}}人</view>
@@ -177,7 +188,7 @@
     </view>
     <view wx:for="{{reservations}}" wx:key="reservationId" class="row">
       <view class="row-title">{{item.table.name}} · {{item.reservationDate}}</view>
-      <view class="muted">{{item.statusText}} · {{item.contactPhone}}</view>
+      <view class="muted">{{item.statusText}} · {{item.partySize || 1}}人 · {{item.contactPhone}} · {{item.remark}}</view>
       <button wx:if="{{item.status === 'pending' || item.status === 'confirmed'}}" size="mini" class="secondary" data-id="{{item.reservationId}}" bindtap="cancelReservation">取消预约</button>
     </view>
   </view>

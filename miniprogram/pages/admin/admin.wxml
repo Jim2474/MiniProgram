@@ -132,7 +132,7 @@
     <view wx:if="{{reservations.length === 0}}" class="muted">暂无预约。</view>
     <view wx:for="{{reservations}}" wx:key="reservationId" class="row">
       <view class="row-title">{{item.table.name}} · {{item.user.phone}}</view>
-      <view class="muted">{{item.statusText}} · {{item.reservationDate}}</view>
+      <view class="muted">{{item.statusText}} · {{item.reservationDate}} · {{item.partySize || 1}}人 · {{item.remark || '无备注'}}</view>
       <view wx:if="{{item.status === 'pending' || item.status === 'confirmed'}}" class="btn-row">
         <button wx:if="{{item.status === 'pending'}}" size="mini" class="primary" data-id="{{item.reservationId}}" bindtap="confirmReservation">确认预约</button>
         <button size="mini" class="secondary" data-id="{{item.reservationId}}" bindtap="cancelAdminReservation">取消预约</button>

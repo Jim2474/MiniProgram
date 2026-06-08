@@ -25,6 +25,17 @@ async function request(baseUrl, path, options = {}) {
   return data;
 }
 
+async function expectHttpError(baseUrl, path, options, status, message) {
+  const body = options.rawBody !== undefined ? options.rawBody : options.body ? JSON.stringify(options.body) : undefined;
+  const res = await fetch(`${baseUrl}${path}`, {
+    method: options.method || "GET",
+    headers: { "content-type": "application/json", ...(options.headers || {}) },
+    body,
+  });
+  await res.json();
+  assert(res.status === status, message);
+}
+
 function signWechatPayBody(privateKey, timestamp, nonce, rawBody) {
   const sign = createSign("RSA-SHA256");
   sign.update(`${timestamp}\n${nonce}\n${rawBody}\n`);
@@ -167,11 +178,13 @@ async function main() {
 
     const reservation = await request(baseUrl, "/api/reservations", {
       method: "POST",
-      body: { userId: "user_demo", tableId: "table_a1", reservationTime: new Date().toISOString() },
+      body: { userId: "user_demo", tableId: "table_a1", reservationTime: new Date().toISOString(), partySize: 2, contactPhone: "13800000000", remark: "靠近吧台" },
     });
     assert(reservation.reservation.status === "pending", "客户可提交桌位预约");
+    assert(reservation.reservation.partySize === 2 && reservation.reservation.remark === "靠近吧台" && reservation.reservation.contactPhone === "13800000000", "客户预约保存人数、联系方式和备注");
     const publicTables = await request(baseUrl, "/api/tables");
     assert(publicTables.tables.every((item) => item.capacity >= 1 && item.imageUrl), "客户预约页可获取桌台人数和非空图片字段");
+    await expectHttpError(baseUrl, "/api/reservations", { method: "POST", body: { userId: "user_demo", tableId: "table_a1", partySize: 99 } }, 400, "预约人数超过桌台容量");
     const confirmedReservation = await request(baseUrl, `/api/admin/reservations/${reservation.reservation.reservationId}`, {
       method: "PATCH",
       body: { status: "confirmed", operatorId: "emp_admin" },

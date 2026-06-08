@@ -21,6 +21,10 @@ Page({
     pickupRecords: [],
     tables: [],
     reservations: [],
+    reservationDate: new Date().toISOString().slice(0, 10),
+    reservationClock: "20:00",
+    reservationPartySize: 4,
+    reservationRemark: "客户小程序预约",
     profile: { user: {} },
     loginPhone: "13800000000",
     loginNickname: "德扑客人",
@@ -356,13 +360,16 @@ Page({
 
   async createReservation(event) {
     try {
+      const reservationTime = `${this.data.reservationDate}T${this.data.reservationClock}:00+08:00`
       await request("/api/reservations", {
         method: "POST",
         data: {
           userId: app.globalData.userId,
           tableId: event.currentTarget.dataset.id,
-          reservationTime: new Date().toISOString(),
-          remark: "小程序预约"
+          reservationTime,
+          partySize: this.data.reservationPartySize,
+          contactPhone: this.data.bindPhoneValue,
+          remark: this.data.reservationRemark
         }
       })
       wx.showToast({ title: "已预约" })
@@ -370,6 +377,22 @@ Page({
     } catch (error) {
       showError(error)
     }
+  },
+
+  onReservationDate(event) {
+    this.setData({ reservationDate: event.detail.value })
+  },
+
+  onReservationClock(event) {
+    this.setData({ reservationClock: event.detail.value })
+  },
+
+  onReservationPartySize(event) {
+    this.setData({ reservationPartySize: Number(event.detail.value || 1) })
+  },
+
+  onReservationRemark(event) {
+    this.setData({ reservationRemark: event.detail.value })
   },
 
   async cancelReservation(event) {

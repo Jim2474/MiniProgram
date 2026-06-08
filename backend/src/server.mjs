@@ -1925,6 +1925,9 @@ function createRouter(store) {
     const user = store.getUser(body.userId || "user_demo");
     const table = store.data.tables.find((item) => item.tableId === body.tableId);
     if (!table) throw new HttpError(404, "桌位不存在");
+    const partySize = Number(body.partySize || body.seatCount || 1);
+    if (!Number.isInteger(partySize) || partySize < 1) throw new HttpError(400, "预约人数不合法");
+    if (partySize > Number(table.capacity || 1)) throw new HttpError(400, "预约人数超过桌台容量");
     const reservation = {
       reservationId: newId("reservation"),
       merchantId: table.merchantId,
@@ -1933,6 +1936,7 @@ function createRouter(store) {
       tableId: table.tableId,
       status: "pending",
       reservationTime: body.reservationTime || now(),
+      partySize,
       contactPhone: body.contactPhone || user.phone,
       remark: body.remark || "",
       createdAt: now(),

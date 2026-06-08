@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V38
+# 德扑棋牌门店小程序 V39
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V38 验收状态
+## V39 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V39.md`
 - `docs/ACCEPTANCE-V38.md`
 - `docs/ACCEPTANCE-V37.md`
 - `docs/ACCEPTANCE-V36.md`
@@ -244,6 +245,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V39 新增能力
+
+- 客户预约申请新增日期、时间、预约人数、联系电话和备注。
+- 后端预约接口保存预约人数和备注，并拦截超过桌台容量的预约申请。
+- 后台预约管理展示预约人数和备注，便于商家人工确认。
 
 ## V38 新增能力
 
