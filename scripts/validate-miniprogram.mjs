@@ -150,6 +150,7 @@ assert(adminJs.includes("/api/admin/storage/") && adminJs.includes("expire-handl
 assert(adminJs.includes("expiredStorageActionOptions") && adminJs.includes("expiredStorageExtendDays") && adminWxml.includes("过期存酒处理表单") && !adminJs.includes("后台人工确认过期作废"), "admin page supports real expired storage handling input");
 assert(adminJs.includes("/api/admin/stock-ledgers"), "admin page calls stock ledger API");
 assert(adminJs.includes("/api/admin/storage-ledgers") && adminJs.includes("storageLedgers"), "admin page calls customer storage ledger API");
+assert(adminJs.includes("pickupRequests") && adminJs.includes("requestedAtText") && adminWxml.includes("取酒申请队列") && adminWxml.includes("存酒余量"), "admin page displays pickup request queue with customer product context");
 assert(adminJs.includes("/api/admin/categories"), "admin page calls category create API");
 assert(adminJs.includes("/api/admin/categories/"), "admin page calls category update API");
 assert(adminJs.includes("categoryForm") && adminJs.includes("onCategorySortOrder") && adminWxml.includes("商品分类表单") && !adminJs.includes("新分类"), "admin page supports real category create form");

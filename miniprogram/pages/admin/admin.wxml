@@ -157,6 +157,15 @@
   <view class="section">
     <view class="section-title">客户存酒</view>
     <view class="row">
+      <view class="row-title">取酒申请队列</view>
+      <view class="muted">管理员可查看客户申请、商品、数量、余量和处理状态。</view>
+    </view>
+    <view wx:if="{{pickupRequests.length === 0}}" class="muted">暂无取酒申请。</view>
+    <view wx:for="{{pickupRequests}}" wx:key="requestId" class="row">
+      <view class="row-title">{{item.userPhone}} · {{item.productName}}</view>
+      <view class="muted">{{item.statusText}} · 申请 {{item.quantity}} · 存酒余量 {{item.storageQuantity}} · {{item.requestedAtText}} · {{item.requestId}}</view>
+    </view>
+    <view class="row">
       <view class="row-title">过期存酒处理表单</view>
       <picker range="{{operationForm.expiredStorageActionOptions}}" range-key="label" value="{{operationForm.expiredStorageActionIndex}}" bindchange="onExpiredStorageAction">
         <view class="input">处理动作：{{operationForm.expiredStorageActionOptions[operationForm.expiredStorageActionIndex].label}}</view>

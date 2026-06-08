@@ -14,6 +14,7 @@ Page({
     productKeyword: "",
     users: [],
     storage: [],
+    pickupRequests: [],
     reservations: [],
     tables: [],
     tableTypes: [],
@@ -235,7 +236,15 @@ Page({
   async loadStorage() {
     const data = await request("/api/admin/customer-storage")
     this.setData({
-      storage: data.storage.map((item) => ({ ...item, statusText: statusText(item.status), expireDate: item.expireAt.slice(0, 10) }))
+      storage: data.storage.map((item) => ({ ...item, statusText: statusText(item.status), expireDate: item.expireAt.slice(0, 10) })),
+      pickupRequests: data.pickupRequests.map((item) => ({
+        ...item,
+        statusText: statusText(item.status),
+        productName: item.product ? item.product.name : "未知商品",
+        userPhone: item.user ? item.user.phone : item.userId,
+        storageQuantity: item.storage ? item.storage.quantity : 0,
+        requestedAtText: item.createdAt ? item.createdAt.slice(0, 16) : ""
+      }))
     })
   },
 
