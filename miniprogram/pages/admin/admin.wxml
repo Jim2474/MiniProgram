@@ -237,7 +237,16 @@
 
   <view class="section">
     <view class="section-title">人员与系统设置</view>
-    <button size="mini" class="primary" bindtap="createEmployee">新增测试员工</button>
+    <view class="row">
+      <view class="row-title">新增员工表单</view>
+      <input class="input" value="{{employeeForm.name}}" bindinput="onEmployeeName" placeholder="员工姓名" />
+      <input class="input" value="{{employeeForm.phone}}" bindinput="onEmployeePhone" placeholder="员工手机号" />
+      <input class="input" value="{{employeeForm.loginAccount}}" bindinput="onEmployeeLoginAccount" placeholder="登录账号" />
+      <input class="input" password="true" value="{{employeeForm.password}}" bindinput="onEmployeePassword" placeholder="初始密码" />
+      <input class="input" value="{{employeeForm.role}}" bindinput="onEmployeeRole" placeholder="角色 staff/dealer/warehouse" />
+      <input class="input" type="digit" value="{{employeeForm.commissionRate}}" bindinput="onEmployeeCommissionRate" placeholder="提成率，如 0.05" />
+      <button size="mini" class="primary" bindtap="createEmployee">新增员工</button>
+    </view>
     <button size="mini" class="secondary" bindtap="updateBlindSettings">更新升盲主题</button>
     <view class="row">
       <view class="row-title">系统设置</view>

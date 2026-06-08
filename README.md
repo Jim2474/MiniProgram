@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V44
+# 德扑棋牌门店小程序 V45
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V44 验收状态
+## V45 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V45.md`
 - `docs/ACCEPTANCE-V44.md`
 - `docs/ACCEPTANCE-V43.md`
 - `docs/ACCEPTANCE-V42.md`
@@ -250,6 +251,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V45 新增能力
+
+- 后台人员管理新增员工表单，可填写姓名、手机号、登录账号、初始密码、角色和提成率。
+- 新增员工使用表单值创建，继续保存强哈希密码并隐藏密码字段。
+- 移除固定“新增测试员工”的演示式操作。
 
 ## V44 新增能力
 

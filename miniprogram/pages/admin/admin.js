@@ -66,6 +66,14 @@ Page({
       latitude: 31.2304,
       longitude: 121.4737
     },
+    employeeForm: {
+      name: "新员工",
+      phone: "13900009999",
+      loginAccount: "newstaff",
+      password: "demo123",
+      role: "staff",
+      commissionRate: 0.05
+    },
     blindSettings: {},
     blindForm: {
       theme: "classic",
@@ -701,11 +709,47 @@ Page({
 
   async createEmployee() {
     try {
-      await request("/api/admin/employees", { method: "POST", data: { name: "测试员工", phone: `139${Date.now().toString().slice(-8)}`, role: "staff" } })
+      await request("/api/admin/employees", {
+        method: "POST",
+        data: {
+          name: this.data.employeeForm.name,
+          phone: this.data.employeeForm.phone,
+          loginAccount: this.data.employeeForm.loginAccount,
+          password: this.data.employeeForm.password,
+          role: this.data.employeeForm.role,
+          commissionRate: this.data.employeeForm.commissionRate,
+          operatorId: "emp_admin"
+        }
+      })
       wx.showToast({ title: "已新增员工" })
+      await this.loadDashboard()
     } catch (error) {
       showError(error)
     }
+  },
+
+  onEmployeeName(event) {
+    this.setData({ "employeeForm.name": event.detail.value })
+  },
+
+  onEmployeePhone(event) {
+    this.setData({ "employeeForm.phone": event.detail.value })
+  },
+
+  onEmployeeLoginAccount(event) {
+    this.setData({ "employeeForm.loginAccount": event.detail.value })
+  },
+
+  onEmployeePassword(event) {
+    this.setData({ "employeeForm.password": event.detail.value })
+  },
+
+  onEmployeeRole(event) {
+    this.setData({ "employeeForm.role": event.detail.value })
+  },
+
+  onEmployeeCommissionRate(event) {
+    this.setData({ "employeeForm.commissionRate": Number(event.detail.value || 0) })
   },
 
   async updateSystemSettings() {
