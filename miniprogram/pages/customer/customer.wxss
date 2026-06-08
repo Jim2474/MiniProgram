@@ -9,3 +9,28 @@
   margin-bottom: 12rpx;
   background: #f3f3f3;
 }
+
+.qr-image {
+  width: 320rpx;
+  height: 320rpx;
+  display: block;
+  margin: 12rpx 0;
+  border: 1rpx solid #d8ded6;
+  border-radius: 8rpx;
+  background: #ffffff;
+}
+
+.qr-row {
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+  margin-top: 12rpx;
+}
+
+.qr-thumb {
+  width: 96rpx;
+  height: 96rpx;
+  border: 1rpx solid #d8ded6;
+  border-radius: 8rpx;
+  background: #ffffff;
+}

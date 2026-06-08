@@ -4,6 +4,7 @@ import { existsSync, createReadStream } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createDecipheriv, createSign, createVerify, randomBytes } from "node:crypto";
+import QRCode from "qrcode";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const rootDir = resolve(__dirname, "..");
@@ -60,6 +61,16 @@ const runtimeInfo = () => ({
 });
 function requireMockWechat(feature) {
   if (!mockWechatEnabled()) throw new HttpError(501, `${feature}需要接入真实微信能力，生产环境禁止使用模拟接口`);
+}
+
+async function qrDataUri(payload) {
+  return QRCode.toDataURL(payload, {
+    type: "image/svg+xml",
+    errorCorrectionLevel: "M",
+    margin: 1,
+    width: 256,
+    color: { dark: "#18241f", light: "#ffffff" },
+  });
 }
 
 const defaultBlindLevels = () => [
@@ -887,10 +898,12 @@ function publicEmployee(employee) {
   return safe;
 }
 
-function employeeOrderQr(employee) {
+async function employeeOrderQr(employee) {
+  const qrPayload = `employee:${employee.employeeId}`;
   return {
     scene: "employee_qr",
-    qrPayload: `employee:${employee.employeeId}`,
+    qrPayload,
+    qrImageUrl: await qrDataUri(qrPayload),
     employee: publicEmployee(employee),
     title: `${employee.name}专属点单码`,
     hint: "客户扫码后下单，订单、营收和员工业绩归属该员工。",
@@ -1031,6 +1044,7 @@ function createVoiceEvent(store, game, eventType, message) {
 function publicVerificationCode(store, code) {
   return {
     ...code,
+    qrImageUrl: code.qrImageUrl || "",
     user: store.data.users.find((user) => user.userId === code.userId),
     storage: code.storageId ? store.data.customerStorage.find((storage) => storage.storageId === code.storageId) : null,
     coupon: code.couponId ? store.data.coupons.find((coupon) => coupon.couponId === code.couponId) : null,
@@ -1212,7 +1226,7 @@ function createRouter(store) {
 
   add("GET", "/api/staff/employees/:employeeId/order-qr", async (_body, params) => {
     const employee = store.getEmployee(params.employeeId);
-    return { qr: employeeOrderQr(employee) };
+    return { qr: await employeeOrderQr(employee) };
   });
 
   add("POST", "/api/user/bind-phone", async (body) => {
@@ -2233,6 +2247,7 @@ function createRouter(store) {
       code.pointsAmount = amount;
     }
     code.qrPayload = `verify:${code.codeId}`;
+    code.qrImageUrl = await qrDataUri(code.qrPayload);
     store.data.verificationCodes.unshift(code);
     store.log(user.userId, "customer", "create_verification_code", "VerificationCode", code.codeId, null, code, `生成${type}二维码`);
     await store.save();
@@ -2272,7 +2287,7 @@ function createRouter(store) {
   add("GET", "/api/support/contact", async () => ({ phone: store.data.settings.supportPhone }));
   add("POST", "/api/scan/employee", async (body) => {
     const employee = store.getEmployee(body.employeeId || "emp_anna");
-    const expectedPayload = employeeOrderQr(employee).qrPayload;
+    const expectedPayload = `employee:${employee.employeeId}`;
     if (body.rawCode && body.rawCode !== expectedPayload) throw new HttpError(400, "员工二维码码值不匹配");
     const record = {
       recordId: newId("scan"),

@@ -16,6 +16,7 @@
     </picker>
     <view class="row">
       <view class="row-title">专属点单二维码</view>
+      <image wx:if="{{orderQrImageUrl}}" class="qr-image" mode="aspectFit" src="{{orderQrImageUrl}}" />
       <view class="muted">{{orderQrPayload}}</view>
       <view class="muted">{{orderQrHint}}</view>
       <button size="mini" class="secondary" bindtap="showOrderQr">出示码值</button>

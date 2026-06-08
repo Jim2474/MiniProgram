@@ -146,8 +146,12 @@
     </view>
     <view class="row">
       <view class="row-title">核销二维码</view>
+      <image wx:if="{{qrImageUrl}}" class="qr-image" mode="aspectFit" src="{{qrImageUrl}}" />
       <view class="muted" wx:if="{{qrText}}">当前码值：{{qrText}}</view>
-      <view wx:for="{{verificationCodes}}" wx:key="codeId" class="muted">{{item.type}} · {{item.qrPayload}} · {{item.statusText}}</view>
+      <view wx:for="{{verificationCodes}}" wx:key="codeId" class="qr-row">
+        <image wx:if="{{item.qrImageUrl}}" class="qr-thumb" mode="aspectFit" src="{{item.qrImageUrl}}" />
+        <view class="muted">{{item.type}} · {{item.qrPayload}} · {{item.statusText}}</view>
+      </view>
     </view>
     <view class="row">
       <view class="row-title">门店服务</view>

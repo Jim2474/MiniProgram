@@ -29,6 +29,7 @@ Page({
     checkinRecords: [],
     verificationCodes: [],
     qrText: "",
+    qrImageUrl: "",
     storeLocation: {},
     supportPhone: "",
     scanText: ""
@@ -369,7 +370,7 @@ Page({
         payload.storageId = storage.storageId
       }
       const data = await request("/api/verification-codes", { method: "POST", data: payload })
-      this.setData({ qrText: data.code.qrPayload })
+      this.setData({ qrText: data.code.qrPayload, qrImageUrl: data.code.qrImageUrl })
       wx.showModal({ title: "二维码码值", content: data.code.qrPayload, showCancel: false })
       await this.loadMarketing()
     } catch (error) {

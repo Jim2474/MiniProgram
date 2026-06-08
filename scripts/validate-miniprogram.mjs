@@ -79,6 +79,7 @@ assert(!customerJs.includes("/api/lottery/draw") && !customerWxml.includes("积�
 assert(!customerJs.includes("/api/leaderboard/points") && !customerWxml.includes("积分排行榜"), "customer page hides points leaderboard");
 assert(!customerJs.includes("/api/coupons/exchange") && !customerWxml.includes("积分兑换酒水券"), "customer page hides points coupon exchange");
 assert(customerJs.includes("/api/verification-codes"), "customer page calls verification code API");
+assert(customerJs.includes("qrImageUrl") && customerWxml.includes("qr-image") && customerWxml.includes("qr-thumb"), "customer page displays verification QR images");
 assert(customerJs.includes("wx.scanCode"), "customer page uses WeChat scanCode");
 assert(customerJs.includes("wx.openLocation"), "customer page uses WeChat openLocation");
 assert(customerJs.includes("wx.makePhoneCall"), "customer page uses WeChat makePhoneCall");
@@ -95,6 +96,7 @@ assert(staffJs.includes("/api/staff/performance/monthly"), "staff page calls mon
 assert(staffJs.includes("commissionText") && staffWxml.includes("预估提成"), "staff page displays commission amount");
 assert(staffJs.includes("/api/staff/employees/") && staffJs.includes("/order-qr"), "staff page calls employee order QR API");
 assert(staffJs.includes("showOrderQr") && staffWxml.includes("orderQrPayload"), "staff page displays employee order QR payload");
+assert(staffJs.includes("orderQrImageUrl") && staffWxml.includes("qr-image"), "staff page displays employee order QR image");
 assert(staffJs.includes("/confirm"), "staff page calls pickup confirm API");
 assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adjust API");
 assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code API");

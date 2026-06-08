@@ -71,6 +71,7 @@ async function main() {
     assert(!("passwordHash" in staffLogin.employee), "员工登录结果不暴露密码字段");
     const staffOrderQr = await request(baseUrl, "/api/staff/employees/emp_anna/order-qr");
     assert(staffOrderQr.qr.qrPayload === "employee:emp_anna" && staffOrderQr.qr.scene === "employee_qr", "员工端可获取专属点单二维码码值");
+    assert(staffOrderQr.qr.qrImageUrl.startsWith("data:image/"), "员工专属点单二维码返回可展示图片");
     assert(!("passwordHash" in staffOrderQr.qr.employee), "员工专属点单二维码接口不暴露密码字段");
 
     const productsBefore = await request(baseUrl, "/api/products");
@@ -397,6 +398,7 @@ async function main() {
 
     const pointsQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "points", pointsAmount: 5 } });
     assert(pointsQr.code.qrPayload.startsWith("verify:"), "客户可生成取积分二维码");
+    assert(pointsQr.code.qrImageUrl.startsWith("data:image/"), "客户取积分二维码返回可展示图片");
     const scannedPointsQr = await request(baseUrl, "/api/staff/verification-codes/scan", { method: "POST", body: { operatorId: "emp_anna", qrPayload: pointsQr.code.qrPayload } });
     assert(scannedPointsQr.code.type === "points", "员工可扫码查看积分二维码");
     const confirmedPointsQr = await request(baseUrl, `/api/staff/verification-codes/${pointsQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
@@ -407,6 +409,7 @@ async function main() {
       body: { operatorId: "emp_anna", phone: "13800000000", skuId: "sku_bud", quantity: 1, agreementAccepted: true },
     });
     const storageQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "storage", storageId: qrStorage.storage.storageId } });
+    assert(storageQr.code.qrImageUrl.startsWith("data:image/"), "客户取酒二维码返回可展示图片");
     const confirmedStorageQr = await request(baseUrl, `/api/staff/verification-codes/${storageQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna", quantity: 1 } });
     assert(confirmedStorageQr.result.storage.status === "empty", "员工可扫码核销取酒二维码");
 

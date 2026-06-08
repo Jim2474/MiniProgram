@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V30
+# 德扑棋牌门店小程序 V31
 
 本仓库包含：
 
@@ -72,10 +72,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V30 验收状态
+## V31 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V31.md`
 - `docs/ACCEPTANCE-V30.md`
 - `docs/ACCEPTANCE-V29.md`
 - `docs/ACCEPTANCE-V28.md`
@@ -109,10 +110,16 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：153 项。
-- 小程序结构与 API 调用校验：123 项。
+- 后端业务自验收：156 项。
+- 小程序结构与 API 调用校验：125 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V31 新增能力
+
+- 员工专属点单码返回并展示二维码图片，客户可直接扫码归属员工。
+- 客户积分/存酒核销码返回并展示二维码图片，历史核销码列表展示缩略图。
+- 保留原始二维码码值，便于开发者工具和人工排查。
 
 ## V30 新增能力
 

@@ -10,6 +10,7 @@ Page({
     loginPassword: "demo",
     loginSession: null,
     orderQrPayload: "",
+    orderQrImageUrl: "",
     orderQrHint: "",
     products: [],
     storageSkuIndex: 0,
@@ -81,6 +82,7 @@ Page({
     const data = await request(`/api/staff/employees/${this.data.selectedEmployee.employeeId}/order-qr`)
     this.setData({
       orderQrPayload: data.qr.qrPayload,
+      orderQrImageUrl: data.qr.qrImageUrl,
       orderQrHint: data.qr.hint
     })
   },
