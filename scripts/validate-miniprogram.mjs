@@ -66,6 +66,11 @@ assert(customerJs.includes("/api/recharge"), "customer page calls recharge API")
 assert(customerJs.includes("/api/lottery/draw"), "customer page calls lottery API");
 assert(customerJs.includes("/api/leaderboard/points"), "customer page calls leaderboard API");
 assert(customerJs.includes("/api/coupons/"), "customer page calls coupon API");
+assert(customerJs.includes("wx.scanCode"), "customer page uses WeChat scanCode");
+assert(customerJs.includes("wx.openLocation"), "customer page uses WeChat openLocation");
+assert(customerJs.includes("wx.makePhoneCall"), "customer page uses WeChat makePhoneCall");
+assert(customerJs.includes("/api/scan/employee"), "customer page records employee QR scan");
+assert(customerJs.includes("/api/lottery/records/") && customerJs.includes("redeem-request"), "customer page calls lottery redeem request API");
 
 const staffJs = await readFile(join(root, "miniprogram/pages/staff/staff.js"), "utf8");
 assert(staffJs.includes("/api/staff/storage"), "staff page calls storage create API");
@@ -74,16 +79,24 @@ assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adj
 assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code API");
 assert(staffJs.includes("/api/staff/seats/"), "staff page calls seat API");
 assert(staffJs.includes("/api/staff/password"), "staff page calls password API");
+assert(staffJs.includes("/api/staff/lottery-records/"), "staff page calls lottery redeem confirm API");
 
 const adminJs = await readFile(join(root, "miniprogram/pages/admin/admin.js"), "utf8");
 assert(adminJs.includes("/api/admin/dashboard"), "admin page calls dashboard API");
 assert(adminJs.includes("/refund"), "admin page calls refund API");
 assert(adminJs.includes("/transfer-storage"), "admin page calls transfer storage API");
 assert(adminJs.includes("/api/admin/stock/adjust"), "admin page calls stock adjust API");
+assert(adminJs.includes("/api/admin/stock-requests"), "admin page calls stock request workflow API");
+assert(adminJs.includes("/api/admin/stock-ledgers"), "admin page calls stock ledger API");
+assert(adminJs.includes("/api/admin/categories"), "admin page calls category create API");
+assert(adminJs.includes("/api/admin/products") && adminJs.includes("createProduct"), "admin page supports product create API");
 assert(adminJs.includes("/api/admin/finance/overview"), "admin page calls finance API");
 assert(adminJs.includes("/api/admin/recharge-configs"), "admin page calls recharge config API");
+assert(adminJs.includes("/api/admin/recharge-records"), "admin page calls recharge records API");
+assert(adminJs.includes("/api/admin/consumption-records"), "admin page calls consumption records API");
 assert(adminJs.includes("/api/admin/member-levels"), "admin page calls member level API");
 assert(adminJs.includes("/api/admin/lottery/"), "admin page calls lottery admin API");
+assert(adminJs.includes("/api/admin/scan-records"), "admin page calls scan records API");
 assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind settings API");
 assert(adminJs.includes("/api/admin/system-settings"), "admin page calls system settings API");
 

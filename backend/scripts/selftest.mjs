@@ -160,6 +160,7 @@ async function main() {
     assert(recharge.user.balance === 330, "客户充值后余额增加含赠送金额");
     const rechargeRecords = await request(baseUrl, "/api/recharge-records?userId=user_demo");
     assert(rechargeRecords.records.length === 1, "充值记录可查询");
+    assert(rechargeRecords.configs.some((config) => config.configId === rechargeConfig.config.configId), "充值中心返回可选配置");
 
     const couponsBefore = await request(baseUrl, "/api/coupons?userId=user_demo");
     const coupon = couponsBefore.coupons.find((item) => item.status === "available");
@@ -170,6 +171,10 @@ async function main() {
 
     const lottery = await request(baseUrl, "/api/lottery/draw", { method: "POST", body: { userId: "user_demo" } });
     assert(lottery.record.status === "won" && lottery.record.costPoints === 20, "积分抽奖扣积分并生成中奖记录");
+    const lotteryRedeemRequest = await request(baseUrl, `/api/lottery/records/${lottery.record.recordId}/redeem-request`, { method: "POST", body: { userId: "user_demo" } });
+    assert(lotteryRedeemRequest.record.status === "redeeming", "客户可申请中奖记录核销");
+    const lotteryRedeemConfirm = await request(baseUrl, `/api/staff/lottery-records/${lottery.record.recordId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
+    assert(lotteryRedeemConfirm.record.status === "completed" && lotteryRedeemConfirm.record.redeemedBy === "emp_anna", "员工可确认核销中奖记录");
     const lotteryOverview = await request(baseUrl, "/api/admin/lottery/overview");
     assert(lotteryOverview.totalDraws >= 1 && lotteryOverview.todayCostPoints >= 20, "后台抽奖概况更新");
 
@@ -177,9 +182,31 @@ async function main() {
     assert(typeof finance.todayRevenue === "number" && Array.isArray(finance.trend), "财务概览返回营收和趋势");
     const businessDetails = await request(baseUrl, "/api/admin/business-details");
     assert(Array.isArray(businessDetails.details), "营业明细可查询");
+    const consumptionRecords = await request(baseUrl, "/api/admin/consumption-records?userId=user_demo");
+    assert(Array.isArray(consumptionRecords.records), "会员消费记录可查询");
 
     const level = await request(baseUrl, "/api/admin/member-levels", { method: "POST", body: { name: "黑金会员", minPoints: 2000 } });
     assert(level.level.name === "黑金会员", "后台可新增会员等级");
+
+    const category = await request(baseUrl, "/api/admin/categories", { method: "POST", body: { name: "软饮", sortOrder: 4 } });
+    assert(category.category.name === "软饮", "后台可新增商品分类");
+    const product = await request(baseUrl, "/api/admin/products", {
+      method: "POST",
+      body: { categoryId: category.category.categoryId, name: "苏打水", spec: "330ml", unit: "瓶", price: 18, stockQty: 6, warningQty: 2, storageDays: 0 },
+    });
+    assert(product.product.name === "苏打水" && product.product.stockQty === 6, "后台可新增 SKU");
+    const filteredProducts = await request(baseUrl, `/api/products?categoryId=${category.category.categoryId}&keyword=${encodeURIComponent("苏打")}`);
+    assert(filteredProducts.products.length === 1 && filteredProducts.products[0].skuId === product.product.skuId, "商品列表支持分类与关键词筛选");
+    const stockInRequest = await request(baseUrl, "/api/admin/stock-requests", { method: "POST", body: { skuId: product.product.skuId, direction: "in", quantity: 4, operatorId: "emp_admin" } });
+    assert(stockInRequest.request.status === "pending" && stockInRequest.request.direction === "in", "后台可提交入库申请");
+    const stockInConfirm = await request(baseUrl, `/api/admin/stock-requests/${stockInRequest.request.requestId}/confirm`, { method: "POST", body: { operatorId: "emp_admin" } });
+    assert(stockInConfirm.product.stockQty === 10 && stockInConfirm.request.status === "completed", "确认入库后写入库存账");
+    const stockOutRequest = await request(baseUrl, "/api/admin/stock-requests", { method: "POST", body: { skuId: product.product.skuId, direction: "out", quantity: 2, operatorId: "emp_admin" } });
+    const stockOutConfirm = await request(baseUrl, `/api/admin/stock-requests/${stockOutRequest.request.requestId}/confirm`, { method: "POST", body: { operatorId: "emp_admin" } });
+    assert(stockOutConfirm.product.stockQty === 8 && stockOutConfirm.ledger.changeType === "stock_out", "确认出库后写入库存账");
+    const rejectRequest = await request(baseUrl, "/api/admin/stock-requests", { method: "POST", body: { skuId: product.product.skuId, direction: "in", quantity: 1, operatorId: "emp_admin" } });
+    const rejectedRequest = await request(baseUrl, `/api/admin/stock-requests/${rejectRequest.request.requestId}/reject`, { method: "POST", body: { operatorId: "emp_admin", reason: "单据错误" } });
+    assert(rejectedRequest.request.status === "rejected", "出入库申请可驳回");
 
     const employee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "新员工", phone: "13900009999", role: "staff" } });
     assert(employee.employee.status === "active", "后台可新增工作人员");
@@ -190,6 +217,11 @@ async function main() {
 
     const verifyCode = await request(baseUrl, "/api/staff/verify-code", { method: "POST", body: { userId: "user_demo" } });
     assert(verifyCode.pointsBalance >= 0 && Array.isArray(verifyCode.coupons), "员工核销码可查询客户积分存酒券");
+
+    const scan = await request(baseUrl, "/api/scan/employee", { method: "POST", body: { userId: "user_demo", employeeId: "emp_anna", rawCode: "employee:emp_anna" } });
+    assert(scan.employee.employeeId === "emp_anna" && scan.record.scene === "employee_qr", "客户扫码员工二维码生成归属记录");
+    const scanRecords = await request(baseUrl, "/api/admin/scan-records");
+    assert(scanRecords.records.some((record) => record.employeeId === "emp_anna"), "后台可查看扫码归属记录");
 
     const seatSit = await request(baseUrl, "/api/staff/seats/3/sit", { method: "POST", body: { userId: "user_demo", operatorId: "emp_anna" } });
     assert(seatSit.seat.status === "occupied", "员工可确认座位入座");

@@ -78,6 +78,11 @@
       <view class="muted">{{item.statusText}}</view>
       <button wx:if="{{item.status === 'pending'}}" size="mini" class="primary" data-id="{{item.couponId}}" bindtap="confirmCoupon">确认酒水券</button>
     </view>
+    <view wx:for="{{lotteryConfirmList}}" wx:key="recordId" class="row">
+      <view class="row-title">{{item.prizeName}}</view>
+      <view class="muted">{{item.statusText}} · 消耗 {{item.costPoints}} 积分</view>
+      <button wx:if="{{item.status === 'redeeming' || item.status === 'won'}}" size="mini" class="primary" data-id="{{item.recordId}}" bindtap="confirmLottery">确认中奖核销</button>
+    </view>
   </view>
 
   <view class="section">

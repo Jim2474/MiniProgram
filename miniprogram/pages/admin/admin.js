@@ -5,18 +5,31 @@ Page({
     dashboard: {},
     orders: [],
     products: [],
+    productCategories: [],
+    productKeyword: "",
     storage: [],
     reservations: [],
     logs: [],
+    stockRequests: [],
+    stockLedgers: [],
     finance: {},
     businessDetails: [],
     rechargeConfigs: [],
+    rechargeRecords: [],
+    consumptionRecords: [],
     memberLevels: [],
     lotteryOverview: {},
     lotteryPrizes: [],
     lotterySettings: {},
+    scanRecords: [],
     systemSettings: {},
-    blindSettings: {}
+    blindSettings: {},
+    productForm: {
+      categoryIndex: 0,
+      name: "气泡水",
+      price: 18,
+      stockQty: 12
+    }
   },
 
   onShow() {
@@ -56,9 +69,11 @@ Page({
   },
 
   async loadProducts() {
-    const data = await request("/api/admin/products")
+    const keyword = this.data.productKeyword ? `?keyword=${encodeURIComponent(this.data.productKeyword)}` : ""
+    const data = await request(`/api/admin/products${keyword}`)
     this.setData({
-      products: data.products.map((item) => ({ ...item, priceText: money(item.price) }))
+      products: data.products.map((item) => ({ ...item, priceText: money(item.price) })),
+      productCategories: data.categories
     })
   },
 
@@ -86,13 +101,18 @@ Page({
   },
 
   async loadV3Admin() {
-    const [finance, business, recharge, levels, lotteryOverview, lotteryPrizes, system, blind] = await Promise.all([
+    const [finance, business, recharge, rechargeRecords, consumptionRecords, levels, lotteryOverview, lotteryPrizes, stockRequests, stockLedgers, scanRecords, system, blind] = await Promise.all([
       request("/api/admin/finance/overview"),
       request("/api/admin/business-details"),
       request("/api/admin/recharge-configs"),
+      request("/api/admin/recharge-records"),
+      request("/api/admin/consumption-records"),
       request("/api/admin/member-levels"),
       request("/api/admin/lottery/overview"),
       request("/api/admin/lottery/prizes"),
+      request("/api/admin/stock-requests"),
+      request("/api/admin/stock-ledgers"),
+      request("/api/admin/scan-records"),
       request("/api/admin/system-settings"),
       request("/api/admin/blind-settings")
     ])
@@ -105,10 +125,15 @@ Page({
       },
       businessDetails: business.details,
       rechargeConfigs: recharge.configs,
+      rechargeRecords: rechargeRecords.records.map((item) => ({ ...item, amountText: money(item.amount), giftText: money(item.giftAmount), balanceText: money(item.balanceAfter) })),
+      consumptionRecords: consumptionRecords.records.map((item) => ({ ...item, amountText: money(item.amount), statusText: statusText(item.orderStatus) })),
       memberLevels: levels.levels,
       lotteryOverview,
       lotteryPrizes: lotteryPrizes.prizes,
       lotterySettings: lotteryPrizes.settings,
+      stockRequests: stockRequests.requests.map((item) => ({ ...item, statusText: statusText(item.status), directionText: item.direction === "in" ? "入库" : "出库" })),
+      stockLedgers: stockLedgers.ledgers.slice(0, 8),
+      scanRecords: scanRecords.records.slice(0, 8),
       systemSettings: system.settings,
       blindSettings: blind.settings
     })
@@ -159,6 +184,99 @@ Page({
       })
       wx.showToast({ title: "库存已调整" })
       await this.loadProducts()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  onProductKeyword(event) {
+    this.setData({ productKeyword: event.detail.value })
+  },
+
+  async searchProducts() {
+    await this.loadProducts()
+  },
+
+  onProductCategoryChange(event) {
+    this.setData({ "productForm.categoryIndex": Number(event.detail.value) })
+  },
+
+  onProductName(event) {
+    this.setData({ "productForm.name": event.detail.value })
+  },
+
+  onProductPrice(event) {
+    this.setData({ "productForm.price": Number(event.detail.value || 0) })
+  },
+
+  onProductStock(event) {
+    this.setData({ "productForm.stockQty": Number(event.detail.value || 0) })
+  },
+
+  async createCategory() {
+    try {
+      await request("/api/admin/categories", { method: "POST", data: { name: `新分类${Date.now().toString().slice(-3)}` } })
+      wx.showToast({ title: "分类已新增" })
+      await this.loadProducts()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async createProduct() {
+    try {
+      const category = this.data.productCategories[this.data.productForm.categoryIndex] || this.data.productCategories[0]
+      await request("/api/admin/products", {
+        method: "POST",
+        data: {
+          categoryId: category.categoryId,
+          name: this.data.productForm.name,
+          spec: "标准规格",
+          unit: "份",
+          price: this.data.productForm.price,
+          stockQty: this.data.productForm.stockQty,
+          warningQty: 2,
+          description: "后台新增 SKU",
+          storageDays: 0
+        }
+      })
+      wx.showToast({ title: "SKU 已新增" })
+      await this.loadProducts()
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async createStockRequest(event) {
+    try {
+      await request("/api/admin/stock-requests", {
+        method: "POST",
+        data: { skuId: event.currentTarget.dataset.id, direction: event.currentTarget.dataset.direction, quantity: 3, operatorId: "emp_admin" }
+      })
+      wx.showToast({ title: "申请已提交" })
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async confirmStockRequest(event) {
+    try {
+      await request(`/api/admin/stock-requests/${event.currentTarget.dataset.id}/confirm`, { method: "POST", data: { operatorId: "emp_admin" } })
+      wx.showToast({ title: "已确认" })
+      await this.loadProducts()
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async rejectStockRequest(event) {
+    try {
+      await request(`/api/admin/stock-requests/${event.currentTarget.dataset.id}/reject`, { method: "POST", data: { operatorId: "emp_admin", reason: "后台驳回" } })
+      wx.showToast({ title: "已驳回" })
+      await this.loadV3Admin()
     } catch (error) {
       showError(error)
     }

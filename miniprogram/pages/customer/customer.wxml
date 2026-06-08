@@ -10,6 +10,10 @@
     <picker range="{{employees}}" range-key="name" value="{{employeeIndex}}" bindchange="onEmployeeChange">
       <view class="input">{{selectedEmployee.name || '自然订单'}}</view>
     </picker>
+    <view class="btn-row">
+      <button class="primary" bindtap="scanEmployeeCode">扫码员工二维码</button>
+    </view>
+    <view class="muted" wx:if="{{scanText}}">{{scanText}}</view>
   </view>
 
   <view class="section">
@@ -71,6 +75,10 @@
       <view class="muted">{{item.statusText}} · 到期 {{item.expireDate}}</view>
       <button wx:if="{{item.status === 'available' && item.quantity > 0}}" size="mini" class="primary" data-id="{{item.storageId}}" bindtap="requestPickup">申请取酒</button>
     </view>
+    <view class="row">
+      <view class="row-title">积分明细</view>
+      <view wx:for="{{points.ledgers}}" wx:key="ledgerId" class="muted">{{item.reason}} · {{item.changeAmount}} · 余额 {{item.balanceAfter}}</view>
+    </view>
   </view>
 
   <view class="section">
@@ -85,10 +93,21 @@
         <view class="metric-label">余额</view>
       </view>
     </view>
+    <picker range="{{rechargeConfigs}}" range-key="label" value="{{rechargeConfigIndex}}" bindchange="onRechargeConfigChange">
+      <view class="input">{{rechargeConfigLabel}}</view>
+    </picker>
     <view class="btn-row">
       <button size="mini" class="primary" bindtap="checkin">签到送积分</button>
-      <button size="mini" class="secondary" bindtap="recharge">充值500送50</button>
+      <button size="mini" class="secondary" bindtap="recharge">微信支付充值</button>
       <button size="mini" class="secondary" bindtap="drawLottery">积分抽奖</button>
+    </view>
+    <view class="row">
+      <view class="row-title">签到记录</view>
+      <view wx:for="{{checkinRecords}}" wx:key="checkinId" class="muted">{{item.date}} · +{{item.points}}</view>
+    </view>
+    <view class="row">
+      <view class="row-title">充值记录</view>
+      <view wx:for="{{rechargeRecords}}" wx:key="recordId" class="muted">{{item.amountText}} + {{item.giftText}} · 余额 {{item.balanceText}}</view>
     </view>
     <view class="row">
       <view class="row-title">积分排行榜</view>
@@ -99,10 +118,20 @@
       <view class="row-title">酒水券</view>
       <view wx:for="{{coupons}}" wx:key="couponId" class="muted">{{item.title}} · {{item.statusText}}</view>
       <button wx:if="{{redeemableCouponId}}" size="mini" class="primary" data-id="{{redeemableCouponId}}" bindtap="requestCouponRedeem">申请兑换</button>
+      <view wx:for="{{couponRecords}}" wx:key="recordId" class="muted">{{item.action}} · {{item.statusText}}</view>
+    </view>
+    <view class="row">
+      <view class="row-title">中奖记录</view>
+      <view wx:for="{{lotteryRecords}}" wx:key="recordId" class="muted">{{item.prizeName}} · {{item.statusText}}</view>
+      <button wx:if="{{redeemableLotteryId}}" size="mini" class="primary" data-id="{{redeemableLotteryId}}" bindtap="requestLotteryRedeem">申请核销奖品</button>
     </view>
     <view class="row">
       <view class="row-title">门店服务</view>
       <view class="muted">{{storeLocation.address}} · 客服 {{supportPhone}}</view>
+      <view class="btn-row">
+        <button size="mini" class="secondary" bindtap="openStoreLocation">打开地图</button>
+        <button size="mini" class="secondary" bindtap="callSupport">拨打客服</button>
+      </view>
     </view>
   </view>
 

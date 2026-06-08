@@ -207,6 +207,8 @@ function seedData() {
     refunds: [],
     pointsLedgers: [],
     stockLedgers: [],
+    stockRequests: [],
+    scanRecords: [],
     customerStorage: [
       {
         storageId: "storage_demo",
@@ -338,6 +340,8 @@ class Store {
       return this.data;
     }
     this.data = JSON.parse(await readFile(this.filePath, "utf8"));
+    this.data.stockRequests ||= [];
+    this.data.scanRecords ||= [];
     return this.data;
   }
 
@@ -523,6 +527,15 @@ function publicCoupon(store, coupon) {
   };
 }
 
+function publicStockRequest(store, request) {
+  return {
+    ...request,
+    product: store.data.products.find((sku) => sku.skuId === request.skuId),
+    operator: store.data.employees.find((employee) => employee.employeeId === request.operatorId),
+    handledByEmployee: request.handledBy ? store.data.employees.find((employee) => employee.employeeId === request.handledBy) : null,
+  };
+}
+
 async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -620,7 +633,14 @@ function createRouter(store) {
   });
 
   add("GET", "/api/products/categories", async () => ({ categories: store.data.categories.filter((item) => item.status === "active") }));
-  add("GET", "/api/products", async () => ({ products: store.data.products.filter((item) => item.status === "active") }));
+  add("GET", "/api/products", async (_body, _params, query) => {
+    let products = store.data.products.filter((item) => item.status === "active");
+    const categoryId = query.get("categoryId");
+    const keyword = query.get("keyword");
+    if (categoryId) products = products.filter((item) => item.categoryId === categoryId);
+    if (keyword) products = products.filter((item) => `${item.name}${item.spec}${item.description}`.includes(keyword));
+    return { products, categories: store.data.categories.filter((item) => item.status === "active") };
+  });
   add("GET", "/api/products/:skuId", async (_body, params) => ({ product: store.getSku(params.skuId) }));
 
   add("GET", "/api/cart", async (_body, _params, query) => {
@@ -1036,15 +1056,147 @@ function createRouter(store) {
 
   add("GET", "/api/admin/dashboard", async () => dashboard(store));
   add("GET", "/api/admin/orders", async () => ({ orders: store.data.orders.map((order) => publicOrder(store, order)).reverse() }));
-  add("GET", "/api/admin/products", async () => ({ products: store.data.products, categories: store.data.categories }));
-  add("GET", "/api/admin/stock-ledgers", async () => ({ ledgers: store.data.stockLedgers }));
+  add("GET", "/api/admin/products", async (_body, _params, query) => {
+    let products = store.data.products;
+    const status = query.get("status");
+    const categoryId = query.get("categoryId");
+    const keyword = query.get("keyword");
+    if (status) products = products.filter((item) => item.status === status);
+    if (categoryId) products = products.filter((item) => item.categoryId === categoryId);
+    if (keyword) products = products.filter((item) => `${item.name}${item.spec}${item.description}`.includes(keyword));
+    return { products, categories: store.data.categories };
+  });
+  add("POST", "/api/admin/categories", async (body) => {
+    const category = {
+      categoryId: newId("cat"),
+      merchantId: store.data.settings.merchantId,
+      storeId: store.data.settings.storeId,
+      name: body.name || "新分类",
+      sortOrder: Number(body.sortOrder || store.data.categories.length + 1),
+      status: body.status || "active",
+    };
+    store.data.categories.push(category);
+    store.log(body.operatorId || "emp_admin", "admin", "create_category", "ProductCategory", category.categoryId, null, category, "新增商品分类");
+    await store.save();
+    return { category };
+  });
+  add("POST", "/api/admin/products", async (body) => {
+    const category = store.data.categories.find((item) => item.categoryId === (body.categoryId || store.data.categories[0]?.categoryId));
+    if (!category) throw new HttpError(404, "商品分类不存在");
+    const product = {
+      skuId: newId("sku"),
+      merchantId: store.data.settings.merchantId,
+      storeId: store.data.settings.storeId,
+      categoryId: category.categoryId,
+      name: body.name || "新商品",
+      spec: body.spec || "标准规格",
+      unit: body.unit || "份",
+      price: Number(body.price || 0),
+      stockQty: Number(body.stockQty || 0),
+      warningQty: Number(body.warningQty || 0),
+      status: body.status || "active",
+      description: body.description || "",
+      imageUrl: body.imageUrl || "",
+      storageDays: Number(body.storageDays || 0),
+    };
+    if (product.price < 0 || product.stockQty < 0) throw new HttpError(400, "价格和库存不能为负数");
+    store.data.products.push(product);
+    if (product.stockQty > 0) {
+      store.data.stockLedgers.unshift({
+        ledgerId: newId("stock"),
+        merchantId: product.merchantId,
+        storeId: product.storeId,
+        skuId: product.skuId,
+        changeQty: product.stockQty,
+        stockAfter: product.stockQty,
+        changeType: "initial",
+        sourceType: "product",
+        sourceId: product.skuId,
+        operatorId: body.operatorId || "emp_admin",
+        reason: "新增商品初始库存",
+        createdAt: now(),
+      });
+    }
+    store.log(body.operatorId || "emp_admin", "admin", "create_product", "ProductSKU", product.skuId, null, product, "新增 SKU");
+    await store.save();
+    return { product };
+  });
+  add("GET", "/api/admin/stock-ledgers", async () => ({ ledgers: store.data.stockLedgers.map((ledger) => ({ ...ledger, product: store.data.products.find((sku) => sku.skuId === ledger.skuId) })) }));
+  add("GET", "/api/admin/stock-requests", async (_body, _params, query) => {
+    let requests = store.data.stockRequests;
+    const status = query.get("status");
+    if (status) requests = requests.filter((item) => item.status === status);
+    return { requests: requests.map((request) => publicStockRequest(store, request)) };
+  });
+  add("POST", "/api/admin/stock-requests", async (body) => {
+    const employee = store.getEmployee(body.operatorId || "emp_admin");
+    const sku = store.getSku(body.skuId);
+    const quantity = Number(body.quantity || 0);
+    const direction = body.direction === "out" ? "out" : "in";
+    if (quantity <= 0) throw new HttpError(400, "出入库数量必须大于 0");
+    if (direction === "out" && sku.stockQty < quantity) throw new HttpError(409, "库存不足，不能提交出库");
+    const request = {
+      requestId: newId("stockReq"),
+      merchantId: sku.merchantId,
+      storeId: sku.storeId,
+      skuId: sku.skuId,
+      direction,
+      quantity,
+      status: "pending",
+      operatorId: employee.employeeId,
+      handledBy: null,
+      reason: body.reason || (direction === "in" ? "后台入库申请" : "后台出库申请"),
+      createdAt: now(),
+      handledAt: null,
+    };
+    store.data.stockRequests.unshift(request);
+    store.log(employee.employeeId, employee.role, "create_stock_request", "StockRequest", request.requestId, null, request, request.reason);
+    await store.save();
+    return { request: publicStockRequest(store, request) };
+  });
+  add("POST", "/api/admin/stock-requests/:requestId/confirm", async (body, params) => {
+    const request = store.data.stockRequests.find((item) => item.requestId === params.requestId);
+    if (!request) throw new HttpError(404, "出入库申请不存在");
+    if (request.status !== "pending") throw new HttpError(400, "出入库申请已处理");
+    const sku = store.getSku(request.skuId);
+    const before = deepClone(sku);
+    const changeQty = request.direction === "in" ? request.quantity : -request.quantity;
+    if (sku.stockQty + changeQty < 0) throw new HttpError(409, "库存不足，不能确认出库");
+    const ledger = store.createStockLedger(sku, changeQty, request.direction === "in" ? "stock_in" : "stock_out", "stock_request", request.requestId, body.operatorId || "emp_admin", request.reason);
+    request.status = "completed";
+    request.handledBy = body.operatorId || "emp_admin";
+    request.handledAt = now();
+    store.log(body.operatorId || "emp_admin", "admin", "confirm_stock_request", "ProductSKU", sku.skuId, before, sku, request.reason);
+    await store.save();
+    return { request: publicStockRequest(store, request), product: sku, ledger };
+  });
+  add("POST", "/api/admin/stock-requests/:requestId/reject", async (body, params) => {
+    const request = store.data.stockRequests.find((item) => item.requestId === params.requestId);
+    if (!request) throw new HttpError(404, "出入库申请不存在");
+    if (request.status !== "pending") throw new HttpError(400, "出入库申请已处理");
+    const before = deepClone(request);
+    request.status = "rejected";
+    request.handledBy = body.operatorId || "emp_admin";
+    request.handledAt = now();
+    request.reason = body.reason || request.reason;
+    store.log(body.operatorId || "emp_admin", "admin", "reject_stock_request", "StockRequest", request.requestId, before, request, request.reason);
+    await store.save();
+    return { request: publicStockRequest(store, request) };
+  });
   add("GET", "/api/admin/customer-storage", async () => ({
     storage: store.data.customerStorage.map((item) => ({ ...item, user: store.data.users.find((user) => user.userId === item.userId), product: store.getSku(item.skuId) })),
     pickupRequests: store.data.storagePickupRequests,
   }));
   add("GET", "/api/admin/users", async () => ({ users: store.data.users }));
   add("GET", "/api/admin/points-ledgers", async () => ({ ledgers: store.data.pointsLedgers }));
+  add("GET", "/api/admin/consumption-records", async (_body, _params, query) => {
+    const userId = query.get("userId");
+    let orders = store.data.orders.filter((order) => order.payStatus === "paid");
+    if (userId) orders = orders.filter((order) => order.userId === userId);
+    return { records: orders.map((order) => publicOrder(store, order)).reverse() };
+  });
   add("GET", "/api/admin/employees", async () => ({ employees: store.data.employees }));
+  add("GET", "/api/admin/scan-records", async () => ({ records: store.data.scanRecords }));
   add("GET", "/api/admin/operation-logs", async () => ({ logs: store.data.operationLogs }));
 
   add("POST", "/api/admin/stock/adjust", async (body) => {
@@ -1216,7 +1368,21 @@ function createRouter(store) {
 
   add("GET", "/api/store/location", async () => ({ location: store.data.settings.location, store: store.data.stores[0] }));
   add("GET", "/api/support/contact", async () => ({ phone: store.data.settings.supportPhone }));
-  add("POST", "/api/scan/employee", async (body) => ({ employee: store.getEmployee(body.employeeId || "emp_anna"), scene: "employee_qr" }));
+  add("POST", "/api/scan/employee", async (body) => {
+    const employee = store.getEmployee(body.employeeId || "emp_anna");
+    const record = {
+      recordId: newId("scan"),
+      userId: body.userId || "user_demo",
+      employeeId: employee.employeeId,
+      scene: "employee_qr",
+      rawCode: body.rawCode || `employee:${employee.employeeId}`,
+      createdAt: now(),
+    };
+    store.data.scanRecords.unshift(record);
+    store.log(record.userId, "customer", "scan_employee_qr", "Employee", employee.employeeId, null, record, "客户扫码点单归属员工");
+    await store.save();
+    return { employee, record, scene: "employee_qr" };
+  });
 
   add("POST", "/api/lottery/draw", async (body) => {
     if (!store.data.lotterySettings.enabled) throw new HttpError(400, "抽奖未开启");
@@ -1229,7 +1395,7 @@ function createRouter(store) {
     const prizes = store.data.lotteryPrizes.filter((prize) => prize.status === "active");
     const prize = prizes[store.data.lotteryRecords.length % prizes.length];
     store.createPointsLedger(user, -cost, "积分抽奖消耗", "lottery", prize.prizeId, "system");
-    const record = { recordId: newId("lottery"), userId: user.userId, prizeId: prize.prizeId, prizeName: prize.name, costPoints: cost, status: "won", createdAt: now() };
+    const record = { recordId: newId("lottery"), userId: user.userId, prizeId: prize.prizeId, prizeName: prize.name, costPoints: cost, status: "won", redeemedBy: null, redeemedAt: null, createdAt: now() };
     store.data.lotteryRecords.unshift(record);
     store.log(user.userId, "customer", "lottery_draw", "LotteryRecord", record.recordId, null, record, "积分抽奖");
     await store.save();
@@ -1239,6 +1405,32 @@ function createRouter(store) {
   add("GET", "/api/lottery/records", async (_body, _params, query) => {
     const userId = query.get("userId") || "user_demo";
     return { records: store.data.lotteryRecords.filter((record) => record.userId === userId), settings: store.data.lotterySettings, prizes: store.data.lotteryPrizes };
+  });
+
+  add("POST", "/api/lottery/records/:recordId/redeem-request", async (body, params) => {
+    const record = store.data.lotteryRecords.find((item) => item.recordId === params.recordId);
+    if (!record) throw new HttpError(404, "中奖记录不存在");
+    if (record.userId !== (body.userId || record.userId)) throw new HttpError(403, "不能核销他人中奖记录");
+    if (record.status !== "won") throw new HttpError(400, "中奖记录不可申请核销");
+    const before = deepClone(record);
+    record.status = "redeeming";
+    store.log(record.userId, "customer", "lottery_redeem_request", "LotteryRecord", record.recordId, before, record, "客户申请核销中奖记录");
+    await store.save();
+    return { record };
+  });
+
+  add("POST", "/api/staff/lottery-records/:recordId/confirm", async (body, params) => {
+    const employee = store.getEmployee(body.operatorId || "emp_anna");
+    const record = store.data.lotteryRecords.find((item) => item.recordId === params.recordId);
+    if (!record) throw new HttpError(404, "中奖记录不存在");
+    if (record.status !== "redeeming" && record.status !== "won") throw new HttpError(400, "中奖记录已核销");
+    const before = deepClone(record);
+    record.status = "completed";
+    record.redeemedBy = employee.employeeId;
+    record.redeemedAt = now();
+    store.log(employee.employeeId, employee.role, "lottery_redeem_confirm", "LotteryRecord", record.recordId, before, record, "员工确认核销中奖记录");
+    await store.save();
+    return { record };
   });
 
   add("POST", "/api/staff/password", async (body) => {

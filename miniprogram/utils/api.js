@@ -54,7 +54,11 @@ function statusText(status) {
     occupied: "占用",
     maintenance: "维护",
     running: "进行中",
-    paused: "已暂停"
+    paused: "已暂停",
+    redeeming: "待核销",
+    won: "已中奖",
+    active: "启用",
+    disabled: "停用"
   }
   return map[status] || status
 }

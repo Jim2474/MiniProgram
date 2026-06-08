@@ -20,9 +20,18 @@ Page({
     leaderboard: [],
     myRank: null,
     coupons: [],
+    couponRecords: [],
     redeemableCouponId: "",
+    rechargeConfigs: [],
+    rechargeConfigIndex: 0,
+    rechargeConfigLabel: "充500送50",
+    rechargeRecords: [],
+    checkinRecords: [],
+    lotteryRecords: [],
+    redeemableLotteryId: "",
     storeLocation: {},
-    supportPhone: ""
+    supportPhone: "",
+    scanText: ""
   },
 
   onShow() {
@@ -103,13 +112,18 @@ Page({
   },
 
   async loadMarketing() {
-    const [profile, leaderboard, coupons, location, support] = await Promise.all([
+    const [profile, leaderboard, coupons, location, support, rechargeRecords, checkin, lotteryRecords] = await Promise.all([
       request(`/api/user/profile?userId=${app.globalData.userId}`),
       request(`/api/leaderboard/points?userId=${app.globalData.userId}`),
       request(`/api/coupons?userId=${app.globalData.userId}`),
       request("/api/store/location"),
-      request("/api/support/contact")
+      request("/api/support/contact"),
+      request(`/api/recharge-records?userId=${app.globalData.userId}`),
+      request(`/api/checkin?userId=${app.globalData.userId}`),
+      request(`/api/lottery/records?userId=${app.globalData.userId}`)
     ])
+    const rechargeConfigs = rechargeRecords.configs || []
+    const lotteryList = lotteryRecords.records || []
     this.setData({
       profile: {
         ...profile,
@@ -119,7 +133,14 @@ Page({
       leaderboard: leaderboard.top10,
       myRank: leaderboard.mine,
       coupons: coupons.coupons.map((item) => ({ ...item, statusText: statusText(item.status) })),
+      couponRecords: coupons.records.map((item) => ({ ...item, statusText: statusText(item.status) })),
       redeemableCouponId: (coupons.coupons.find((item) => item.status === "available") || {}).couponId || "",
+      rechargeConfigs: rechargeConfigs.map((item) => ({ ...item, label: `充${item.amount}送${item.giftAmount}` })),
+      rechargeConfigLabel: rechargeConfigs[this.data.rechargeConfigIndex] ? `充${rechargeConfigs[this.data.rechargeConfigIndex].amount}送${rechargeConfigs[this.data.rechargeConfigIndex].giftAmount}` : "充500送50",
+      rechargeRecords: rechargeRecords.records.map((item) => ({ ...item, amountText: money(item.amount), giftText: money(item.giftAmount), balanceText: money(item.balanceAfter) })),
+      checkinRecords: checkin.records,
+      lotteryRecords: lotteryList.map((item) => ({ ...item, statusText: statusText(item.status) })),
+      redeemableLotteryId: (lotteryList.find((item) => item.status === "won") || {}).recordId || "",
       storeLocation: location.location,
       supportPhone: support.phone
     })
@@ -131,6 +152,29 @@ Page({
     app.globalData.selectedEmployeeId = selectedEmployee.employeeId
     this.setData({ employeeIndex, selectedEmployee })
     await this.loadCart()
+  },
+
+  async scanEmployeeCode() {
+    try {
+      let rawCode = `employee:${this.data.selectedEmployee.employeeId}`
+      if (wx.scanCode) {
+        try {
+          const result = await new Promise((resolve, reject) => wx.scanCode({ onlyFromCamera: false, success: resolve, fail: reject }))
+          rawCode = result.result || rawCode
+        } catch (_error) {
+          rawCode = `employee:${this.data.selectedEmployee.employeeId}`
+        }
+      }
+      const employeeId = rawCode.includes("employee:") ? rawCode.split("employee:")[1] : this.data.selectedEmployee.employeeId
+      const data = await request("/api/scan/employee", { method: "POST", data: { userId: app.globalData.userId, employeeId, rawCode } })
+      const employeeIndex = Math.max(0, this.data.employees.findIndex((item) => item.employeeId === data.employee.employeeId))
+      app.globalData.selectedEmployeeId = data.employee.employeeId
+      this.setData({ selectedEmployee: data.employee, employeeIndex, scanText: `已扫码归属：${data.employee.name}` })
+      await this.loadCart()
+      wx.showToast({ title: "扫码成功" })
+    } catch (error) {
+      showError(error)
+    }
   },
 
   async addToCart(event) {
@@ -224,7 +268,8 @@ Page({
 
   async recharge() {
     try {
-      await request("/api/recharge", { method: "POST", data: { userId: app.globalData.userId, amount: 500, giftAmount: 50 } })
+      const config = this.data.rechargeConfigs[this.data.rechargeConfigIndex]
+      await request("/api/recharge", { method: "POST", data: { userId: app.globalData.userId, configId: config ? config.configId : undefined, amount: config ? undefined : 500, giftAmount: config ? undefined : 50 } })
       wx.showToast({ title: "充值成功" })
       await this.loadMarketing()
     } catch (error) {
@@ -232,11 +277,27 @@ Page({
     }
   },
 
+  onRechargeConfigChange(event) {
+    const rechargeConfigIndex = Number(event.detail.value)
+    const config = this.data.rechargeConfigs[rechargeConfigIndex]
+    this.setData({ rechargeConfigIndex, rechargeConfigLabel: config ? config.label : "充500送50" })
+  },
+
   async drawLottery() {
     try {
       const data = await request("/api/lottery/draw", { method: "POST", data: { userId: app.globalData.userId } })
       wx.showToast({ title: data.prize.name, icon: "none" })
       await this.loadAll()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async requestLotteryRedeem(event) {
+    try {
+      await request(`/api/lottery/records/${event.currentTarget.dataset.id}/redeem-request`, { method: "POST", data: { userId: app.globalData.userId } })
+      wx.showToast({ title: "已申请核销" })
+      await this.loadMarketing()
     } catch (error) {
       showError(error)
     }
@@ -250,5 +311,22 @@ Page({
     } catch (error) {
       showError(error)
     }
+  },
+
+  openStoreLocation() {
+    const location = this.data.storeLocation
+    if (!location.latitude || !location.longitude || !wx.openLocation) return
+    wx.openLocation({
+      latitude: Number(location.latitude),
+      longitude: Number(location.longitude),
+      name: "河岸德扑酒馆",
+      address: location.address,
+      scale: 16
+    })
+  },
+
+  callSupport() {
+    if (!this.data.supportPhone || !wx.makePhoneCall) return
+    wx.makePhoneCall({ phoneNumber: this.data.supportPhone })
   }
 })

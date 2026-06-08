@@ -30,10 +30,42 @@
 
   <view class="section">
     <view class="section-title">SKU 库存</view>
+    <input class="input" value="{{productKeyword}}" bindinput="onProductKeyword" placeholder="按商品名/规格筛选" />
+    <view class="btn-row">
+      <button size="mini" class="secondary" bindtap="searchProducts">筛选</button>
+      <button size="mini" class="secondary" bindtap="createCategory">新增分类</button>
+    </view>
+    <picker range="{{productCategories}}" range-key="name" value="{{productForm.categoryIndex}}" bindchange="onProductCategoryChange">
+      <view class="input">{{productCategories[productForm.categoryIndex].name || '选择分类'}}</view>
+    </picker>
+    <input class="input" value="{{productForm.name}}" bindinput="onProductName" placeholder="SKU 名称" />
+    <input class="input" type="number" value="{{productForm.price}}" bindinput="onProductPrice" placeholder="售价" />
+    <input class="input" type="number" value="{{productForm.stockQty}}" bindinput="onProductStock" placeholder="初始库存" />
+    <button size="mini" class="primary" bindtap="createProduct">新增 SKU</button>
     <view wx:for="{{products}}" wx:key="skuId" class="row">
       <view class="row-title">{{item.name}} · {{item.spec}}</view>
       <view class="muted">{{item.priceText}} · 库存 {{item.stockQty}} · 预警 {{item.warningQty}}</view>
-      <button size="mini" class="secondary" data-id="{{item.skuId}}" data-current="{{item.stockQty}}" bindtap="addStock">库存 +10</button>
+      <view class="btn-row">
+        <button size="mini" class="secondary" data-id="{{item.skuId}}" data-current="{{item.stockQty}}" bindtap="addStock">盘点 +10</button>
+        <button size="mini" class="secondary" data-id="{{item.skuId}}" data-direction="in" bindtap="createStockRequest">入库申请</button>
+        <button size="mini" class="secondary" data-id="{{item.skuId}}" data-direction="out" bindtap="createStockRequest">出库申请</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">出入库申请与流水</view>
+    <view wx:for="{{stockRequests}}" wx:key="requestId" class="row">
+      <view class="row-title">{{item.directionText}} · {{item.product.name}} x {{item.quantity}}</view>
+      <view class="muted">{{item.statusText}} · {{item.reason}}</view>
+      <view wx:if="{{item.status === 'pending'}}" class="btn-row">
+        <button size="mini" class="primary" data-id="{{item.requestId}}" bindtap="confirmStockRequest">确认入账</button>
+        <button size="mini" class="secondary" data-id="{{item.requestId}}" bindtap="rejectStockRequest">驳回</button>
+      </view>
+    </view>
+    <view wx:for="{{stockLedgers}}" wx:key="ledgerId" class="row">
+      <view class="row-title">{{item.product.name}} · {{item.changeType}}</view>
+      <view class="muted">变动 {{item.changeQty}} · 库存 {{item.stockAfter}} · {{item.reason}}</view>
     </view>
   </view>
 
@@ -71,6 +103,10 @@
       <view class="metric"><view class="metric-value">{{finance.rechargeRevenueText}}</view><view class="metric-label">充值收入</view></view>
       <view class="metric"><view class="metric-value">{{businessDetails.length}}</view><view class="metric-label">营业明细</view></view>
     </view>
+    <view wx:for="{{consumptionRecords}}" wx:key="orderId" class="row">
+      <view class="row-title">{{item.user.phone}} · {{item.amountText}}</view>
+      <view class="muted">{{item.statusText}} · {{item.employee ? item.employee.name : '自然订单'}}</view>
+    </view>
   </view>
 
   <view class="section">
@@ -80,6 +116,10 @@
     <view wx:for="{{rechargeConfigs}}" wx:key="configId" class="row">
       <view class="row-title">充 {{item.amount}} 送 {{item.giftAmount}}</view>
       <view class="muted">{{item.status}}</view>
+    </view>
+    <view wx:for="{{rechargeRecords}}" wx:key="recordId" class="row">
+      <view class="row-title">{{item.amountText}} + {{item.giftText}}</view>
+      <view class="muted">{{item.status}} · 余额 {{item.balanceText}}</view>
     </view>
     <view wx:for="{{memberLevels}}" wx:key="levelId" class="row">
       <view class="row-title">{{item.name}}</view>
@@ -99,6 +139,10 @@
       <view class="row-title">{{item.name}}</view>
       <view class="muted">中奖率 {{item.winRate}} · {{item.status}}</view>
     </view>
+    <view wx:for="{{lotteryOverview.records}}" wx:key="recordId" class="row">
+      <view class="row-title">{{item.prizeName}}</view>
+      <view class="muted">{{item.status}} · 消耗 {{item.costPoints}}</view>
+    </view>
   </view>
 
   <view class="section">
@@ -113,6 +157,10 @@
     <view class="row">
       <view class="row-title">升盲设置</view>
       <view class="muted">主题 {{blindSettings.theme}} · 字号 {{blindSettings.fontSize}} · 报名 {{blindSettings.registrationStatus}}</view>
+    </view>
+    <view wx:for="{{scanRecords}}" wx:key="recordId" class="row">
+      <view class="row-title">扫码归属 {{item.employeeId}}</view>
+      <view class="muted">{{item.rawCode}} · {{item.createdAt}}</view>
     </view>
   </view>
 </view>
