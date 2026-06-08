@@ -133,6 +133,7 @@ assert(adminJs.includes("app.globalData.staffSessionId = data.session.sessionId"
 assert(adminJs.includes("staffSales") && adminWxml.includes("员工销售提成"), "admin page displays staff sales commissions");
 assert(adminJs.includes("/refund"), "admin page calls refund API");
 assert(adminJs.includes("/transfer-storage"), "admin page calls transfer storage API");
+assert(adminJs.includes("transferForm") && adminJs.includes("onTransferQty") && adminWxml.includes("订单转存表单") && adminWxml.includes("转存数量") && !adminWxml.includes("转存威士忌") && !/transferStorage[\s\S]*?sku_whisky[\s\S]*?quantity: 1/.test(adminJs), "admin page supports real order storage transfer input");
 assert(adminJs.includes("/api/admin/stock-counts"), "admin page calls stock count API");
 assert(adminJs.includes("/api/admin/stock-requests"), "admin page calls stock request workflow API");
 assert(adminJs.includes("stockRequestForm") && adminJs.includes("onStockRequestQty") && adminWxml.includes("出入库数量") && adminWxml.includes("出入库原因") && !adminJs.includes("quantity: 3,"), "admin page supports real stock request input");

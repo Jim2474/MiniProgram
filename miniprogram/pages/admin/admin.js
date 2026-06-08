@@ -41,6 +41,10 @@ Page({
       countedQty: 10,
       reason: "闭店盘点"
     },
+    transferForm: {
+      skuIndex: 0,
+      quantity: 1
+    },
     storageLedgers: [],
     finance: {},
     businessDetails: [],
@@ -329,15 +333,25 @@ Page({
 
   async transferStorage(event) {
     try {
+      const sku = this.data.products[this.data.transferForm.skuIndex] || this.data.products[0]
+      if (!sku) throw new Error("请先选择转存 SKU")
       await request(`/api/admin/orders/${event.currentTarget.dataset.id}/transfer-storage`, {
         method: "POST",
-        data: { skuId: "sku_whisky", quantity: 1, operatorId: "emp_admin" }
+        data: { skuId: sku.skuId, quantity: this.data.transferForm.quantity, operatorId: "emp_admin" }
       })
       wx.showToast({ title: "已转存" })
       await this.loadStorage()
     } catch (error) {
       showError(error)
     }
+  },
+
+  onTransferSkuChange(event) {
+    this.setData({ "transferForm.skuIndex": Number(event.detail.value) })
+  },
+
+  onTransferQty(event) {
+    this.setData({ "transferForm.quantity": Number(event.detail.value || 1) })
   },
 
   async addStock(event) {

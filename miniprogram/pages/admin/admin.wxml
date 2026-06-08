@@ -27,6 +27,13 @@
 
   <view class="section">
     <view class="section-title">订单管理</view>
+    <view class="row">
+      <view class="row-title">订单转存表单</view>
+      <picker range="{{products}}" range-key="name" value="{{transferForm.skuIndex}}" bindchange="onTransferSkuChange">
+        <view class="input">{{products[transferForm.skuIndex].name || '选择转存 SKU'}}</view>
+      </picker>
+      <input class="input" type="number" value="{{transferForm.quantity}}" bindinput="onTransferQty" placeholder="转存数量" />
+    </view>
     <view wx:if="{{orders.length === 0}}" class="muted">暂无订单。</view>
     <view wx:for="{{orders}}" wx:key="orderId" class="row">
       <view class="row-title">{{item.orderId}} · {{item.amountText}}</view>
@@ -34,7 +41,7 @@
       <view class="btn-row">
         <button size="mini" class="primary" data-id="{{item.orderId}}" bindtap="completeOrder">完成</button>
         <button size="mini" class="secondary" data-id="{{item.orderId}}" bindtap="refundOrder">退款</button>
-        <button size="mini" class="secondary" data-id="{{item.orderId}}" bindtap="transferStorage">转存威士忌</button>
+        <button size="mini" class="secondary" data-id="{{item.orderId}}" bindtap="transferStorage">按表单转存</button>
       </view>
     </view>
   </view>
