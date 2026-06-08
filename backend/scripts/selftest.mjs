@@ -257,6 +257,16 @@ async function main() {
       body: { action: "restore", operatorId: "emp_dealer", seatNo: 4 },
     });
     assert(seatRestoredByDealer.game.currentPlayers === 8, "荷官可按座位号恢复玩家");
+    const headsUpGame = await request(baseUrl, "/api/staff/blind-games", {
+      method: "POST",
+      body: { operatorId: "emp_dealer", initialPlayers: 3, smallBlind: 1, bigBlind: 2 },
+    });
+    await request(baseUrl, `/api/staff/blind-games/${headsUpGame.game.gameId}`, {
+      method: "PATCH",
+      body: { action: "eliminate", operatorId: "emp_dealer" },
+    });
+    const headsUpTimer = await request(baseUrl, `/api/staff/blind-games/${headsUpGame.game.gameId}/timer`);
+    assert(headsUpTimer.timer.latestEvents.some((event) => event.eventType === "heads_up" && event.message.includes("单挑阶段")), "荷官淘汰到剩余2人时提示单挑阶段");
     const buyinAdded = await request(baseUrl, `/api/staff/blind-games/${game.game.gameId}`, {
       method: "PATCH",
       body: { action: "buyin", operatorId: "emp_dealer", count: 2 },

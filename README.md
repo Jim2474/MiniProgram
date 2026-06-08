@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V56
+# 德扑棋牌门店小程序 V57
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V56 验收状态
+## V57 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V57.md`
 - `docs/ACCEPTANCE-V56.md`
 - `docs/ACCEPTANCE-V55.md`
 - `docs/ACCEPTANCE-V54.md`
@@ -137,8 +138,8 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：187 项。
-- 小程序结构与 API 调用校验：154 项。
+- 后端业务自验收：188 项。
+- 小程序结构与 API 调用校验：155 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
 
@@ -263,6 +264,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V57 新增能力
+
+- 荷官淘汰到剩余 2 人时生成“进入单挑阶段”事件提示。
+- 荷官端继续在游戏进行中展示“单挑阶段”状态。
+- 自动验收覆盖后端 heads-up 事件和荷官端前端提示入口。
 
 ## V56 新增能力
 

@@ -188,6 +188,7 @@ assert(dealerWxml.includes("set_buyin_amount"), "dealer page supports buyin amou
 assert(dealerWxml.includes("gameSeatAction"), "dealer page supports seat-specific game action");
 assert(dealerJs.includes("/api/staff/blind-settings") && !dealerJs.includes("/api/admin/blind-settings"), "dealer page reads staff-safe blind settings API");
 assert(dealerWxml.includes("championBackgroundImage") && dealerWxml.includes("voiceTerms") && dealerWxml.includes("blindLevelsText"), "dealer page displays advanced blind settings and blind sequence");
+assert(dealerJs.includes("headsUpText") && dealerJs.includes("单挑阶段") && dealerWxml.includes("game.headsUpText"), "dealer page displays heads-up stage prompt");
 
 console.log(`Miniprogram validation passed: ${checks.length} checks`);
 for (const check of checks) console.log(`- ${check}`);

@@ -1257,6 +1257,13 @@ function createVoiceEvent(store, game, eventType, message) {
   return event;
 }
 
+function maybeCreateHeadsUpEvent(store, game, beforePlayers) {
+  if (game.voiceEnabled && beforePlayers > 2 && game.currentPlayers === 2) {
+    return createVoiceEvent(store, game, "heads_up", "剩余2人，进入单挑阶段");
+  }
+  return null;
+}
+
 function publicVerificationCode(store, code) {
   return {
     ...code,
@@ -2320,6 +2327,7 @@ function createRouter(store) {
       game.lastVoiceMarks = [];
     }
     if (action === "eliminate") {
+      const beforePlayers = game.currentPlayers;
       if (body.seatNo !== undefined) {
         const seat = store.data.seats.find((item) => item.seatNo === Number(body.seatNo));
         if (!seat) throw new HttpError(404, "座位不存在");
@@ -2330,6 +2338,7 @@ function createRouter(store) {
       } else {
         game.currentPlayers = Math.max(1, game.currentPlayers - 1);
       }
+      maybeCreateHeadsUpEvent(store, game, beforePlayers);
     }
     if (action === "restore") {
       if (body.seatNo !== undefined) {
