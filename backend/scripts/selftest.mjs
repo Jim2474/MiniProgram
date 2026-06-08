@@ -395,6 +395,7 @@ async function main() {
     assert(Array.isArray(businessDetails.details), "营业明细可查询");
     const paidBusinessDetail = businessDetails.details.find((detail) => detail.orderId === paid.order.orderId);
     assert(paidBusinessDetail.payment?.provider === "mock_wechat" && paidBusinessDetail.paymentProvider === "mock_wechat" && paidBusinessDetail.paymentPaidAt, "营业明细返回支付方式和支付时间");
+    assert(!("nonceStr" in paidBusinessDetail.payment) && !("paySign" in paidBusinessDetail.payment) && !("requestPayment" in paidBusinessDetail.payment), "营业明细支付记录不暴露预支付签名字段");
     const consumptionRecords = await request(baseUrl, "/api/admin/consumption-records?userId=user_demo");
     assert(Array.isArray(consumptionRecords.records), "会员消费记录可查询");
 

@@ -1004,6 +1004,18 @@ class SQLiteStore extends Store {
   }
 }
 
+function publicPayment(payment) {
+  if (!payment) return null;
+  const {
+    nonceStr: _nonceStr,
+    paySign: _paySign,
+    prepayId: _prepayId,
+    requestPayment: _requestPayment,
+    ...safe
+  } = payment;
+  return safe;
+}
+
 function publicOrder(store, order) {
   const items = store.data.orderItems
     .filter((item) => item.orderId === order.orderId)
@@ -1019,16 +1031,17 @@ function publicOrder(store, order) {
   const employee = order.employeeId ? publicEmployee(store.data.employees.find((item) => item.employeeId === order.employeeId)) : null;
   const user = store.data.users.find((item) => item.userId === order.userId);
   const payment = store.data.payments.find((item) => item.orderId === order.orderId && item.status !== "cancelled") || null;
+  const safePayment = publicPayment(payment);
   return {
     ...order,
     items,
     transferableItems,
     employee,
     user,
-    payment,
-    paymentProvider: payment?.provider || null,
-    paymentPaidAt: payment?.paidAt || order.paidAt || null,
-    paymentMethodText: payment?.provider === "mock_wechat" ? "模拟微信支付" : "微信支付",
+    payment: safePayment,
+    paymentProvider: safePayment?.provider || null,
+    paymentPaidAt: safePayment?.paidAt || order.paidAt || null,
+    paymentMethodText: safePayment?.provider === "mock_wechat" ? "模拟微信支付" : "微信支付",
   };
 }
 
