@@ -162,6 +162,7 @@ assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind se
 assert(adminJs.includes("blindForm") && adminJs.includes("onBlindField"), "admin page supports blind settings form");
 assert(adminJs.includes("titleMap") && adminJs.includes("voiceTerms"), "admin page updates blind title map and voice terms");
 assert(adminJs.includes("blindLevelsText") && adminWxml.includes("升盲规则"), "admin page supports blind level sequence configuration");
+assert(adminJs.includes("autoStartAfterCountdown") && adminJs.includes("onBlindAutoStartChange") && adminWxml.includes("倒计时结束自动升盲") && adminWxml.includes("保存升盲设置") && !adminWxml.includes("更新升盲主题"), "admin page supports blind auto-start setting");
 assert(adminJs.includes("/api/admin/system-settings"), "admin page calls system settings API");
 assert(adminJs.includes("systemSettingsForm") && adminJs.includes("onSystemLocationAddress") && adminWxml.includes("保存系统设置") && adminWxml.includes("门店地址") && !adminWxml.includes("隐藏积分并改客服电话"), "admin page supports real system settings form");
 assert(adminJs.includes("employeeForm") && adminJs.includes("onEmployeeCommissionRate") && adminWxml.includes("新增员工表单") && adminWxml.includes("提成率") && !adminWxml.includes("新增测试员工"), "admin page supports real employee create form");

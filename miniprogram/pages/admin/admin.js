@@ -92,6 +92,7 @@ Page({
       voiceEndText: "结束提示音",
       entrants: 9,
       totalBuyins: 0,
+      autoStartAfterCountdown: true,
       levelTitle: "LEVEL",
       playerLeftTitle: "PLAYER LEFT",
       blindsTitle: "BLINDS",
@@ -801,6 +802,10 @@ Page({
     this.setData({ [`blindForm.${key}`]: value })
   },
 
+  onBlindAutoStartChange(event) {
+    this.setData({ "blindForm.autoStartAfterCountdown": Boolean(event.detail.value) })
+  },
+
   async updateBlindSettings() {
     try {
       const form = this.data.blindForm
@@ -831,6 +836,7 @@ Page({
           voiceEndText: form.voiceEndText,
           entrants: form.entrants,
           totalBuyins: form.totalBuyins,
+          autoStartAfterCountdown: form.autoStartAfterCountdown,
           blindLevels,
           titleMap: {
             level: form.levelTitle,

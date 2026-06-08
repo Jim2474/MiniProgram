@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V45
+# 德扑棋牌门店小程序 V46
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V45 验收状态
+## V46 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V46.md`
 - `docs/ACCEPTANCE-V45.md`
 - `docs/ACCEPTANCE-V44.md`
 - `docs/ACCEPTANCE-V43.md`
@@ -251,6 +252,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V46 新增能力
+
+- 后台升盲设置新增“倒计时结束自动升盲”开关。
+- 升盲设置保存按钮从“更新升盲主题”改为“保存升盲设置”，匹配完整配置表单。
+- 自动验收覆盖升盲自动开始配置入口。
 
 ## V45 新增能力
 
