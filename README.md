@@ -78,6 +78,7 @@ node scripts/validate-miniprogram.mjs
 验收记录：
 
 - `docs/ACCEPTANCE-V76.md`
+- `docs/REQUIREMENTS-AUDIT-V76.md`
 - `docs/ACCEPTANCE-V75.md`
 - `docs/ACCEPTANCE-V74.md`
 - `docs/ACCEPTANCE-V73.md`
@@ -292,6 +293,7 @@ node scripts/validate-miniprogram.mjs
 - 客户端新增 `checkinEnabled` 状态，同时受积分显示开关和签到开关控制。
 - 关闭积分显示时，购物车预计赠分、会员营销积分区、签到按钮和签到日历同步隐藏。
 - 自动验收覆盖积分关闭时隐藏签到和预计赠分。
+- 新增 V76 需求审计矩阵，同步 V72-V76 产品补齐后的 Excel 覆盖证据。
 
 ## V75 新增能力
 
