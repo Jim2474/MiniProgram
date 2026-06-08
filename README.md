@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V24
+# 德扑棋牌门店小程序 V25
 
 本仓库包含：
 
@@ -69,10 +69,12 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V24 验收状态
+## V25 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V25.md`
+- `docs/EXCEL-AUDIT-V25.md`
 - `docs/REQUIREMENTS-AUDIT-V24.md`
 - `docs/ACCEPTANCE-V24.md`
 - `docs/ACCEPTANCE-V23.md`
@@ -99,10 +101,19 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：125 项。
-- 小程序结构与 API 调用校验：117 项。
+- 后端业务自验收：132 项。
+- 小程序结构与 API 调用校验：121 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V25 新增能力
+
+- 客户商品列表新增“查看详情”弹窗，覆盖 Excel 中点击产品查看具体描述。
+- 后台会员列表展示积分、存酒、消费总额和订单数。
+- 座台支持删除/禁用软删除，保留历史预约和日志。
+- 库房角色 `warehouse` 可访问出入库/库存接口，但不能访问经营看板。
+- 新增员工/荷官安全的升盲设置接口 `/api/staff/blind-settings`。
+- 升盲设置支持自定义盲注序列，荷官升盲按后台规则推进。
 
 ## V24 新增能力
 

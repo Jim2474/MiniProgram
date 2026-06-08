@@ -51,6 +51,7 @@
     <view class="row">
       <view class="row-title">名词</view>
       <view class="muted">级别 {{blindSettings.titleMap.level}} · 剩余人数 {{blindSettings.titleMap.playerLeft}} · 盲注 {{blindSettings.titleMap.blinds}} · 参赛 {{blindSettings.titleMap.entrants}}</view>
+      <view class="muted">升盲规则 {{blindSettings.blindLevelsText}}</view>
       <view class="muted">语音 {{blindSettings.voiceType}} · 开始 {{blindSettings.voiceStartText}} · 结束 {{blindSettings.voiceEndText}}</view>
       <view class="muted">术语 {{blindSettings.voiceTerms.smallBlind}}/{{blindSettings.voiceTerms.bigBlind}}/{{blindSettings.voiceTerms.ante}} · 参赛 {{blindSettings.entrants}} · 总买入 {{blindSettings.totalBuyins}}</view>
     </view>

@@ -170,6 +170,7 @@
       <view class="btn-row">
         <button size="mini" class="secondary" data-id="{{item.tableId}}" bindtap="occupyTable">开台占用</button>
         <button size="mini" class="secondary" data-id="{{item.tableId}}" bindtap="disableTable">设为维护</button>
+        <button size="mini" class="secondary" data-id="{{item.tableId}}" bindtap="deleteTable">删除/禁用</button>
       </view>
     </view>
   </view>
@@ -198,6 +199,10 @@
 
   <view class="section">
     <view class="section-title">会员等级与积分配置</view>
+    <view wx:for="{{users}}" wx:key="userId" class="row">
+      <view class="row-title">{{item.phone}} · {{item.memberLevel}}</view>
+      <view class="muted">积分 {{item.pointsBalance}} · 存酒 {{item.hasStorage ? item.storageCount : 0}} · 消费 {{item.totalSpendText}} · 订单 {{item.orderCount}}</view>
+    </view>
     <button size="mini" class="secondary" bindtap="createMemberLevel">新增黑金会员</button>
     <view wx:for="{{memberLevels}}" wx:key="levelId" class="row">
       <view class="row-title">{{item.name}}</view>
@@ -240,6 +245,7 @@
       <input class="input" value="{{blindForm.playerLeftTitle}}" data-key="playerLeftTitle" bindinput="onBlindField" placeholder="标题：剩余人数" />
       <input class="input" value="{{blindForm.blindsTitle}}" data-key="blindsTitle" bindinput="onBlindField" placeholder="标题：盲注" />
       <input class="input" value="{{blindForm.entrantsTitle}}" data-key="entrantsTitle" bindinput="onBlindField" placeholder="标题：参赛人数" />
+      <input class="input" value="{{blindForm.blindLevelsText}}" data-key="blindLevelsText" bindinput="onBlindField" placeholder="升盲规则：1/2,2/4,5/10" />
       <input class="input" value="{{blindForm.voiceType}}" data-key="voiceType" bindinput="onBlindField" placeholder="语音类型" />
       <input class="input" value="{{blindForm.voiceStartText}}" data-key="voiceStartText" bindinput="onBlindField" placeholder="开始语音文案" />
       <input class="input" value="{{blindForm.voiceEndText}}" data-key="voiceEndText" bindinput="onBlindField" placeholder="结束语音文案" />

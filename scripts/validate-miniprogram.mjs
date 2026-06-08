@@ -60,6 +60,7 @@ for (const page of ["customer", "staff", "admin", "dealer"]) {
 const customerJs = await readFile(join(root, "miniprogram/pages/customer/customer.js"), "utf8");
 const customerWxml = await readFile(join(root, "miniprogram/pages/customer/customer.wxml"), "utf8");
 assert(customerJs.includes("/api/cart/items"), "customer page calls cart API");
+assert(customerJs.includes("showProductDetail") && customerWxml.includes("查看详情"), "customer page supports product detail modal");
 assert(customerJs.includes("/api/wechat/login"), "customer page calls WeChat login API");
 assert(customerJs.includes("/api/user/bind-phone"), "customer page calls bind phone API");
 assert(customerJs.includes("/api/orders") && customerJs.includes("/pay"), "customer page calls order pay API");
@@ -124,6 +125,7 @@ assert(adminJs.includes("/api/admin/stock-counts") && adminWxml.includes("库存
 assert(adminJs.includes("/api/admin/finance/overview"), "admin page calls finance API");
 assert(!adminJs.includes("/api/admin/recharge-configs") && !adminWxml.includes("新增充值"), "admin page hides recharge config operations");
 assert(adminJs.includes("/api/admin/consumption-records"), "admin page calls consumption records API");
+assert(adminJs.includes("/api/admin/users") && adminWxml.includes("存酒 {{item.hasStorage") && adminWxml.includes("消费 {{item.totalSpendText"), "admin page displays member storage points and spend summary");
 assert(adminJs.includes("/api/admin/member-levels"), "admin page calls member level API");
 assert(adminJs.includes("/api/admin/member-levels/"), "admin page calls member level update API");
 assert(adminJs.includes("/api/admin/points-config"), "admin page calls points config API");
@@ -134,9 +136,11 @@ assert(adminJs.includes("tablePagination") && adminJs.includes("pageSize") && ad
 assert(adminJs.includes("tableStatusOptions") && adminJs.includes("onTableKeyword"), "admin page supports table status and keyword filtering");
 assert(adminJs.includes("cancelAdminReservation") && adminWxml.includes("取消预约"), "admin page can cancel reservations");
 assert(adminJs.includes("onTableImage") && adminWxml.includes("桌台图片 URL"), "admin page supports table image URL input");
+assert(adminJs.includes("deleteTable") && adminWxml.includes("删除/禁用"), "admin page can delete or disable tables");
 assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind settings API");
 assert(adminJs.includes("blindForm") && adminJs.includes("onBlindField"), "admin page supports blind settings form");
 assert(adminJs.includes("titleMap") && adminJs.includes("voiceTerms"), "admin page updates blind title map and voice terms");
+assert(adminJs.includes("blindLevelsText") && adminWxml.includes("升盲规则"), "admin page supports blind level sequence configuration");
 assert(adminJs.includes("/api/admin/system-settings"), "admin page calls system settings API");
 
 const dealerJs = await readFile(join(root, "miniprogram/pages/dealer/dealer.js"), "utf8");
@@ -147,8 +151,8 @@ assert(dealerWxml.includes("next_level"), "dealer page supports next level actio
 assert(dealerWxml.includes("buyin_minus"), "dealer page supports buyin decrement action");
 assert(dealerWxml.includes("set_buyin_amount"), "dealer page supports buyin amount sync action");
 assert(dealerWxml.includes("gameSeatAction"), "dealer page supports seat-specific game action");
-assert(dealerJs.includes("/api/admin/blind-settings"), "dealer page reads blind settings API");
-assert(dealerWxml.includes("championBackgroundImage") && dealerWxml.includes("voiceTerms"), "dealer page displays advanced blind settings");
+assert(dealerJs.includes("/api/staff/blind-settings") && !dealerJs.includes("/api/admin/blind-settings"), "dealer page reads staff-safe blind settings API");
+assert(dealerWxml.includes("championBackgroundImage") && dealerWxml.includes("voiceTerms") && dealerWxml.includes("blindLevelsText"), "dealer page displays advanced blind settings and blind sequence");
 
 console.log(`Miniprogram validation passed: ${checks.length} checks`);
 for (const check of checks) console.log(`- ${check}`);

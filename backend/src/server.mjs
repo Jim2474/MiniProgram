@@ -30,6 +30,15 @@ function requireMockWechat(feature) {
   if (!mockWechatEnabled()) throw new HttpError(501, `${feature}需要接入真实微信能力，生产环境禁止使用模拟接口`);
 }
 
+const defaultBlindLevels = () => [
+  { level: 1, smallBlind: 1, bigBlind: 2, ante: 0 },
+  { level: 2, smallBlind: 2, bigBlind: 4, ante: 0 },
+  { level: 3, smallBlind: 5, bigBlind: 10, ante: 0 },
+  { level: 4, smallBlind: 10, bigBlind: 20, ante: 0 },
+  { level: 5, smallBlind: 25, bigBlind: 50, ante: 0 },
+  { level: 6, smallBlind: 50, bigBlind: 100, ante: 0 },
+];
+
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -342,6 +351,7 @@ function seedData() {
       voiceTerms: { smallBlind: "小盲", bigBlind: "大盲", ante: "前注" },
       entrants: 9,
       totalBuyins: 0,
+      blindLevels: defaultBlindLevels(),
     },
     blindGames: [],
     operationLogs: [],
@@ -385,6 +395,8 @@ class Store {
       table.consumptionAmount ||= 0;
       table.imageUrl ||= defaultTableImage(table);
     }
+    this.data.blindSettings ||= {};
+    this.data.blindSettings.blindLevels ||= defaultBlindLevels();
     for (const storage of this.data.customerStorage || []) {
       storage.handledAt ||= null;
       storage.handledBy ||= null;
@@ -656,6 +668,32 @@ function publicTable(store, table) {
   };
 }
 
+function publicAdminUser(store, user) {
+  const storageItems = store.data.customerStorage.filter((item) => item.userId === user.userId && item.quantity > 0);
+  const paidOrders = store.data.orders.filter((order) => order.userId === user.userId && order.payStatus === "paid");
+  return {
+    ...user,
+    hasStorage: storageItems.length > 0,
+    storageCount: storageItems.reduce((sum, item) => sum + item.quantity, 0),
+    orderCount: paidOrders.length,
+    totalSpend: paidOrders.reduce((sum, order) => sum + order.amount, 0),
+    lastOrderAt: paidOrders.map((order) => order.paidAt || order.createdAt).sort().at(-1) || null,
+  };
+}
+
+function blindLevelFor(store, level) {
+  const levels = store.data.blindSettings?.blindLevels?.length ? store.data.blindSettings.blindLevels : defaultBlindLevels();
+  return levels.find((item) => Number(item.level) === Number(level)) || levels[Math.min(level - 1, levels.length - 1)] || { level, smallBlind: 2 ** (level - 1), bigBlind: 2 ** level, ante: 0 };
+}
+
+function applyBlindLevel(store, game, level) {
+  const next = blindLevelFor(store, level);
+  game.level = Number(next.level || level);
+  game.smallBlind = Number(next.smallBlind || game.smallBlind || 1);
+  game.bigBlind = Number(next.bigBlind || game.bigBlind || 2);
+  game.ante = Number(next.ante || 0);
+}
+
 function getOrCreatePayment(store, order, provider = "mock_wechat") {
   let payment = store.data.payments.find((item) => item.orderId === order.orderId && item.status !== "cancelled");
   if (!payment) {
@@ -824,8 +862,11 @@ function requireStaffAccess(store, req, roles = []) {
 
 function defaultRolesForPath(path) {
   if (path === "/api/staff/login") return null;
+  if (path === "/api/staff/blind-settings") return ["staff", "dealer", "warehouse", "admin"];
+  if (path.startsWith("/api/admin/stock-")) return ["warehouse", "admin"];
+  if (path === "/api/admin/stock/adjust") return ["warehouse", "admin"];
   if (path.startsWith("/api/admin/")) return ["admin"];
-  if (path.startsWith("/api/staff/")) return ["staff", "dealer", "admin"];
+  if (path.startsWith("/api/staff/")) return ["staff", "dealer", "warehouse", "admin"];
   return null;
 }
 
@@ -1620,7 +1661,7 @@ function createRouter(store) {
     if (actionType) ledgers = ledgers.filter((ledger) => ledger.actionType === actionType);
     return { ledgers: ledgers.map((ledger) => publicStorageLedger(store, ledger)) };
   });
-  add("GET", "/api/admin/users", async () => ({ users: store.data.users }));
+  add("GET", "/api/admin/users", async () => ({ users: store.data.users.map((user) => publicAdminUser(store, user)) }));
   add("GET", "/api/admin/points-ledgers", async () => ({ ledgers: store.data.pointsLedgers }));
   add("GET", "/api/admin/consumption-records", async (_body, _params, query) => {
     const userId = query.get("userId");
@@ -1646,13 +1687,15 @@ function createRouter(store) {
 
   add("POST", "/api/staff/blind-games", async (body) => {
     const employee = store.getEmployee(body.operatorId || "emp_dealer");
+    const firstLevel = blindLevelFor(store, 1);
     const game = {
       gameId: newId("game"),
       merchantId: employee.merchantId,
       storeId: employee.storeId,
       operatorId: employee.employeeId,
-      smallBlind: Number(body.smallBlind || 1),
-      bigBlind: Number(body.bigBlind || 2),
+      smallBlind: Number(body.smallBlind || firstLevel.smallBlind || 1),
+      bigBlind: Number(body.bigBlind || firstLevel.bigBlind || 2),
+      ante: Number(body.ante || firstLevel.ante || 0),
       intervalMinutes: Number(body.intervalMinutes || 10),
       initialPlayers: Number(body.initialPlayers || 9),
       currentPlayers: Number(body.initialPlayers || 9),
@@ -1685,18 +1728,14 @@ function createRouter(store) {
       game.levelStartedAt = now();
     }
     if (action === "next_level") {
-      game.level += 1;
-      game.smallBlind *= 2;
-      game.bigBlind *= 2;
+      applyBlindLevel(store, game, game.level + 1);
       game.levelStartedAt = now();
       game.remainingSecondsOverride = null;
       game.lastVoiceMarks = [];
       if (game.voiceEnabled) createVoiceEvent(store, game, "level_up", `升盲！当前盲注 ${game.smallBlind}/${game.bigBlind}`);
     }
     if (action === "prev_level" && game.level > 1) {
-      game.level -= 1;
-      game.smallBlind = Math.max(1, Math.floor(game.smallBlind / 2));
-      game.bigBlind = Math.max(2, Math.floor(game.bigBlind / 2));
+      applyBlindLevel(store, game, game.level - 1);
       game.levelStartedAt = now();
       game.remainingSecondsOverride = null;
       game.lastVoiceMarks = [];
@@ -2267,6 +2306,19 @@ function createRouter(store) {
     await store.save();
     return { table: publicTable(store, table) };
   });
+  add("DELETE", "/api/admin/tables/:tableId", async (body, params) => {
+    const table = store.data.tables.find((item) => item.tableId === params.tableId);
+    if (!table) throw new HttpError(404, "桌台不存在");
+    if (table.status === "occupied" || table.status === "reserved") throw new HttpError(400, "占用或预订中的桌台不能删除");
+    const before = deepClone(table);
+    table.status = "disabled";
+    table.deletedAt = now();
+    table.deletedBy = body.operatorId || "emp_admin";
+    table.occupiedStartedAt = null;
+    store.log(table.deletedBy, "admin", "delete_table", "Table", table.tableId, before, table, body.reason || "删除座台信息");
+    await store.save();
+    return { table: publicTable(store, table) };
+  });
   add("POST", "/api/admin/employees", async (body) => {
     const employee = { employeeId: newId("emp"), merchantId: store.data.settings.merchantId, storeId: store.data.settings.storeId, name: body.name, phone: body.phone, role: body.role || "staff", loginAccount: body.loginAccount || body.phone, passwordHash: body.password || "demo", commissionRate: Number(body.commissionRate ?? 0.05), status: "active", createdAt: now() };
     store.data.employees.push(employee);
@@ -2285,10 +2337,19 @@ function createRouter(store) {
     await store.save();
     return { employee: publicEmployee(employee) };
   });
+  add("GET", "/api/staff/blind-settings", async () => ({ settings: store.data.blindSettings }));
   add("GET", "/api/admin/blind-settings", async () => ({ settings: store.data.blindSettings }));
   add("PATCH", "/api/admin/blind-settings", async (body) => {
     const before = deepClone(store.data.blindSettings);
     const { titleMap, voiceTerms, ...updates } = body;
+    if (updates.blindLevels) {
+      updates.blindLevels = updates.blindLevels.map((level, index) => ({
+        level: Number(level.level || index + 1),
+        smallBlind: Number(level.smallBlind || 0),
+        bigBlind: Number(level.bigBlind || 0),
+        ante: Number(level.ante || 0),
+      }));
+    }
     store.data.blindSettings = {
       ...store.data.blindSettings,
       ...updates,

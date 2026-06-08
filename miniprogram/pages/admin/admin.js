@@ -12,6 +12,7 @@ Page({
     products: [],
     productCategories: [],
     productKeyword: "",
+    users: [],
     storage: [],
     reservations: [],
     tables: [],
@@ -64,7 +65,8 @@ Page({
       entrantsTitle: "ENTRANTS",
       smallBlindTerm: "小盲",
       bigBlindTerm: "大盲",
-      anteTerm: "前注"
+      anteTerm: "前注",
+      blindLevelsText: "1/2,2/4,5/10,10/20,25/50,50/100"
     },
     productForm: {
       categoryIndex: 0,
@@ -197,10 +199,11 @@ Page({
   },
 
   async loadV3Admin() {
-    const [finance, business, consumptionRecords, levels, pointsConfig, stockRequests, stockLedgers, stockCounts, storageLedgers, scanRecords, system, blind] = await Promise.all([
+    const [finance, business, consumptionRecords, users, levels, pointsConfig, stockRequests, stockLedgers, stockCounts, storageLedgers, scanRecords, system, blind] = await Promise.all([
       request("/api/admin/finance/overview"),
       request("/api/admin/business-details"),
       request("/api/admin/consumption-records"),
+      request("/api/admin/users"),
       request("/api/admin/member-levels"),
       request("/api/admin/points-config"),
       request("/api/admin/stock-requests"),
@@ -219,6 +222,7 @@ Page({
         wechatPayRevenueText: money(finance.wechatPayRevenue)
       },
       businessDetails: business.details,
+      users: users.users.map((item) => ({ ...item, totalSpendText: money(item.totalSpend) })),
       consumptionRecords: consumptionRecords.records.map((item) => ({ ...item, amountText: money(item.amount), statusText: statusText(item.orderStatus) })),
       memberLevels: levels.levels,
       pointsConfig: pointsConfig.config,
@@ -238,7 +242,8 @@ Page({
         entrantsTitle: blind.settings.titleMap?.entrants || this.data.blindForm.entrantsTitle,
         smallBlindTerm: blind.settings.voiceTerms?.smallBlind || this.data.blindForm.smallBlindTerm,
         bigBlindTerm: blind.settings.voiceTerms?.bigBlind || this.data.blindForm.bigBlindTerm,
-        anteTerm: blind.settings.voiceTerms?.ante || this.data.blindForm.anteTerm
+        anteTerm: blind.settings.voiceTerms?.ante || this.data.blindForm.anteTerm,
+        blindLevelsText: (blind.settings.blindLevels || []).map((level) => `${level.smallBlind}/${level.bigBlind}${level.ante ? `/${level.ante}` : ""}`).join(",")
       }
     })
   },
@@ -552,6 +557,17 @@ Page({
     }
   },
 
+  async deleteTable(event) {
+    try {
+      await request(`/api/admin/tables/${event.currentTarget.dataset.id}`, { method: "DELETE", data: { operatorId: "emp_admin", reason: "小程序后台删除座台" } })
+      wx.showToast({ title: "座台已禁用" })
+      await this.loadTables()
+      await this.loadDashboard()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
   async createMemberLevel() {
     try {
       await request("/api/admin/member-levels", { method: "POST", data: { name: "黑金会员", minPoints: 2000 } })
@@ -611,6 +627,13 @@ Page({
   async updateBlindSettings() {
     try {
       const form = this.data.blindForm
+      const blindLevels = String(form.blindLevelsText || "")
+        .split(",")
+        .map((item, index) => {
+          const [smallBlind, bigBlind, ante] = item.trim().split("/").map((value) => Number(value || 0))
+          return { level: index + 1, smallBlind, bigBlind, ante: ante || 0 }
+        })
+        .filter((item) => item.smallBlind > 0 && item.bigBlind > 0)
       await request("/api/admin/blind-settings", {
         method: "PATCH",
         data: {
@@ -631,6 +654,7 @@ Page({
           voiceEndText: form.voiceEndText,
           entrants: form.entrants,
           totalBuyins: form.totalBuyins,
+          blindLevels,
           titleMap: {
             level: form.levelTitle,
             playerLeft: form.playerLeftTitle,

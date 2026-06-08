@@ -49,6 +49,7 @@
         <text class="tag {{item.lowStock ? 'danger' : ''}}">库存 {{item.stockQty}}</text>
       </view>
       <view class="btn-row">
+        <button size="mini" class="secondary" data-sku="{{item.skuId}}" bindtap="showProductDetail">查看详情</button>
         <button size="mini" class="primary" data-sku="{{item.skuId}}" bindtap="addToCart">加入购物车</button>
       </view>
     </view>

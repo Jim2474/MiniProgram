@@ -24,13 +24,17 @@ Page({
     try {
       const data = await request("/api/staff/blind-games")
       const boot = await request("/api/bootstrap")
-      const blind = await request("/api/admin/blind-settings")
+      const blind = await request("/api/staff/blind-settings")
       const game = this.decorateGame(data.games[0])
+      const blindSettings = {
+        ...blind.settings,
+        blindLevelsText: (blind.settings.blindLevels || []).map((item) => `${item.smallBlind}/${item.bigBlind}${item.ante ? `/${item.ante}` : ""}`).join(" → ")
+      }
       this.setData({
         game,
         "form.buyinAmount": game ? game.buyinAmount : this.data.form.buyinAmount,
         seats: (boot.seats || []).map((item) => ({ ...item, statusText: statusText(item.status) })),
-        blindSettings: blind.settings
+        blindSettings
       })
     } catch (error) {
       showError(error)

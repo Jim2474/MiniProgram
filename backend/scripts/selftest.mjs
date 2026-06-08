@@ -407,6 +407,11 @@ async function main() {
     const filteredTables = await request(baseUrl, `/api/admin/tables?keyword=${encodeURIComponent("超级")}&status=occupied&page=1&pageSize=1`);
     assert(filteredTables.tables.length === 1 && filteredTables.tables[0].tableId === occupiedTable.table.tableId, "后台咖位列表支持关键词、状态筛选和分页");
     assert(filteredTables.pagination.total >= 1 && filteredTables.pagination.pageSize === 1 && filteredTables.summary.occupied >= 1, "后台咖位列表返回分页信息和状态汇总");
+    const deletableTable = await request(baseUrl, "/api/admin/tables", { method: "POST", body: { name: "C3 临时桌", type: "普通卡座", capacity: 6 } });
+    const deletedTable = await request(baseUrl, `/api/admin/tables/${deletableTable.table.tableId}`, { method: "DELETE", body: { operatorId: "emp_admin", reason: "验收删除座台" } });
+    assert(deletedTable.table.status === "disabled" && deletedTable.table.deletedAt, "后台可删除座台并软禁用保留历史");
+    const adminUsers = await request(baseUrl, "/api/admin/users");
+    assert(adminUsers.users.some((user) => user.userId === "user_demo" && typeof user.hasStorage === "boolean" && typeof user.totalSpend === "number" && typeof user.orderCount === "number"), "后台会员列表展示积分、存酒和消费汇总");
 
     const blindSettings = await request(baseUrl, "/api/admin/blind-settings", {
       method: "PATCH",
@@ -430,6 +435,10 @@ async function main() {
         showBeijingTime: false,
         showRegistrationCountdown: false,
         autoStartAfterCountdown: true,
+        blindLevels: [
+          { level: 1, smallBlind: 1, bigBlind: 2, ante: 0 },
+          { level: 2, smallBlind: 3, bigBlind: 6, ante: 1 },
+        ],
         titleMap: { level: "级别", entrants: "参赛人数", blinds: "盲注" },
         voiceTerms: { smallBlind: "小盲位", bigBlind: "大盲位", ante: "前注" },
       },
@@ -439,6 +448,15 @@ async function main() {
     assert(blindSettings.settings.titleMap.level === "级别" && blindSettings.settings.titleMap.playerLeft === "PLAYER LEFT", "后台可局部配置升盲标题文案且保留未改标题");
     assert(blindSettings.settings.voiceType === "custom" && blindSettings.settings.voiceStartText === "比赛开始" && blindSettings.settings.voiceTerms.smallBlind === "小盲位", "后台可配置升盲语音和术语");
     assert(blindSettings.settings.entrants === 18 && blindSettings.settings.totalBuyins === 23 && blindSettings.settings.autoStartAfterCountdown === true, "后台可配置参赛人数、总买入和倒计时行为");
+    assert(blindSettings.settings.blindLevels[1].smallBlind === 3 && blindSettings.settings.blindLevels[1].ante === 1, "后台可配置自定义升盲规则序列");
+    const staffBlindSettings = await request(baseUrl, "/api/staff/blind-settings");
+    assert(staffBlindSettings.settings.blindLevels[1].bigBlind === 6, "荷官端可读取员工升盲设置接口");
+    const customGame = await request(baseUrl, "/api/staff/blind-games", {
+      method: "POST",
+      body: { operatorId: "emp_dealer", intervalMinutes: 10, initialPlayers: 9, buyinAmount: 100 },
+    });
+    const customNext = await request(baseUrl, `/api/staff/blind-games/${customGame.game.gameId}`, { method: "PATCH", body: { action: "next_level", operatorId: "emp_dealer" } });
+    assert(customNext.game.smallBlind === 3 && customNext.game.bigBlind === 6 && customNext.game.ante === 1, "荷官升盲按后台自定义规则序列推进");
 
     const systemSettings = await request(baseUrl, "/api/admin/system-settings", { method: "PATCH", body: { pointsVisible: false, supportPhone: "400-000-0000" } });
     assert(systemSettings.settings.pointsVisible === false && systemSettings.settings.supportPhone === "400-000-0000", "后台可配置系统设置");
@@ -496,6 +514,16 @@ async function main() {
         forbiddenAdminError = error.message;
       }
       assert(forbiddenAdminError.includes("无权限"), "普通员工会话不能访问后台接口");
+      const warehouseSession = await request(blockedBaseUrl, "/api/staff/login", { method: "POST", body: { account: "bar", password: "demo" } });
+      const warehouseStockRequests = await request(blockedBaseUrl, "/api/admin/stock-requests", { headers: { "x-staff-session": warehouseSession.session.sessionId } });
+      assert(Array.isArray(warehouseStockRequests.requests), "库房角色可访问出入库管理接口");
+      let forbiddenWarehouseDashboard = "";
+      try {
+        await request(blockedBaseUrl, "/api/admin/dashboard", { headers: { "x-staff-session": warehouseSession.session.sessionId } });
+      } catch (error) {
+        forbiddenWarehouseDashboard = error.message;
+      }
+      assert(forbiddenWarehouseDashboard.includes("无权限"), "库房角色不能访问后台经营看板");
       const adminSession = await request(blockedBaseUrl, "/api/staff/login", { method: "POST", body: { account: "admin", password: "demo" } });
       const authedDashboard = await request(blockedBaseUrl, "/api/admin/dashboard", { headers: { "x-staff-session": adminSession.session.sessionId } });
       assert(typeof authedDashboard.todayRevenue === "number", "管理员会话可访问后台接口");

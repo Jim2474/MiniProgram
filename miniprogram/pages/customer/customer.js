@@ -246,6 +246,16 @@ Page({
     }
   },
 
+  showProductDetail(event) {
+    const product = this.data.products.find((item) => item.skuId === event.currentTarget.dataset.sku)
+    if (!product) return
+    wx.showModal({
+      title: product.name,
+      content: `${product.spec}\n${product.description || "暂无描述"}\n价格：${product.priceText}\n库存：${product.stockQty}`,
+      showCancel: false
+    })
+  },
+
   async removeCartItem(event) {
     try {
       await request(`/api/cart/items/${event.currentTarget.dataset.id}`, { method: "DELETE" })
