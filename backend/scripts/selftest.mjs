@@ -542,6 +542,10 @@ async function main() {
     assert(tableType.type.name === "超级VIP卡" && tableType.type.capacity === 9 && tableType.type.createdAt, "后台可新增咖位类型");
     assert(store.data.operationLogs.some((log) => log.action === "create_table_type" && log.targetId === tableType.type.typeId), "新增咖位类型写入操作日志");
     await expectHttpError(baseUrl, "/api/admin/table-types", { method: "POST", body: { capacity: 6 } }, 400, "新增咖位类型必须填写名称");
+    const updatedTableType = await request(baseUrl, `/api/admin/table-types/${tableType.type.typeId}`, { method: "PATCH", body: { name: "超级VIP包厢", capacity: 10, status: "disabled", operatorId: "emp_admin" } });
+    assert(updatedTableType.type.name === "超级VIP包厢" && updatedTableType.type.capacity === 10 && updatedTableType.type.status === "disabled" && updatedTableType.type.updatedAt, "后台可编辑和停用咖位类型");
+    assert(store.data.operationLogs.some((log) => log.action === "update_table_type" && log.targetId === tableType.type.typeId), "编辑咖位类型写入操作日志");
+    await expectHttpError(baseUrl, `/api/admin/table-types/${tableType.type.typeId}`, { method: "PATCH", body: { name: "" } }, 400, "编辑咖位类型名称不能为空");
     const table = await request(baseUrl, "/api/admin/tables", { method: "POST", body: { name: "B2 超级桌", type: "超级VIP卡", capacity: 9 } });
     assert(table.table.name === "B2 超级桌", "后台可新增座台信息");
     const occupiedTable = await request(baseUrl, `/api/admin/tables/${table.table.tableId}`, {

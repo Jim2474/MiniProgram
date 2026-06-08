@@ -183,6 +183,7 @@ assert(adminJs.includes("/api/admin/tables"), "admin page calls table management
 assert(adminJs.includes("tablePagination") && adminJs.includes("pageSize") && adminJs.includes("tableSummary"), "admin page supports table pagination and summary");
 assert(adminJs.includes("tableStatusOptions") && adminJs.includes("onTableKeyword"), "admin page supports table status and keyword filtering");
 assert(adminJs.includes("/api/admin/table-types") && adminJs.includes("createTableType") && adminJs.includes("tableTypeForm") && adminWxml.includes("咖位类型表单") && adminWxml.includes("新增咖位类型"), "admin page supports table type configuration form");
+assert(adminJs.includes("fillTableTypeForm") && adminJs.includes("updateTableType") && adminJs.includes("toggleTableType") && adminWxml.includes("保存咖位类型") && adminWxml.includes("启停类型"), "admin page supports table type edit and status toggle");
 assert(adminJs.includes("onTableTypeChange") && adminJs.includes("tableForm.typeIndex") && adminWxml.includes("座台类型") && adminWxml.includes('range="{{tableTypes}}"'), "admin page selects configured table type when creating tables");
 assert(adminJs.includes("cancelAdminReservation") && adminWxml.includes("取消预约"), "admin page can cancel reservations");
 assert(adminJs.includes("reservationConfirmReason") && adminJs.includes("reservationCancelReason") && adminJs.includes("reservationExpireReason") && adminWxml.includes("预约处理原因") && !adminJs.includes("小程序后台确认预约") && !adminJs.includes("小程序后台取消预约") && !adminJs.includes("小程序后台标记失效"), "admin page supports real reservation handling reasons");

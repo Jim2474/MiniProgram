@@ -2895,6 +2895,19 @@ function createRouter(store) {
     await store.save();
     return { type };
   });
+  add("PATCH", "/api/admin/table-types/:typeId", async (body, params) => {
+    const type = store.data.tableTypes.find((item) => item.typeId === params.typeId);
+    if (!type) throw new HttpError(404, "咖位类型不存在");
+    if (body.name !== undefined && !body.name) throw new HttpError(400, "咖位类型名称不能为空");
+    const before = deepClone(type);
+    if (body.name !== undefined) type.name = body.name;
+    if (body.capacity !== undefined) type.capacity = Number(body.capacity || 1);
+    if (body.status !== undefined) type.status = body.status;
+    type.updatedAt = now();
+    store.log(body.operatorId || "emp_admin", "admin", "update_table_type", "TableType", type.typeId, before, type, body.reason || "修改咖位类型");
+    await store.save();
+    return { type };
+  });
   add("GET", "/api/admin/tables", async (_body, _params, query) => {
     const allTables = store.data.tables;
     let tables = allTables;

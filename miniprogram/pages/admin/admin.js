@@ -20,6 +20,7 @@ Page({
     tables: [],
     tableTypes: [],
     tableTypeForm: {
+      editingTypeId: "",
       name: "超级VIP卡",
       capacity: 9
     },
@@ -843,6 +844,43 @@ Page({
         data: { ...this.data.tableTypeForm, operatorId: "emp_admin", reason: "后台新增咖位类型" }
       })
       wx.showToast({ title: "类型已新增" })
+      await this.loadTables()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  fillTableTypeForm(event) {
+    const tableType = this.data.tableTypes.find((item) => item.typeId === event.currentTarget.dataset.id)
+    if (!tableType) return
+    this.setData({
+      tableTypeForm: {
+        editingTypeId: tableType.typeId,
+        name: tableType.name,
+        capacity: tableType.capacity
+      }
+    })
+  },
+
+  async updateTableType() {
+    try {
+      if (!this.data.tableTypeForm.editingTypeId) throw new Error("请先选择要编辑的咖位类型")
+      await request(`/api/admin/table-types/${this.data.tableTypeForm.editingTypeId}`, {
+        method: "PATCH",
+        data: { name: this.data.tableTypeForm.name, capacity: this.data.tableTypeForm.capacity, operatorId: "emp_admin", reason: "后台编辑咖位类型" }
+      })
+      wx.showToast({ title: "类型已保存" })
+      await this.loadTables()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async toggleTableType(event) {
+    try {
+      const status = event.currentTarget.dataset.status === "active" ? "disabled" : "active"
+      await request(`/api/admin/table-types/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status, operatorId: "emp_admin", reason: "后台启停咖位类型" } })
+      wx.showToast({ title: status === "active" ? "类型已启用" : "类型已停用" })
       await this.loadTables()
     } catch (error) {
       showError(error)

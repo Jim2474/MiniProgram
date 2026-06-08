@@ -223,11 +223,17 @@
       <view class="row-title">咖位类型表单</view>
       <input class="input" value="{{tableTypeForm.name}}" bindinput="onTableTypeName" placeholder="类型名称，如 VIP 卡座" />
       <input class="input" type="number" value="{{tableTypeForm.capacity}}" bindinput="onTableTypeCapacity" placeholder="默认人数" />
+      <view class="muted">编辑类型：{{tableTypeForm.editingTypeId || '未选择'}}</view>
       <button size="mini" class="secondary" bindtap="createTableType">新增咖位类型</button>
+      <button size="mini" class="secondary" bindtap="updateTableType">保存咖位类型</button>
     </view>
     <view wx:for="{{tableTypes}}" wx:key="typeId" class="row">
       <view class="row-title">{{item.name}}</view>
       <view class="muted">默认 {{item.capacity}} 人 · {{item.status}}</view>
+      <view class="btn-row">
+        <button size="mini" class="secondary" data-id="{{item.typeId}}" bindtap="fillTableTypeForm">填入编辑类型</button>
+        <button size="mini" class="secondary" data-id="{{item.typeId}}" data-status="{{item.status}}" bindtap="toggleTableType">启停类型</button>
+      </view>
     </view>
     <picker range="{{tableTypes}}" range-key="name" value="{{tableForm.typeIndex}}" bindchange="onTableTypeChange">
       <view class="input">座台类型：{{tableTypes[tableForm.typeIndex].name || '选择咖位类型'}}</view>
