@@ -157,8 +157,14 @@ async function main() {
       body: { skuId: "sku_whisky", quantity: 1, operatorId: "emp_admin" },
     });
     assert(transfer.storage.quantity === 1 && transfer.storage.status === "available", "订单转存生成客户存酒");
+    assert(transfer.transferableQtyAfter === 0, "订单转存返回当前 SKU 剩余可转存数量");
     const storageLedgerAfterTransfer = await request(baseUrl, `/api/admin/storage-ledgers?storageId=${transfer.storage.storageId}`);
-    assert(storageLedgerAfterTransfer.ledgers.some((ledger) => ledger.actionType === "from_order" && ledger.product.skuId === "sku_whisky" && ledger.user.userId === "user_demo"), "客户存酒账记录订单转存入账");
+    assert(storageLedgerAfterTransfer.ledgers.some((ledger) => ledger.actionType === "from_order" && ledger.product.skuId === "sku_whisky" && ledger.user.userId === "user_demo" && ledger.sourceId === orderData.order.orderId), "客户存酒账记录订单转存入账并绑定来源订单");
+    const orderAfterTransfer = await request(baseUrl, `/api/orders?userId=user_demo`);
+    const transferredOrder = orderAfterTransfer.orders.find((order) => order.orderId === orderData.order.orderId);
+    assert(transferredOrder.transferableItems.some((item) => item.skuId === "sku_whisky" && item.transferableQty === 0 && item.transferredQty === 1), "订单详情返回 SKU 已转存和剩余可转存数量");
+    await expectHttpError(baseUrl, `/api/admin/orders/${orderData.order.orderId}/transfer-storage`, { method: "POST", body: { skuId: "sku_whisky", quantity: 1, operatorId: "emp_admin" } }, 409, "订单同一 SKU 超额转存被拦截");
+    await expectHttpError(baseUrl, `/api/admin/orders/${orderData.order.orderId}/transfer-storage`, { method: "POST", body: { skuId: "sku_fries", quantity: 1, operatorId: "emp_admin" } }, 400, "订单外 SKU 不能转存客户存酒");
 
     const pickup = await request(baseUrl, `/api/storage/${transfer.storage.storageId}/pickup-requests`, {
       method: "POST",

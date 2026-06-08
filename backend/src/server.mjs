@@ -1003,9 +1003,17 @@ function publicOrder(store, order) {
   const items = store.data.orderItems
     .filter((item) => item.orderId === order.orderId)
     .map((item) => ({ ...item, product: store.data.products.find((sku) => sku.skuId === item.skuId) }));
+  const transferredBySku = new Map();
+  for (const ledger of store.data.customerStorageLedgers.filter((item) => item.actionType === "from_order" && item.sourceId === order.orderId)) {
+    transferredBySku.set(ledger.skuId, (transferredBySku.get(ledger.skuId) || 0) + Math.max(0, Number(ledger.changeQty || 0)));
+  }
+  const transferableItems = items.map((item) => {
+    const transferredQty = transferredBySku.get(item.skuId) || 0;
+    return { ...item, transferredQty, transferableQty: Math.max(0, Number(item.quantity || 0) - transferredQty) };
+  });
   const employee = order.employeeId ? publicEmployee(store.data.employees.find((item) => item.employeeId === order.employeeId)) : null;
   const user = store.data.users.find((item) => item.userId === order.userId);
-  return { ...order, items, employee, user };
+  return { ...order, items, transferableItems, employee, user };
 }
 
 function dashboard(store) {
@@ -1730,6 +1738,13 @@ function createRouter(store) {
     const sku = store.getSku(body.skuId);
     const quantity = Number(body.quantity || 1);
     if (quantity < 1) throw new HttpError(400, "转存数量必须大于 0");
+    const orderItem = store.data.orderItems.find((item) => item.orderId === order.orderId && item.skuId === sku.skuId);
+    if (!orderItem) throw new HttpError(400, "只能转存订单内 SKU");
+    const transferredQty = store.data.customerStorageLedgers
+      .filter((ledger) => ledger.actionType === "from_order" && ledger.sourceId === order.orderId && ledger.skuId === sku.skuId)
+      .reduce((sum, ledger) => sum + Math.max(0, Number(ledger.changeQty || 0)), 0);
+    const transferableQty = Number(orderItem.quantity || 0) - transferredQty;
+    if (quantity > transferableQty) throw new HttpError(409, `订单内 ${sku.name} 可转存数量不足`);
     const storage = {
       storageId: newId("storage"),
       merchantId: order.merchantId,
@@ -1751,12 +1766,14 @@ function createRouter(store) {
       quantityAfter: quantity,
       actionType: "from_order",
       operatorId: body.operatorId || "emp_admin",
-      reason: "订单转存",
+      sourceType: "order",
+      sourceId: order.orderId,
+      reason: body.reason || "订单转存",
       createdAt: now(),
     });
-    store.log(body.operatorId || "emp_admin", "admin", "transfer_order_storage", "CustomerStorage", storage.storageId, null, storage, "订单转存");
+    store.log(body.operatorId || "emp_admin", "admin", "transfer_order_storage", "CustomerStorage", storage.storageId, null, storage, body.reason || "订单转存");
     await store.save();
-    return { storage };
+    return { storage, transferableQtyAfter: transferableQty - quantity };
   });
 
   add("GET", "/api/points", async (_body, _params, query) => {

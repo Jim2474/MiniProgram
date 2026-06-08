@@ -40,6 +40,7 @@
     <view wx:for="{{orders}}" wx:key="orderId" class="row">
       <view class="row-title">{{item.orderId}} · {{item.amountText}}</view>
       <view class="muted">{{item.statusText}} · {{item.employeeName}} · {{item.user.phone}}</view>
+      <view class="muted">可转存：{{item.transferableText || '无可转存商品'}}</view>
       <view class="btn-row">
         <button size="mini" class="primary" data-id="{{item.orderId}}" bindtap="completeOrder">完成</button>
         <button size="mini" class="secondary" data-id="{{item.orderId}}" bindtap="refundOrder">退款</button>

@@ -139,6 +139,7 @@ assert(adminJs.includes("/refund"), "admin page calls refund API");
 assert(adminJs.includes("operationForm") && adminJs.includes("refundReason") && adminWxml.includes("退款原因") && !adminJs.includes("小程序后台退款"), "admin page supports real refund reason input");
 assert(adminJs.includes("/transfer-storage"), "admin page calls transfer storage API");
 assert(adminJs.includes("transferForm") && adminJs.includes("onTransferQty") && adminWxml.includes("订单转存表单") && adminWxml.includes("转存数量") && !adminWxml.includes("转存威士忌") && !/transferStorage[\s\S]*?sku_whisky[\s\S]*?quantity: 1/.test(adminJs), "admin page supports real order storage transfer input");
+assert(adminJs.includes("transferableItems") && adminJs.includes("transferableText") && adminWxml.includes("可转存："), "admin page displays order storage transfer remaining quantity");
 assert(adminJs.includes("/api/admin/stock-counts"), "admin page calls stock count API");
 assert(adminJs.includes("/api/admin/stock-requests"), "admin page calls stock request workflow API");
 assert(adminJs.includes("stockRequestForm") && adminJs.includes("onStockRequestQty") && adminWxml.includes("出入库数量") && adminWxml.includes("出入库原因") && !adminJs.includes("quantity: 3,"), "admin page supports real stock request input");

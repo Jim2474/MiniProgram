@@ -215,7 +215,10 @@ Page({
         ...item,
         amountText: money(item.amount),
         statusText: statusText(item.orderStatus),
-        employeeName: item.employee ? item.employee.name : "自然订单"
+        employeeName: item.employee ? item.employee.name : "自然订单",
+        transferableText: (item.transferableItems || [])
+          .map((transferable) => `${transferable.product ? transferable.product.name : transferable.skuId} 可转 ${transferable.transferableQty}/${transferable.quantity}`)
+          .join("；")
       }))
     })
   },
@@ -355,7 +358,7 @@ Page({
       if (!sku) throw new Error("请先选择转存 SKU")
       await request(`/api/admin/orders/${event.currentTarget.dataset.id}/transfer-storage`, {
         method: "POST",
-        data: { skuId: sku.skuId, quantity: this.data.transferForm.quantity, operatorId: "emp_admin" }
+        data: { skuId: sku.skuId, quantity: this.data.transferForm.quantity, operatorId: "emp_admin", reason: "订单商品转客户存酒" }
       })
       wx.showToast({ title: "已转存" })
       await this.loadStorage()
