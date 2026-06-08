@@ -16,6 +16,10 @@ Page({
     timer: null,
     voiceEvents: [],
     blindSettings: { titleMap: {} },
+    blindDisplayStyle: "",
+    blindTitleStyle: "",
+    blindTimerStyle: "",
+    blindDialogStyle: "",
     beijingTimeText: "",
     registrationCountdownText: "",
     seats: []
@@ -45,6 +49,7 @@ Page({
         ...blind.settings,
         blindLevelsText: (blind.settings.blindLevels || []).map((item) => `${item.smallBlind}/${item.bigBlind}${item.ante ? `/${item.ante}` : ""}`).join(" → ")
       }
+      const blindStyles = this.buildBlindDisplayStyles(blindSettings)
       const intervalMinutes = game ? game.intervalMinutes : this.data.form.intervalMinutes
       const intervalIndex = Math.max(0, this.data.intervalOptions.indexOf(intervalMinutes))
       this.setData({
@@ -54,10 +59,26 @@ Page({
         "form.intervalIndex": intervalIndex,
         "form.voiceEnabled": game ? game.voiceEnabled !== false : this.data.form.voiceEnabled,
         seats: (boot.seats || []).map((item) => ({ ...item, statusText: statusText(item.status) })),
-        blindSettings
+        blindSettings,
+        ...blindStyles
       })
     } catch (error) {
       showError(error)
+    }
+  },
+
+  buildBlindDisplayStyles(settings) {
+    const fontSize = Math.max(24, Math.min(96, Number(settings.fontSize || 48)))
+    const fontFamily = settings.fontFamily && settings.fontFamily !== "system" ? settings.fontFamily : "Arial, sans-serif"
+    const fontColor = settings.fontColor || "#FFFFFF"
+    const timerColor = settings.timerColor || "#F8D66D"
+    const dialogColor = settings.dialogColor || "#15221B"
+    const backgroundImage = settings.backgroundImage ? `background-image: linear-gradient(rgba(0,0,0,.48), rgba(0,0,0,.48)), url('${settings.backgroundImage}'); background-size: cover; background-position: center;` : ""
+    return {
+      blindDisplayStyle: `background-color: ${dialogColor}; color: ${fontColor}; font-family: ${fontFamily}; ${backgroundImage}`,
+      blindTitleStyle: `color: ${fontColor}; font-size: ${fontSize}rpx; font-family: ${fontFamily};`,
+      blindTimerStyle: `color: ${timerColor}; font-size: ${Math.max(28, fontSize - 4)}rpx; font-family: ${fontFamily};`,
+      blindDialogStyle: `background-color: ${dialogColor}; color: ${fontColor};`
     }
   },
 

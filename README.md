@@ -73,10 +73,12 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V94 验收状态
+## V95 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V95.md`
+- `docs/REQUIREMENTS-AUDIT-V95.md`
 - `docs/ACCEPTANCE-V94.md`
 - `docs/REQUIREMENTS-AUDIT-V94.md`
 - `docs/ACCEPTANCE-V93.md`
@@ -196,9 +198,17 @@ node scripts/validate-miniprogram.mjs
 当前自动测试通过：
 
 - 后端业务自验收：236 项。
-- 小程序结构与 API 调用校验：210 项。
+- 小程序结构与 API 调用校验：211 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V95 新增能力
+
+- 荷官“游戏进行中”区域应用后台升盲背景图。
+- 荷官现场主标题应用后台字体颜色、字号和字体样式。
+- 荷官倒计时应用后台计时颜色和字号。
+- 冠军提示面板应用后台弹窗背景色。
+- 自动验收覆盖荷官端升盲样式应用，避免只展示配置值。
 
 ## V94 新增能力
 
