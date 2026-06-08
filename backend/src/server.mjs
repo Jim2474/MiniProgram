@@ -1016,6 +1016,10 @@ function publicOrder(store, order) {
   return { ...order, items, transferableItems, employee, user };
 }
 
+function orderHasStorageTransfer(store, orderId) {
+  return store.data.customerStorageLedgers.some((ledger) => ledger.actionType === "from_order" && ledger.sourceId === orderId);
+}
+
 function dashboard(store) {
   const today = dayKey();
   const yesterdayDate = new Date();
@@ -1671,6 +1675,7 @@ function createRouter(store) {
     const order = store.getOrder(params.orderId);
     if (order.payStatus !== "paid") throw new HttpError(400, "只有已支付订单可退款");
     if (order.orderStatus === "refunded") return { order: publicOrder(store, order), idempotent: true };
+    if (orderHasStorageTransfer(store, order.orderId)) throw new HttpError(409, "订单已转存客户存酒，需先人工处理存酒后再退款");
     const existingRefund = store.data.refunds.find((item) => item.orderId === order.orderId && item.status !== "failed");
     if (existingRefund) return { order: publicOrder(store, order), refund: existingRefund, refundProvider: existingRefund.provider, idempotent: true };
     const payment = store.data.payments.find((item) => item.orderId === order.orderId);

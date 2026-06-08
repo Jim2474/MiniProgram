@@ -301,17 +301,24 @@ async function main() {
     }
     assert(stockError.includes("库存不足"), "库存不足不可加入购物车/下单");
 
-    const refunded = await request(baseUrl, `/api/admin/orders/${orderData.order.orderId}/refund`, {
+    await expectHttpError(baseUrl, `/api/admin/orders/${orderData.order.orderId}/refund`, { method: "POST", body: { operatorId: "emp_admin", reason: "已转存后误退款" } }, 409, "已转存客户存酒的订单退款前需人工处理存酒");
+    await request(baseUrl, "/api/cart/items", {
+      method: "POST",
+      body: { userId: "user_demo", employeeId: "emp_anna", skuId: "sku_bud", quantity: 1 },
+    });
+    const refundOrderData = await request(baseUrl, "/api/orders", { method: "POST", body: { userId: "user_demo" } });
+    await request(baseUrl, `/api/orders/${refundOrderData.order.orderId}/pay`, { method: "POST" });
+    const refunded = await request(baseUrl, `/api/admin/orders/${refundOrderData.order.orderId}/refund`, {
       method: "POST",
       body: { operatorId: "emp_admin", reason: "自验收退款" },
     });
     assert(refunded.order.payStatus === "refunded" && refunded.order.orderStatus === "refunded", "管理员可退款");
     assert(refunded.refundProvider === "mock_wechat", "模拟微信退款返回提供方标记");
     const productsAfterRefund = await request(baseUrl, "/api/products");
-    assert(productsAfterRefund.products.find((item) => item.skuId === "sku_bud").stockQty === bud.stockQty, "退款后啤酒库存恢复");
-    assert(productsAfterRefund.products.find((item) => item.skuId === "sku_whisky").stockQty === whisky.stockQty, "退款后威士忌库存恢复");
+    assert(productsAfterRefund.products.find((item) => item.skuId === "sku_bud").stockQty === bud.stockQty - 2, "退款后啤酒库存恢复且保留未退款已支付订单扣减");
+    assert(productsAfterRefund.products.find((item) => item.skuId === "sku_whisky").stockQty === whisky.stockQty - 1, "已转存订单未退款时威士忌库存不被恢复");
     const pointsAfterRefund = await request(baseUrl, "/api/points?userId=user_demo");
-    assert(pointsAfterRefund.balance === 120, "退款后积分扣回");
+    assert(pointsAfterRefund.balance === 120 + paid.order.pointsAwarded, "退款后仅扣回被退款订单积分");
 
     const logs = await request(baseUrl, "/api/admin/operation-logs");
     assert(logs.logs.length >= 8, "关键业务操作写入操作日志");
