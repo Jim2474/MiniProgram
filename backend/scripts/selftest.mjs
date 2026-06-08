@@ -447,12 +447,12 @@ async function main() {
     assert(activeCategory.category.status === "active", "后台可重新启用商品分类");
     const product = await request(baseUrl, "/api/admin/products", {
       method: "POST",
-      body: { categoryId: category.category.categoryId, name: "苏打水", spec: "330ml", unit: "瓶", price: 18, costPrice: 7, supplierName: "软饮供应商", stockQty: 6, warningQty: 2, storageDays: 15 },
+      body: { categoryId: category.category.categoryId, name: "苏打水", spec: "330ml", unit: "瓶", price: 18, costPrice: 7, supplierName: "软饮供应商", stockQty: 6, warningQty: 2, storageDays: 15, imageUrl: "/uploads/product.png" },
     });
-    assert(product.product.name === "苏打水" && product.product.stockQty === 6 && product.product.warningQty === 2 && product.product.storageDays === 15 && product.product.costPrice === 7 && product.product.supplierName === "软饮供应商", "后台可新增 SKU 并配置预警库存、成本、供应商和存酒有效期");
+    assert(product.product.name === "苏打水" && product.product.stockQty === 6 && product.product.warningQty === 2 && product.product.storageDays === 15 && product.product.costPrice === 7 && product.product.supplierName === "软饮供应商" && product.product.imageUrl === "/uploads/product.png", "后台可新增 SKU 并配置图片、预警库存、成本、供应商和存酒有效期");
     assert(product.product.createdAt && product.product.updatedAt, "后台新增 SKU 记录创建和更新时间");
-    const disabledProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "disabled", price: 20, costPrice: 8, supplierName: "新软饮供应商", warningQty: 3, storageDays: 30 } });
-    assert(disabledProduct.product.status === "disabled" && disabledProduct.product.price === 20 && disabledProduct.product.costPrice === 8 && disabledProduct.product.supplierName === "新软饮供应商" && disabledProduct.product.warningQty === 3 && disabledProduct.product.storageDays === 30, "后台可编辑并下架 SKU 且更新成本、供应商和有效期配置");
+    const disabledProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "disabled", price: 20, costPrice: 8, supplierName: "新软饮供应商", warningQty: 3, storageDays: 30, imageUrl: "/uploads/product-new.png" } });
+    assert(disabledProduct.product.status === "disabled" && disabledProduct.product.price === 20 && disabledProduct.product.costPrice === 8 && disabledProduct.product.supplierName === "新软饮供应商" && disabledProduct.product.warningQty === 3 && disabledProduct.product.storageDays === 30 && disabledProduct.product.imageUrl === "/uploads/product-new.png", "后台可编辑并下架 SKU 且更新图片、成本、供应商和有效期配置");
     assert(disabledProduct.product.updatedAt >= product.product.createdAt, "后台编辑 SKU 更新更新时间");
     const activeProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "active" } });
     assert(activeProduct.product.status === "active", "后台可重新上架 SKU");

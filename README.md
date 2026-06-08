@@ -73,10 +73,12 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V93 验收状态
+## V94 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V94.md`
+- `docs/REQUIREMENTS-AUDIT-V94.md`
 - `docs/ACCEPTANCE-V93.md`
 - `docs/REQUIREMENTS-AUDIT-V93.md`
 - `docs/ACCEPTANCE-V92.md`
@@ -194,9 +196,16 @@ node scripts/validate-miniprogram.mjs
 当前自动测试通过：
 
 - 后端业务自验收：236 项。
-- 小程序结构与 API 调用校验：209 项。
+- 小程序结构与 API 调用校验：210 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V94 新增能力
+
+- 后台 SKU 表单新增商品图片 URL 字段。
+- 后台 SKU 新增/编辑支持上传商品图片并自动回填 URL。
+- 新增/编辑 SKU 时后端自测覆盖商品图片保存和更新。
+- 自动验收覆盖后台商品图片上传入口。
 
 ## V93 新增能力
 

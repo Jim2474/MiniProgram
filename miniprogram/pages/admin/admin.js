@@ -263,6 +263,7 @@ Page({
       price: 18,
       costPrice: 8,
       supplierName: "默认供应商",
+      imageUrl: "https://dummyimage.com/640x360/183026/f4d9a6&text=Product",
       stockQty: 12,
       warningQty: 2,
       storageDays: 30
@@ -647,6 +648,31 @@ Page({
     this.setData({ "productForm.supplierName": event.detail.value })
   },
 
+  onProductImage(event) {
+    this.setData({ "productForm.imageUrl": event.detail.value })
+  },
+
+  async chooseProductImage() {
+    try {
+      let filePath = ""
+      if (wx.chooseMedia) {
+        const media = await new Promise((resolve, reject) => wx.chooseMedia({ count: 1, mediaType: ["image"], sourceType: ["album", "camera"], success: resolve, fail: reject }))
+        filePath = media.tempFiles && media.tempFiles[0] && media.tempFiles[0].tempFilePath
+      } else {
+        const image = await new Promise((resolve, reject) => wx.chooseImage({ count: 1, sourceType: ["album", "camera"], success: resolve, fail: reject }))
+        filePath = image.tempFilePaths && image.tempFilePaths[0]
+      }
+      if (!filePath) return
+      const data = await uploadFile("/api/admin/assets/upload", filePath, { field: "productImage" })
+      if (data.asset && data.asset.url) {
+        this.setData({ "productForm.imageUrl": data.asset.url })
+        wx.showToast({ title: "商品图片已上传" })
+      }
+    } catch (error) {
+      showError(error)
+    }
+  },
+
   onProductStock(event) {
     this.setData({ "productForm.stockQty": Number(event.detail.value || 0) })
   },
@@ -690,6 +716,7 @@ Page({
           price: this.data.productForm.price,
           costPrice: this.data.productForm.costPrice,
           supplierName: this.data.productForm.supplierName,
+          imageUrl: this.data.productForm.imageUrl,
           stockQty: this.data.productForm.stockQty,
           warningQty: this.data.productForm.warningQty,
           description: this.data.productForm.description,
@@ -719,6 +746,7 @@ Page({
         price: product.price,
         costPrice: product.costPrice,
         supplierName: product.supplierName,
+        imageUrl: product.imageUrl || "",
         stockQty: product.stockQty,
         warningQty: product.warningQty,
         storageDays: product.storageDays
@@ -740,6 +768,7 @@ Page({
           price: this.data.productForm.price,
           costPrice: this.data.productForm.costPrice,
           supplierName: this.data.productForm.supplierName,
+          imageUrl: this.data.productForm.imageUrl,
           warningQty: this.data.productForm.warningQty,
           description: this.data.productForm.description,
           storageDays: this.data.productForm.storageDays,

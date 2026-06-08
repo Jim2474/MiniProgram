@@ -161,6 +161,7 @@ assert(adminJs.includes("/api/admin/categories/"), "admin page calls category up
 assert(adminJs.includes("categoryForm") && adminJs.includes("onCategorySortOrder") && adminWxml.includes("商品分类表单") && !adminJs.includes("新分类"), "admin page supports real category create form");
 assert(adminJs.includes("/api/admin/products") && adminJs.includes("createProduct"), "admin page supports product create API");
 assert(adminJs.includes("/api/admin/products/"), "admin page calls product update API");
+assert(adminJs.includes("onProductImage") && adminJs.includes("chooseProductImage") && adminJs.includes('field: "productImage"') && adminWxml.includes("商品图片 URL") && adminWxml.includes("上传商品图片"), "admin page supports product image URL and upload");
 assert(adminJs.includes("onProductSpec") && adminJs.includes("onProductUnit") && adminJs.includes("onProductDescription") && adminWxml.includes("商品描述") && !adminJs.includes("标准规格") && !adminJs.includes("后台新增 SKU"), "admin page supports full SKU create form");
 assert(adminJs.includes("fillProductForm") && adminJs.includes("updateProduct") && adminWxml.includes("填入编辑") && adminWxml.includes("保存 SKU"), "admin page supports SKU edit form");
 assert(!/async updateProduct\(\)[\s\S]*?stockQty[\s\S]*?async toggleProduct/.test(adminJs), "admin SKU edit form does not bypass stock ledger");

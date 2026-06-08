@@ -84,6 +84,8 @@
     <input class="input" type="number" value="{{productForm.price}}" bindinput="onProductPrice" placeholder="售价" />
     <input class="input" type="number" value="{{productForm.costPrice}}" bindinput="onProductCost" placeholder="成本价" />
     <input class="input" value="{{productForm.supplierName}}" bindinput="onProductSupplier" placeholder="供应商" />
+    <input class="input" value="{{productForm.imageUrl}}" bindinput="onProductImage" placeholder="商品图片 URL" />
+    <button size="mini" class="secondary" bindtap="chooseProductImage">上传商品图片</button>
     <input class="input" type="number" value="{{productForm.stockQty}}" bindinput="onProductStock" placeholder="初始库存" />
     <input class="input" type="number" value="{{productForm.warningQty}}" bindinput="onProductWarning" placeholder="预警库存" />
     <input class="input" type="number" value="{{productForm.storageDays}}" bindinput="onProductStorageDays" placeholder="存酒有效期天数" />
