@@ -11,6 +11,18 @@ Page({
     reservations: [],
     tables: [],
     tableTypes: [],
+    tableKeyword: "",
+    tableStatusOptions: [
+      { label: "全部", value: "" },
+      { label: "空闲", value: "available" },
+      { label: "占用", value: "occupied" },
+      { label: "预订", value: "reserved" },
+      { label: "维护", value: "maintenance" },
+      { label: "禁用", value: "disabled" }
+    ],
+    tableStatusIndex: 0,
+    tablePagination: { page: 1, pageSize: 5, total: 0, pageCount: 1 },
+    tableSummary: {},
     logs: [],
     stockRequests: [],
     stockLedgers: [],
@@ -31,7 +43,9 @@ Page({
       categoryIndex: 0,
       name: "气泡水",
       price: 18,
-      stockQty: 12
+      stockQty: 12,
+      warningQty: 2,
+      storageDays: 30
     },
     tableForm: {
       name: "B2 新桌",
@@ -106,10 +120,16 @@ Page({
   },
 
   async loadTables() {
-    const data = await request("/api/admin/tables")
+    const status = this.data.tableStatusOptions[this.data.tableStatusIndex].value
+    const params = [`page=${this.data.tablePagination.page}`, `pageSize=${this.data.tablePagination.pageSize}`]
+    if (this.data.tableKeyword) params.push(`keyword=${encodeURIComponent(this.data.tableKeyword)}`)
+    if (status) params.push(`status=${status}`)
+    const data = await request(`/api/admin/tables?${params.join("&")}`)
     this.setData({
       tables: data.tables.map((item) => ({ ...item, statusText: statusText(item.status), consumptionText: money(item.consumptionAmount) })),
-      tableTypes: data.tableTypes
+      tableTypes: data.tableTypes,
+      tablePagination: data.pagination,
+      tableSummary: data.summary
     })
   },
 
@@ -233,6 +253,14 @@ Page({
     this.setData({ "productForm.stockQty": Number(event.detail.value || 0) })
   },
 
+  onProductWarning(event) {
+    this.setData({ "productForm.warningQty": Number(event.detail.value || 0) })
+  },
+
+  onProductStorageDays(event) {
+    this.setData({ "productForm.storageDays": Number(event.detail.value || 0) })
+  },
+
   async createCategory() {
     try {
       await request("/api/admin/categories", { method: "POST", data: { name: `新分类${Date.now().toString().slice(-3)}` } })
@@ -255,9 +283,9 @@ Page({
           unit: "份",
           price: this.data.productForm.price,
           stockQty: this.data.productForm.stockQty,
-          warningQty: 2,
+          warningQty: this.data.productForm.warningQty,
           description: "后台新增 SKU",
-          storageDays: 0
+          storageDays: this.data.productForm.storageDays
         }
       })
       wx.showToast({ title: "SKU 已新增" })
@@ -370,6 +398,32 @@ Page({
 
   onTableCapacity(event) {
     this.setData({ "tableForm.capacity": Number(event.detail.value || 1) })
+  },
+
+  onTableKeyword(event) {
+    this.setData({ tableKeyword: event.detail.value, "tablePagination.page": 1 })
+  },
+
+  onTableStatusChange(event) {
+    this.setData({ tableStatusIndex: Number(event.detail.value), "tablePagination.page": 1 })
+    this.loadTables()
+  },
+
+  async searchTables() {
+    this.setData({ "tablePagination.page": 1 })
+    await this.loadTables()
+  },
+
+  async prevTablePage() {
+    const page = Math.max(1, this.data.tablePagination.page - 1)
+    this.setData({ "tablePagination.page": page })
+    await this.loadTables()
+  },
+
+  async nextTablePage() {
+    const page = Math.min(this.data.tablePagination.pageCount || 1, this.data.tablePagination.page + 1)
+    this.setData({ "tablePagination.page": page })
+    await this.loadTables()
   },
 
   async createTable() {

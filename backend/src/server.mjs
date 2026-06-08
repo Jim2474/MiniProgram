@@ -2058,12 +2058,31 @@ function createRouter(store) {
     return { type };
   });
   add("GET", "/api/admin/tables", async (_body, _params, query) => {
-    let tables = store.data.tables;
+    const allTables = store.data.tables;
+    let tables = allTables;
     const keyword = query.get("keyword");
     const status = query.get("status");
     if (keyword) tables = tables.filter((table) => `${table.name}${table.type}`.includes(keyword));
     if (status) tables = tables.filter((table) => table.status === status);
-    return { tables: tables.map((table) => publicTable(store, table)), tableTypes: store.data.tableTypes };
+    const page = Math.max(1, Number(query.get("page") || 1));
+    const pageSize = Math.min(50, Math.max(1, Number(query.get("pageSize") || tables.length || 1)));
+    const total = tables.length;
+    const pageCount = Math.max(1, Math.ceil(total / pageSize));
+    const pagedTables = tables.slice((page - 1) * pageSize, page * pageSize);
+    const summary = {
+      total: allTables.length,
+      available: allTables.filter((table) => table.status === "available").length,
+      occupied: allTables.filter((table) => table.status === "occupied").length,
+      reserved: allTables.filter((table) => table.status === "reserved").length,
+      maintenance: allTables.filter((table) => table.status === "maintenance").length,
+      disabled: allTables.filter((table) => table.status === "disabled").length,
+    };
+    return {
+      tables: pagedTables.map((table) => publicTable(store, table)),
+      tableTypes: store.data.tableTypes,
+      pagination: { page, pageSize, total, pageCount },
+      summary,
+    };
   });
   add("POST", "/api/admin/tables", async (body) => {
     const table = {

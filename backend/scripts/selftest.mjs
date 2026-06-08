@@ -275,11 +275,11 @@ async function main() {
     assert(activeCategory.category.status === "active", "后台可重新启用商品分类");
     const product = await request(baseUrl, "/api/admin/products", {
       method: "POST",
-      body: { categoryId: category.category.categoryId, name: "苏打水", spec: "330ml", unit: "瓶", price: 18, stockQty: 6, warningQty: 2, storageDays: 0 },
+      body: { categoryId: category.category.categoryId, name: "苏打水", spec: "330ml", unit: "瓶", price: 18, stockQty: 6, warningQty: 2, storageDays: 15 },
     });
-    assert(product.product.name === "苏打水" && product.product.stockQty === 6, "后台可新增 SKU");
-    const disabledProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "disabled", price: 20 } });
-    assert(disabledProduct.product.status === "disabled" && disabledProduct.product.price === 20, "后台可编辑并下架 SKU");
+    assert(product.product.name === "苏打水" && product.product.stockQty === 6 && product.product.warningQty === 2 && product.product.storageDays === 15, "后台可新增 SKU 并配置预警库存和存酒有效期");
+    const disabledProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "disabled", price: 20, warningQty: 3, storageDays: 30 } });
+    assert(disabledProduct.product.status === "disabled" && disabledProduct.product.price === 20 && disabledProduct.product.warningQty === 3 && disabledProduct.product.storageDays === 30, "后台可编辑并下架 SKU 且更新有效期配置");
     const activeProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "active" } });
     assert(activeProduct.product.status === "active", "后台可重新上架 SKU");
     const filteredProducts = await request(baseUrl, `/api/products?categoryId=${category.category.categoryId}&keyword=${encodeURIComponent("苏打")}`);
@@ -374,6 +374,9 @@ async function main() {
       body: { status: "occupied", consumptionAmount: 688, reason: "开台占用" },
     });
     assert(occupiedTable.table.status === "occupied" && occupiedTable.table.occupiedStartedAt && occupiedTable.table.consumptionAmount === 688, "后台可设置座台占用与消费金额");
+    const filteredTables = await request(baseUrl, `/api/admin/tables?keyword=${encodeURIComponent("超级")}&status=occupied&page=1&pageSize=1`);
+    assert(filteredTables.tables.length === 1 && filteredTables.tables[0].tableId === occupiedTable.table.tableId, "后台咖位列表支持关键词、状态筛选和分页");
+    assert(filteredTables.pagination.total >= 1 && filteredTables.pagination.pageSize === 1 && filteredTables.summary.occupied >= 1, "后台咖位列表返回分页信息和状态汇总");
 
     const blindSettings = await request(baseUrl, "/api/admin/blind-settings", { method: "PATCH", body: { theme: "neon", fontSize: 56, registrationStatus: "stopped" } });
     assert(blindSettings.settings.theme === "neon" && blindSettings.settings.registrationStatus === "stopped", "后台可配置升盲样式和报名状态");

@@ -49,10 +49,12 @@
     <input class="input" value="{{productForm.name}}" bindinput="onProductName" placeholder="SKU 名称" />
     <input class="input" type="number" value="{{productForm.price}}" bindinput="onProductPrice" placeholder="售价" />
     <input class="input" type="number" value="{{productForm.stockQty}}" bindinput="onProductStock" placeholder="初始库存" />
+    <input class="input" type="number" value="{{productForm.warningQty}}" bindinput="onProductWarning" placeholder="预警库存" />
+    <input class="input" type="number" value="{{productForm.storageDays}}" bindinput="onProductStorageDays" placeholder="存酒有效期天数" />
     <button size="mini" class="primary" bindtap="createProduct">新增 SKU</button>
     <view wx:for="{{products}}" wx:key="skuId" class="row">
       <view class="row-title">{{item.name}} · {{item.spec}}</view>
-      <view class="muted">{{item.priceText}} · 库存 {{item.stockQty}} · 预警 {{item.warningQty}}</view>
+      <view class="muted">{{item.priceText}} · 库存 {{item.stockQty}} · 预警 {{item.warningQty}} · 存酒 {{item.storageDays}}天</view>
       <view class="btn-row">
         <button size="mini" class="secondary" data-id="{{item.skuId}}" data-current="{{item.stockQty}}" bindtap="addStock">盘点 +10</button>
         <button size="mini" class="secondary" data-id="{{item.skuId}}" data-direction="in" bindtap="createStockRequest">入库申请</button>
@@ -102,6 +104,23 @@
 
   <view class="section">
     <view class="section-title">咖位管理</view>
+    <view class="metrics">
+      <view class="metric"><view class="metric-value">{{tableSummary.total}}</view><view class="metric-label">总咖位</view></view>
+      <view class="metric"><view class="metric-value">{{tableSummary.available}}</view><view class="metric-label">空闲</view></view>
+      <view class="metric"><view class="metric-value">{{tableSummary.occupied}}</view><view class="metric-label">占用</view></view>
+      <view class="metric"><view class="metric-value">{{tableSummary.reserved}}</view><view class="metric-label">预订</view></view>
+      <view class="metric"><view class="metric-value">{{tableSummary.maintenance}}</view><view class="metric-label">维护</view></view>
+    </view>
+    <input class="input" value="{{tableKeyword}}" bindinput="onTableKeyword" placeholder="搜索桌台名称/类型" />
+    <picker range="{{tableStatusOptions}}" range-key="label" value="{{tableStatusIndex}}" bindchange="onTableStatusChange">
+      <view class="input">状态筛选：{{tableStatusOptions[tableStatusIndex].label}}</view>
+    </picker>
+    <view class="btn-row">
+      <button size="mini" class="secondary" bindtap="searchTables">搜索咖位</button>
+      <button size="mini" class="secondary" bindtap="prevTablePage">上一页</button>
+      <button size="mini" class="secondary" bindtap="nextTablePage">下一页</button>
+    </view>
+    <view class="muted">第 {{tablePagination.page}} / {{tablePagination.pageCount}} 页 · 共 {{tablePagination.total}} 条</view>
     <input class="input" value="{{tableForm.name}}" bindinput="onTableName" placeholder="桌台名称" />
     <input class="input" type="number" value="{{tableForm.capacity}}" bindinput="onTableCapacity" placeholder="人数" />
     <button size="mini" class="primary" bindtap="createTable">新增座台</button>

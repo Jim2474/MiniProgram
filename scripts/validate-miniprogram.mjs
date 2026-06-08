@@ -102,6 +102,7 @@ assert(adminJs.includes("/api/admin/categories"), "admin page calls category cre
 assert(adminJs.includes("/api/admin/categories/"), "admin page calls category update API");
 assert(adminJs.includes("/api/admin/products") && adminJs.includes("createProduct"), "admin page supports product create API");
 assert(adminJs.includes("/api/admin/products/"), "admin page calls product update API");
+assert(adminJs.includes("storageDays") && adminJs.includes("warningQty"), "admin page supports SKU warning stock and storage days");
 assert(adminJs.includes("/api/admin/finance/overview"), "admin page calls finance API");
 assert(adminJs.includes("/api/admin/recharge-configs"), "admin page calls recharge config API");
 assert(adminJs.includes("/api/admin/recharge-configs/"), "admin page calls recharge config update API");
@@ -114,6 +115,8 @@ assert(adminJs.includes("/api/admin/lottery/"), "admin page calls lottery admin 
 assert(adminJs.includes("/api/admin/lottery/prizes/"), "admin page calls lottery prize update API");
 assert(adminJs.includes("/api/admin/scan-records"), "admin page calls scan records API");
 assert(adminJs.includes("/api/admin/tables"), "admin page calls table management API");
+assert(adminJs.includes("tablePagination") && adminJs.includes("pageSize") && adminJs.includes("tableSummary"), "admin page supports table pagination and summary");
+assert(adminJs.includes("tableStatusOptions") && adminJs.includes("onTableKeyword"), "admin page supports table status and keyword filtering");
 assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind settings API");
 assert(adminJs.includes("/api/admin/system-settings"), "admin page calls system settings API");
 
