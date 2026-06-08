@@ -229,7 +229,12 @@ Page({
     const keyword = this.data.productKeyword ? `?keyword=${encodeURIComponent(this.data.productKeyword)}` : ""
     const data = await request(`/api/admin/products${keyword}`)
     this.setData({
-      products: data.products.map((item) => ({ ...item, priceText: money(item.price) })),
+      products: data.products.map((item) => ({
+        ...item,
+        priceText: money(item.price),
+        statusText: statusText(item.status),
+        createdDate: item.createdAt ? item.createdAt.slice(0, 10) : "未记录"
+      })),
       productCategories: data.categories
     })
   },

@@ -222,6 +222,11 @@ function normalizeStoreData(data) {
   for (const product of data.products || []) {
     product.costPrice ??= 0;
     product.supplierName ||= "";
+    if (!product.createdAt) {
+      product.createdAt = data.meta?.seededAt || now();
+      shouldSaveAfterLoad = true;
+    }
+    product.updatedAt ||= product.createdAt;
   }
   for (const table of data.tables || []) {
     table.occupiedStartedAt ||= null;
@@ -2148,6 +2153,8 @@ function createRouter(store) {
       description: body.description || "",
       imageUrl: body.imageUrl || "",
       storageDays: Number(body.storageDays || 0),
+      createdAt: now(),
+      updatedAt: now(),
     };
     if (product.price < 0 || product.costPrice < 0 || product.stockQty < 0) throw new HttpError(400, "价格、成本和库存不能为负数");
     store.data.products.push(product);
@@ -2180,6 +2187,7 @@ function createRouter(store) {
     for (const key of ["price", "costPrice", "warningQty", "storageDays"]) {
       if (body[key] !== undefined) product[key] = Number(body[key]);
     }
+    product.updatedAt = now();
     store.log(body.operatorId || "emp_admin", "admin", "update_product", "ProductSKU", product.skuId, before, product, body.reason || "修改 SKU");
     await store.save();
     return { product };

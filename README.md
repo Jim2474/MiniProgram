@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V70
+# 德扑棋牌门店小程序 V71
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V70 验收状态
+## V71 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V71.md`
 - `docs/ACCEPTANCE-V70.md`
 - `docs/ACCEPTANCE-V69.md`
 - `docs/ACCEPTANCE-V68.md`
@@ -153,8 +154,8 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：211 项。
-- 小程序结构与 API 调用校验：172 项。
+- 后端业务自验收：213 项。
+- 小程序结构与 API 调用校验：173 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
 
@@ -279,6 +280,13 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V71 新增能力
+
+- SKU 数据补齐创建时间和更新时间，旧数据加载时自动补默认创建时间。
+- 后台新增/编辑 SKU 会记录创建时间和更新时间。
+- 后台 SKU 列表展示状态和上架/创建时间，对齐 Excel 中商品列表需显示状态、上架时间等字段。
+- 自动验收覆盖 SKU 时间字段和后台列表展示。
 
 ## V70 新增能力
 

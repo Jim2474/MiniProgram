@@ -102,7 +102,7 @@
     </view>
     <view wx:for="{{products}}" wx:key="skuId" class="row">
       <view class="row-title">{{item.name}} · {{item.spec}}</view>
-      <view class="muted">{{item.priceText}} · 成本 {{item.costPrice}} · {{item.supplierName || '未填供应商'}} · 库存 {{item.stockQty}} · 预警 {{item.warningQty}} · 存酒 {{item.storageDays}}天</view>
+      <view class="muted">{{item.priceText}} · {{item.statusText}} · 上架/创建 {{item.createdDate}} · 成本 {{item.costPrice}} · {{item.supplierName || '未填供应商'}} · 库存 {{item.stockQty}} · 预警 {{item.warningQty}} · 存酒 {{item.storageDays}}天</view>
       <view class="btn-row">
         <button size="mini" class="secondary" data-id="{{item.skuId}}" bindtap="fillProductForm">填入编辑</button>
         <button size="mini" class="secondary" data-id="{{item.skuId}}" bindtap="addStock">创建盘点单</button>

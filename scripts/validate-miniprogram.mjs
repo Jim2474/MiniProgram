@@ -162,6 +162,7 @@ assert(adminJs.includes("fillProductForm") && adminJs.includes("updateProduct") 
 assert(!/async updateProduct\(\)[\s\S]*?stockQty[\s\S]*?async toggleProduct/.test(adminJs), "admin SKU edit form does not bypass stock ledger");
 assert(adminJs.includes("storageDays") && adminJs.includes("warningQty"), "admin page supports SKU warning stock and storage days");
 assert(adminJs.includes("costPrice") && adminJs.includes("supplierName") && adminWxml.includes("成本价") && adminWxml.includes("供应商"), "admin page supports SKU cost and supplier fields");
+assert(adminJs.includes("createdDate") && adminJs.includes("statusText: statusText(item.status)") && adminWxml.includes("上架/创建") && adminWxml.includes("item.statusText"), "admin SKU list displays status and created date");
 assert(adminJs.includes("/api/admin/stock-counts") && adminWxml.includes("库存盘点单"), "admin page supports stock count workflow");
 assert(adminJs.includes("stockCountForm") && adminJs.includes("onStockCountQty") && adminWxml.includes("实盘库存") && adminWxml.includes("创建盘点单") && !adminWxml.includes("盘点 +10"), "admin page supports real stock count input");
 assert(adminJs.includes("/api/admin/finance/overview"), "admin page calls finance API");
