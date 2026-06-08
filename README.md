@@ -78,6 +78,7 @@ node scripts/validate-miniprogram.mjs
 验收记录：
 
 - `docs/ACCEPTANCE-V54.md`
+- `docs/REQUIREMENTS-AUDIT-V54.md`
 - `docs/ACCEPTANCE-V53.md`
 - `docs/ACCEPTANCE-V52.md`
 - `docs/ACCEPTANCE-V51.md`
@@ -266,6 +267,7 @@ node scripts/validate-miniprogram.mjs
 - 员工端新增客户存酒表单补齐客户姓名输入。
 - 员工端寄存协议改为真实勾选框，不再用按钮文案隐式表示已勾选。
 - `/api/staff/storage` 支持写入客户姓名到会员昵称，并继续强制校验寄存协议。
+- 新增 V54 需求审计矩阵，按当前收敛范围重新对齐 Excel 覆盖状态。
 
 ## V53 新增能力
 
