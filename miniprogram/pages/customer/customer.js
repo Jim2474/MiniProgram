@@ -178,9 +178,18 @@ Page({
 
   async loginCustomer() {
     try {
+      const payload = { phone: this.data.loginPhone, nickname: this.data.loginNickname }
+      if (wx.login) {
+        try {
+          const loginResult = await new Promise((resolve, reject) => wx.login({ success: resolve, fail: reject }))
+          if (loginResult.code) payload.code = loginResult.code
+        } catch (_error) {
+          // 开发者工具或本地 mock 失败时，后端仍可按手机号走开发态模拟登录。
+        }
+      }
       const data = await request("/api/wechat/login", {
         method: "POST",
-        data: { phone: this.data.loginPhone, nickname: this.data.loginNickname }
+        data: payload
       })
       app.globalData.userId = data.user.userId
       this.setData({ currentUserId: data.user.userId, bindPhoneValue: data.user.phone || this.data.bindPhoneValue })
@@ -280,6 +289,16 @@ Page({
   async payOrder() {
     try {
       const data = await request(`/api/orders/${this.data.currentOrder.orderId}/pay`, { method: "POST" })
+      if (data.prepay) {
+        if (!wx.requestPayment) throw new Error("当前环境不支持微信支付")
+        await new Promise((resolve, reject) => wx.requestPayment({ ...data.prepay, success: resolve, fail: reject }))
+        this.setData({
+          resultText: "微信支付已提交，等待支付回调确认订单。",
+          currentOrder: data.order
+        })
+        await this.loadOrders()
+        return
+      }
       this.setData({
         currentOrder: null,
         resultText: `支付成功，积分 +${data.order.pointsAwarded}，归属 ${data.order.employee ? data.order.employee.name : "自然订单"}`

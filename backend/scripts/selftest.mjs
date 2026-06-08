@@ -1,5 +1,6 @@
 import { rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { generateKeyPairSync } from "node:crypto";
 import { createApp } from "../src/server.mjs";
 
 const rootDir = resolve(new URL("..", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1"));
@@ -467,72 +468,138 @@ async function main() {
     const support = await request(baseUrl, "/api/support/contact");
     assert(support.phone === "400-000-0000", "客服电话可查询");
 
+    const envSnapshot = {};
+    for (const key of [
+      "APP_ENV",
+      "ALLOW_MOCK_WECHAT",
+      "WECHAT_APPID",
+      "WECHAT_APP_SECRET",
+      "WECHAT_MCH_ID",
+      "WECHAT_PAY_SERIAL_NO",
+      "WECHAT_PAY_PRIVATE_KEY",
+      "WECHAT_PAY_API_V3_KEY",
+      "WECHAT_PAY_NOTIFY_URL",
+      "WECHAT_LOGIN_DRY_RUN",
+      "WECHAT_PAY_DRY_RUN",
+    ]) {
+      envSnapshot[key] = process.env[key];
+    }
     process.env.APP_ENV = "production";
     delete process.env.ALLOW_MOCK_WECHAT;
-    const blockedDataFile = join(rootDir, "data", "test-store-prod-block.json");
-    await rm(blockedDataFile, { force: true });
-    const { server: blockedServer } = await createApp({ dataFile: blockedDataFile });
-    await new Promise((resolveListen) => blockedServer.listen(0, resolveListen));
-    const blockedBaseUrl = `http://127.0.0.1:${blockedServer.address().port}`;
     try {
-      const blockedHealth = await request(blockedBaseUrl, "/api/health");
-      assert(blockedHealth.runtime.mockWechatEnabled === false, "生产环境默认禁用模拟微信能力");
-      assert(blockedHealth.runtime.deployment.wechatConfigured === false && blockedHealth.runtime.deployment.missingWechatEnv.includes("WECHAT_MCH_ID"), "生产环境健康检查暴露真实微信配置缺口");
-      let prodLoginError = "";
-      try {
-        await request(blockedBaseUrl, "/api/wechat/login", { method: "POST", body: { phone: "13600000000" } });
-      } catch (error) {
-        prodLoginError = error.message;
-      }
-      assert(prodLoginError.includes("生产环境禁止使用模拟接口"), "生产环境未显式允许时拦截模拟微信登录");
-      await request(blockedBaseUrl, "/api/cart/items", { method: "POST", body: { userId: "user_demo", skuId: "sku_bud", quantity: 1 } });
-      const blockedOrder = await request(blockedBaseUrl, "/api/orders", { method: "POST", body: { userId: "user_demo" } });
-      let prodPayError = "";
-      try {
-        await request(blockedBaseUrl, `/api/orders/${blockedOrder.order.orderId}/pay`, { method: "POST" });
-      } catch (error) {
-        prodPayError = error.message;
-      }
-      assert(prodPayError.includes("微信支付预支付单待接入"), "生产环境支付返回真实微信预支付待接入提示");
-      let notifyError = "";
-      try {
-        await request(blockedBaseUrl, "/api/payments/wechat/notify", { method: "POST", body: { orderId: blockedOrder.order.orderId, amount: blockedOrder.order.amount } });
-      } catch (error) {
-        notifyError = error.message;
-      }
-      assert(notifyError.includes("微信支付回调验签待接入"), "微信支付回调未验签时拒绝处理");
-      let unauthAdminError = "";
-      try {
-        await request(blockedBaseUrl, "/api/admin/dashboard");
-      } catch (error) {
-        unauthAdminError = error.message;
-      }
-      assert(unauthAdminError.includes("请先登录员工账号"), "生产环境后台接口要求员工会话");
-      const staffSession = await request(blockedBaseUrl, "/api/staff/login", { method: "POST", body: { account: "anna", password: "demo" } });
-      let forbiddenAdminError = "";
-      try {
-        await request(blockedBaseUrl, "/api/admin/dashboard", { headers: { "x-staff-session": staffSession.session.sessionId } });
-      } catch (error) {
-        forbiddenAdminError = error.message;
-      }
-      assert(forbiddenAdminError.includes("无权限"), "普通员工会话不能访问后台接口");
-      const warehouseSession = await request(blockedBaseUrl, "/api/staff/login", { method: "POST", body: { account: "bar", password: "demo" } });
-      const warehouseStockRequests = await request(blockedBaseUrl, "/api/admin/stock-requests", { headers: { "x-staff-session": warehouseSession.session.sessionId } });
-      assert(Array.isArray(warehouseStockRequests.requests), "库房角色可访问出入库管理接口");
-      let forbiddenWarehouseDashboard = "";
-      try {
-        await request(blockedBaseUrl, "/api/admin/dashboard", { headers: { "x-staff-session": warehouseSession.session.sessionId } });
-      } catch (error) {
-        forbiddenWarehouseDashboard = error.message;
-      }
-      assert(forbiddenWarehouseDashboard.includes("无权限"), "库房角色不能访问后台经营看板");
-      const adminSession = await request(blockedBaseUrl, "/api/staff/login", { method: "POST", body: { account: "admin", password: "demo" } });
-      const authedDashboard = await request(blockedBaseUrl, "/api/admin/dashboard", { headers: { "x-staff-session": adminSession.session.sessionId } });
-      assert(typeof authedDashboard.todayRevenue === "number", "管理员会话可访问后台接口");
-    } finally {
-      await new Promise((resolveClose) => blockedServer.close(resolveClose));
+      const blockedDataFile = join(rootDir, "data", "test-store-prod-block.json");
       await rm(blockedDataFile, { force: true });
-      delete process.env.APP_ENV;
+      const { server: blockedServer } = await createApp({ dataFile: blockedDataFile });
+      await new Promise((resolveListen) => blockedServer.listen(0, resolveListen));
+      const blockedBaseUrl = `http://127.0.0.1:${blockedServer.address().port}`;
+      try {
+        const blockedHealth = await request(blockedBaseUrl, "/api/health");
+        assert(blockedHealth.runtime.mockWechatEnabled === false, "生产环境默认禁用模拟微信能力");
+        assert(blockedHealth.runtime.deployment.wechatConfigured === false && blockedHealth.runtime.deployment.missingWechatEnv.includes("WECHAT_MCH_ID"), "生产环境健康检查暴露真实微信配置缺口");
+        assert(blockedHealth.runtime.deployment.wechatLoginConfigured === false && blockedHealth.runtime.deployment.wechatPayConfigured === false, "生产环境健康检查拆分微信登录和支付配置状态");
+        let prodLoginError = "";
+        try {
+          await request(blockedBaseUrl, "/api/wechat/login", { method: "POST", body: { phone: "13600000000" } });
+        } catch (error) {
+          prodLoginError = error.message;
+        }
+        assert(prodLoginError.includes("缺少微信登录 code"), "生产环境真实微信登录要求小程序 code");
+        await request(blockedBaseUrl, "/api/cart/items", { method: "POST", body: { userId: "user_demo", skuId: "sku_bud", quantity: 1 } });
+        const blockedOrder = await request(blockedBaseUrl, "/api/orders", { method: "POST", body: { userId: "user_demo" } });
+        let prodPayError = "";
+        try {
+          await request(blockedBaseUrl, `/api/orders/${blockedOrder.order.orderId}/pay`, { method: "POST" });
+        } catch (error) {
+          prodPayError = error.message;
+        }
+        assert(prodPayError.includes("微信支付 JSAPI缺少配置") && prodPayError.includes("WECHAT_MCH_ID"), "生产环境支付缺配置时返回明确环境变量缺口");
+        let notifyError = "";
+        try {
+          await request(blockedBaseUrl, "/api/payments/wechat/notify", { method: "POST", body: { orderId: blockedOrder.order.orderId, amount: blockedOrder.order.amount } });
+        } catch (error) {
+          notifyError = error.message;
+        }
+        assert(notifyError.includes("微信支付回调验签待接入"), "微信支付回调未验签时拒绝处理");
+        let unauthAdminError = "";
+        try {
+          await request(blockedBaseUrl, "/api/admin/dashboard");
+        } catch (error) {
+          unauthAdminError = error.message;
+        }
+        assert(unauthAdminError.includes("请先登录员工账号"), "生产环境后台接口要求员工会话");
+        const staffSession = await request(blockedBaseUrl, "/api/staff/login", { method: "POST", body: { account: "anna", password: "demo" } });
+        let forbiddenAdminError = "";
+        try {
+          await request(blockedBaseUrl, "/api/admin/dashboard", { headers: { "x-staff-session": staffSession.session.sessionId } });
+        } catch (error) {
+          forbiddenAdminError = error.message;
+        }
+        assert(forbiddenAdminError.includes("无权限"), "普通员工会话不能访问后台接口");
+        const warehouseSession = await request(blockedBaseUrl, "/api/staff/login", { method: "POST", body: { account: "bar", password: "demo" } });
+        const warehouseStockRequests = await request(blockedBaseUrl, "/api/admin/stock-requests", { headers: { "x-staff-session": warehouseSession.session.sessionId } });
+        assert(Array.isArray(warehouseStockRequests.requests), "库房角色可访问出入库管理接口");
+        let forbiddenWarehouseDashboard = "";
+        try {
+          await request(blockedBaseUrl, "/api/admin/dashboard", { headers: { "x-staff-session": warehouseSession.session.sessionId } });
+        } catch (error) {
+          forbiddenWarehouseDashboard = error.message;
+        }
+        assert(forbiddenWarehouseDashboard.includes("无权限"), "库房角色不能访问后台经营看板");
+        const adminSession = await request(blockedBaseUrl, "/api/staff/login", { method: "POST", body: { account: "admin", password: "demo" } });
+        const authedDashboard = await request(blockedBaseUrl, "/api/admin/dashboard", { headers: { "x-staff-session": adminSession.session.sessionId } });
+        assert(typeof authedDashboard.todayRevenue === "number", "管理员会话可访问后台接口");
+      } finally {
+        await new Promise((resolveClose) => blockedServer.close(resolveClose));
+        await rm(blockedDataFile, { force: true });
+      }
+
+      const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+      process.env.WECHAT_APPID = "wx_dryrun_appid";
+      process.env.WECHAT_APP_SECRET = "dryrun_secret";
+      process.env.WECHAT_MCH_ID = "1900000001";
+      process.env.WECHAT_PAY_SERIAL_NO = "DRYRUNSERIAL";
+      process.env.WECHAT_PAY_PRIVATE_KEY = privateKey.export({ type: "pkcs8", format: "pem" });
+      process.env.WECHAT_PAY_API_V3_KEY = "0123456789abcdef0123456789abcdef";
+      process.env.WECHAT_PAY_NOTIFY_URL = "https://example.com/api/payments/wechat/notify";
+      process.env.WECHAT_LOGIN_DRY_RUN = "true";
+      process.env.WECHAT_PAY_DRY_RUN = "true";
+      const dryRunDataFile = join(rootDir, "data", "test-store-prod-dryrun.json");
+      await rm(dryRunDataFile, { force: true });
+      const { server: dryRunServer } = await createApp({ dataFile: dryRunDataFile });
+      await new Promise((resolveListen) => dryRunServer.listen(0, resolveListen));
+      const dryRunBaseUrl = `http://127.0.0.1:${dryRunServer.address().port}`;
+      try {
+        const dryRunHealth = await request(dryRunBaseUrl, "/api/health");
+        assert(dryRunHealth.runtime.deployment.wechatLoginConfigured === true && dryRunHealth.runtime.deployment.wechatPayConfigured === true, "真实微信登录和支付配置齐全时健康检查通过");
+        assert(dryRunHealth.runtime.deployment.wechatLoginDryRun === true && dryRunHealth.runtime.deployment.wechatPayDryRun === true, "健康检查暴露微信 dry-run 标记");
+        const wxUser = await request(dryRunBaseUrl, "/api/wechat/login", { method: "POST", body: { code: "testcode", nickname: "真实微信会员" } });
+        assert(wxUser.authProvider === "wechat_jscode2session_dry_run" && wxUser.user.openid === "dry_openid_testcode", "生产环境可通过微信 code 登录创建会员");
+        const dryProductsBefore = await request(dryRunBaseUrl, "/api/products");
+        const dryBudBefore = dryProductsBefore.products.find((item) => item.skuId === "sku_bud");
+        await request(dryRunBaseUrl, "/api/cart/items", { method: "POST", body: { userId: wxUser.user.userId, skuId: "sku_bud", quantity: 1 } });
+        const dryOrder = await request(dryRunBaseUrl, "/api/orders", { method: "POST", body: { userId: wxUser.user.userId } });
+        const prepay = await request(dryRunBaseUrl, `/api/orders/${dryOrder.order.orderId}/pay`, { method: "POST" });
+        assert(prepay.paymentProvider === "wechat_pay_dry_run" && prepay.payment.status === "prepay_created", "配置齐全时生产支付生成微信 JSAPI 预支付记录");
+        assert(prepay.prepay.package.startsWith("prepay_id=") && prepay.prepay.signType === "RSA" && prepay.prepay.paySign, "生产支付返回小程序 requestPayment 参数");
+        assert(prepay.order.payStatus === "unpaid", "微信预支付不会提前标记订单已支付");
+        const dryProductsAfterPrepay = await request(dryRunBaseUrl, "/api/products");
+        assert(dryProductsAfterPrepay.products.find((item) => item.skuId === "sku_bud").stockQty === dryBudBefore.stockQty, "微信预支付不会提前扣减库存");
+        const dryNotify = await request(dryRunBaseUrl, "/api/payments/wechat/notify", {
+          method: "POST",
+          body: { signatureVerified: true, orderId: dryOrder.order.orderId, amount: dryOrder.order.amount, transactionId: "wx_dryrun_tx" },
+        });
+        assert(dryNotify.order.payStatus === "paid" && dryNotify.payment.status === "paid", "微信支付回调确认后订单进入已支付");
+        const dryProductsAfterNotify = await request(dryRunBaseUrl, "/api/products");
+        assert(dryProductsAfterNotify.products.find((item) => item.skuId === "sku_bud").stockQty === dryBudBefore.stockQty - 1, "微信支付回调确认后扣减库存");
+      } finally {
+        await new Promise((resolveClose) => dryRunServer.close(resolveClose));
+        await rm(dryRunDataFile, { force: true });
+      }
+    } finally {
+      for (const [key, value] of Object.entries(envSnapshot)) {
+        if (value === undefined) delete process.env[key];
+        else process.env[key] = value;
+      }
     }
 
     console.log(`Selftest passed: ${checks.length} checks`);

@@ -3,6 +3,7 @@ import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { existsSync, createReadStream } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createSign, randomBytes } from "node:crypto";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const rootDir = resolve(__dirname, "..");
@@ -20,20 +21,28 @@ const addDays = (days) => {
 const currentAppEnv = () => process.env.APP_ENV || process.env.NODE_ENV || "development";
 const mockWechatEnabled = () => process.env.ALLOW_MOCK_WECHAT === "true" || currentAppEnv() !== "production";
 const authRequired = () => process.env.REQUIRE_AUTH === "true" || currentAppEnv() === "production";
-const requiredWechatEnv = [
+const requiredWechatLoginEnv = ["WECHAT_APPID", "WECHAT_APP_SECRET"];
+const requiredWechatPayEnv = [
   "WECHAT_APPID",
-  "WECHAT_APP_SECRET",
   "WECHAT_MCH_ID",
   "WECHAT_PAY_SERIAL_NO",
   "WECHAT_PAY_PRIVATE_KEY",
-  "WECHAT_PAY_API_V3_KEY",
   "WECHAT_PAY_NOTIFY_URL",
 ];
+const requiredWechatEnv = [...new Set([...requiredWechatLoginEnv, ...requiredWechatPayEnv, "WECHAT_PAY_API_V3_KEY"])];
 const deploymentChecks = () => {
   const missingWechatEnv = requiredWechatEnv.filter((key) => !process.env[key]);
+  const missingWechatLoginEnv = requiredWechatLoginEnv.filter((key) => !process.env[key]);
+  const missingWechatPayEnv = requiredWechatPayEnv.filter((key) => !process.env[key]);
   return {
     wechatConfigured: missingWechatEnv.length === 0,
     missingWechatEnv,
+    wechatLoginConfigured: missingWechatLoginEnv.length === 0,
+    missingWechatLoginEnv,
+    wechatPayConfigured: missingWechatPayEnv.length === 0,
+    missingWechatPayEnv,
+    wechatLoginDryRun: process.env.WECHAT_LOGIN_DRY_RUN === "true",
+    wechatPayDryRun: process.env.WECHAT_PAY_DRY_RUN === "true",
     databaseConfigured: Boolean(process.env.DATABASE_URL),
     usingJsonStore: !process.env.DATABASE_URL,
   };
@@ -84,6 +93,120 @@ function newId(prefix) {
 
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function createUserFromWechat(store, { openid, nickname, avatar = "", phone = "" }) {
+  return {
+    userId: newId("user"),
+    merchantId: store.data.settings.merchantId,
+    storeId: store.data.settings.storeId,
+    openid,
+    nickname: nickname || "微信用户",
+    avatar,
+    phone,
+    pointsBalance: 0,
+    balance: 0,
+    memberLevel: "普通会员",
+    createdAt: now(),
+  };
+}
+
+function missingConfigMessage(feature, keys) {
+  return `${feature}缺少配置：${keys.join(", ")}`;
+}
+
+async function wechatCodeToSession(code) {
+  if (!code) throw new HttpError(400, "缺少微信登录 code");
+  const missing = requiredWechatLoginEnv.filter((key) => !process.env[key]);
+  if (missing.length) throw new HttpError(501, missingConfigMessage("真实微信登录", missing));
+  if (process.env.WECHAT_LOGIN_DRY_RUN === "true") {
+    return { openid: `dry_openid_${code}`, session_key: "dry_session_key", provider: "wechat_jscode2session_dry_run" };
+  }
+  const url = new URL("https://api.weixin.qq.com/sns/jscode2session");
+  url.searchParams.set("appid", process.env.WECHAT_APPID);
+  url.searchParams.set("secret", process.env.WECHAT_APP_SECRET);
+  url.searchParams.set("js_code", code);
+  url.searchParams.set("grant_type", "authorization_code");
+  const response = await fetch(url);
+  const data = await response.json();
+  if (!response.ok || data.errcode) {
+    throw new HttpError(502, `微信登录失败：${data.errmsg || response.statusText}`);
+  }
+  if (!data.openid) throw new HttpError(502, "微信登录未返回 openid");
+  return { ...data, provider: "wechat_jscode2session" };
+}
+
+function normalizePrivateKey(value) {
+  const key = (value || "").replace(/\\n/g, "\n").trim();
+  if (!key) throw new HttpError(501, "微信支付缺少配置：WECHAT_PAY_PRIVATE_KEY");
+  return key;
+}
+
+function createNonce() {
+  return randomBytes(16).toString("hex");
+}
+
+function signRsaSha256(message) {
+  const sign = createSign("RSA-SHA256");
+  sign.update(message);
+  sign.end();
+  return sign.sign(normalizePrivateKey(process.env.WECHAT_PAY_PRIVATE_KEY), "base64");
+}
+
+function wechatPayAuthorization(method, urlPath, body, timestamp, nonceStr) {
+  const signature = signRsaSha256(`${method}\n${urlPath}\n${timestamp}\n${nonceStr}\n${body}\n`);
+  return `WECHATPAY2-SHA256-RSA2048 mchid="${process.env.WECHAT_MCH_ID}",nonce_str="${nonceStr}",timestamp="${timestamp}",serial_no="${process.env.WECHAT_PAY_SERIAL_NO}",signature="${signature}"`;
+}
+
+function buildWechatRequestPaymentParams(prepayId) {
+  const timeStamp = Math.floor(Date.now() / 1000).toString();
+  const nonceStr = createNonce();
+  const packageValue = `prepay_id=${prepayId}`;
+  const paySign = signRsaSha256(`${process.env.WECHAT_APPID}\n${timeStamp}\n${nonceStr}\n${packageValue}\n`);
+  return { timeStamp, nonceStr, package: packageValue, signType: "RSA", paySign };
+}
+
+async function createWechatJsapiPrepay(order, user) {
+  const missing = requiredWechatPayEnv.filter((key) => !process.env[key]);
+  if (missing.length) throw new HttpError(501, missingConfigMessage("微信支付 JSAPI", missing));
+  if (!user.openid) throw new HttpError(400, "会员缺少微信 openid，需先微信登录");
+  const bodyObject = {
+    appid: process.env.WECHAT_APPID,
+    mchid: process.env.WECHAT_MCH_ID,
+    description: `门店点单 ${order.orderId}`,
+    out_trade_no: order.orderId,
+    notify_url: process.env.WECHAT_PAY_NOTIFY_URL,
+    amount: { total: Math.round(Number(order.amount || 0) * 100), currency: "CNY" },
+    payer: { openid: user.openid },
+  };
+  const body = JSON.stringify(bodyObject);
+  const urlPath = "/v3/pay/transactions/jsapi";
+  let prepayId = "";
+  if (process.env.WECHAT_PAY_DRY_RUN === "true") {
+    prepayId = `dry_prepay_${order.orderId}`;
+  } else {
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const nonceStr = createNonce();
+    const response = await fetch(`https://api.mch.weixin.qq.com${urlPath}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json",
+        authorization: wechatPayAuthorization("POST", urlPath, body, timestamp, nonceStr),
+      },
+      body,
+    });
+    const data = await response.json();
+    if (!response.ok || !data.prepay_id) {
+      throw new HttpError(502, `微信支付预支付失败：${data.message || data.code || response.statusText}`);
+    }
+    prepayId = data.prepay_id;
+  }
+  return {
+    prepayId,
+    requestPayment: buildWechatRequestPaymentParams(prepayId),
+    provider: process.env.WECHAT_PAY_DRY_RUN === "true" ? "wechat_pay_dry_run" : "wechat_pay",
+  };
 }
 
 function seedData() {
@@ -905,27 +1028,39 @@ function createRouter(store) {
   }));
 
   add("POST", "/api/wechat/login", async (body) => {
-    requireMockWechat("微信登录");
-    const phone = body.phone || "13800000000";
-    let user = store.data.users.find((item) => item.phone === phone);
-    if (!user) {
-      user = {
-        userId: newId("user"),
-        merchantId: store.data.settings.merchantId,
-        storeId: store.data.settings.storeId,
-        openid: `openid_${phone}`,
-        nickname: body.nickname || `客户${phone.slice(-4)}`,
-        avatar: "",
-        phone,
-        pointsBalance: 0,
-        balance: 0,
-        memberLevel: "普通会员",
-        createdAt: now(),
-      };
-      store.data.users.push(user);
-      await store.save();
+    if (mockWechatEnabled()) {
+      const phone = body.phone || "13800000000";
+      let user = store.data.users.find((item) => item.phone === phone);
+      if (!user) {
+        user = createUserFromWechat(store, {
+          openid: `openid_${phone}`,
+          nickname: body.nickname || `客户${phone.slice(-4)}`,
+          phone,
+        });
+        store.data.users.push(user);
+        await store.save();
+      }
+      return { user, authProvider: "mock_wechat" };
     }
-    return { user, authProvider: "mock_wechat" };
+    const session = await wechatCodeToSession(body.code);
+    let user = store.data.users.find((item) => item.openid === session.openid);
+    if (!user) {
+      user = createUserFromWechat(store, {
+        openid: session.openid,
+        nickname: body.nickname,
+        avatar: body.avatar || "",
+        phone: body.phone || "",
+      });
+      store.data.users.push(user);
+    } else {
+      const before = deepClone(user);
+      if (body.nickname) user.nickname = body.nickname;
+      if (body.avatar) user.avatar = body.avatar;
+      if (body.phone && !user.phone) user.phone = body.phone;
+      store.log(user.userId, "customer", "wechat_login", "User", user.userId, before, user, "微信 code 登录");
+    }
+    await store.save();
+    return { user, authProvider: session.provider };
   });
 
   add("POST", "/api/staff/login", async (body) => {
@@ -1071,10 +1206,15 @@ function createRouter(store) {
     if (order.payStatus === "paid") return { order: publicOrder(store, order), payment, paymentProvider: payment.provider, idempotent: true };
     if (order.orderStatus !== "unpaid") throw new HttpError(400, "订单状态不可支付");
     if (!mockWechatEnabled()) {
-      payment.provider = "wechat_pay_required";
-      payment.status = "prepay_required";
+      const prepay = await createWechatJsapiPrepay(order, store.getUser(order.userId));
+      payment.provider = prepay.provider;
+      payment.status = "prepay_created";
+      payment.prepayId = prepay.prepayId;
+      payment.nonceStr = prepay.requestPayment.nonceStr;
+      payment.paySign = prepay.requestPayment.paySign;
+      payment.requestPayment = prepay.requestPayment;
       await store.save();
-      throw new HttpError(501, "微信支付预支付单待接入，需配置商户号、证书、签名和回调验签");
+      return { order: publicOrder(store, order), payment, paymentProvider: prepay.provider, prepay: prepay.requestPayment };
     }
     payment.provider = "mock_wechat";
     markOrderPaid(store, order, payment, `mock_wx_${order.orderId}`, "模拟微信支付成功");

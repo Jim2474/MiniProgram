@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V26
+# 德扑棋牌门店小程序 V27
 
 本仓库包含：
 
@@ -71,10 +71,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V26 验收状态
+## V27 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V27.md`
 - `docs/ACCEPTANCE-V26.md`
 - `docs/ACCEPTANCE-V25.md`
 - `docs/EXCEL-AUDIT-V25.md`
@@ -104,10 +105,19 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：134 项。
-- 小程序结构与 API 调用校验：121 项。
+- 后端业务自验收：144 项。
+- 小程序结构与 API 调用校验：123 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V27 新增能力
+
+- 生产环境 `/api/wechat/login` 支持小程序 `wx.login` code，并接入微信 `jscode2session` 获取 openid。
+- 生产环境 `/api/orders/:orderId/pay` 在配置齐全时生成微信支付 JSAPI 预支付单，并返回 `wx.requestPayment` 参数。
+- 客户小程序登录会携带 `wx.login` code，支付会在后端返回预支付参数时调用 `wx.requestPayment`。
+- 微信预支付不会提前扣库存或赠积分，仍需支付回调确认后才入账。
+- 健康检查拆分 `wechatLoginConfigured`、`wechatPayConfigured`，并暴露 dry-run 状态。
+- `.env.example` 补充微信登录/支付 dry-run 沙箱验证开关。
 
 ## V26 新增能力
 

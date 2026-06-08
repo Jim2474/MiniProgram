@@ -69,7 +69,7 @@
     </view>
     <view class="btn-row">
       <button class="primary" bindtap="createOrder">创建订单</button>
-      <button class="dark" disabled="{{!currentOrder}}" bindtap="payOrder">模拟微信支付</button>
+      <button class="dark" disabled="{{!currentOrder}}" bindtap="payOrder">微信支付</button>
     </view>
     <view class="muted" wx:if="{{resultText}}">{{resultText}}</view>
   </view>
