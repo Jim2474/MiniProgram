@@ -78,6 +78,7 @@ node scripts/validate-miniprogram.mjs
 验收记录：
 
 - `docs/ACCEPTANCE-V57.md`
+- `docs/REQUIREMENTS-AUDIT-V57.md`
 - `docs/ACCEPTANCE-V56.md`
 - `docs/ACCEPTANCE-V55.md`
 - `docs/ACCEPTANCE-V54.md`
@@ -270,6 +271,7 @@ node scripts/validate-miniprogram.mjs
 - 荷官淘汰到剩余 2 人时生成“进入单挑阶段”事件提示。
 - 荷官端继续在游戏进行中展示“单挑阶段”状态。
 - 自动验收覆盖后端 heads-up 事件和荷官端前端提示入口。
+- 新增 V57 需求审计矩阵，同步登录态、生产就绪检查和单挑阶段事件后的 Excel 覆盖状态。
 
 ## V56 新增能力
 
