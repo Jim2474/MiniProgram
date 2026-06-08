@@ -114,6 +114,7 @@ function seedData() {
         role: "staff",
         loginAccount: "anna",
         passwordHash: "demo",
+        commissionRate: 0.08,
         status: "active",
         createdAt,
       },
@@ -126,6 +127,7 @@ function seedData() {
         role: "warehouse",
         loginAccount: "bar",
         passwordHash: "demo",
+        commissionRate: 0.03,
         status: "active",
         createdAt,
       },
@@ -138,6 +140,7 @@ function seedData() {
         role: "admin",
         loginAccount: "admin",
         passwordHash: "demo",
+        commissionRate: 0,
         status: "active",
         createdAt,
       },
@@ -150,6 +153,7 @@ function seedData() {
         role: "dealer",
         loginAccount: "dealer",
         passwordHash: "demo",
+        commissionRate: 0.02,
         status: "active",
         createdAt,
       },
@@ -358,6 +362,9 @@ class Store {
       user.balance ||= 0;
       user.memberLevel ||= "普通会员";
     }
+    for (const employee of this.data.employees || []) {
+      employee.commissionRate ??= employee.role === "staff" ? 0.05 : 0;
+    }
     for (const table of this.data.tables || []) {
       table.occupiedStartedAt ||= null;
       table.consumptionAmount ||= 0;
@@ -524,12 +531,16 @@ function dashboard(store) {
   const yesterdayMembers = store.data.users.filter((user) => user.createdAt?.startsWith(yesterday)).length;
   const staffSales = store.data.employees.map((employee) => {
     const orders = paidOrders.filter((order) => order.employeeId === employee.employeeId);
+    const sales = orders.reduce((sum, order) => sum + order.amount, 0);
+    const commissionRate = Number(employee.commissionRate || 0);
     return {
       employeeId: employee.employeeId,
       name: employee.name,
       role: employee.role,
+      commissionRate,
       orderCount: orders.length,
-      sales: orders.reduce((sum, order) => sum + order.amount, 0),
+      sales,
+      commissionAmount: Math.round(sales * commissionRate * 100) / 100,
     };
   });
   const occupied = store.data.tables.filter((table) => table.status === "occupied" || table.status === "reserved").length;
@@ -1942,15 +1953,18 @@ function createRouter(store) {
     const employeeId = query.get("employeeId") || "emp_anna";
     const months = Number(query.get("months") || 6);
     const paid = store.data.orders.filter((order) => order.employeeId === employeeId && order.payStatus === "paid");
+    const employee = store.getEmployee(employeeId);
+    const commissionRate = Number(employee.commissionRate || 0);
     const rows = [];
     for (let index = 0; index < months; index += 1) {
       const date = new Date();
       date.setMonth(date.getMonth() - index);
       const key = monthKey(date);
       const orders = paid.filter((order) => monthKey(order.paidAt || order.createdAt) === key);
-      rows.push({ month: key, orderCount: orders.length, sales: orders.reduce((sum, order) => sum + order.amount, 0) });
+      const sales = orders.reduce((sum, order) => sum + order.amount, 0);
+      rows.push({ month: key, orderCount: orders.length, sales, commissionRate, commissionAmount: Math.round(sales * commissionRate * 100) / 100 });
     }
-    return { employee: publicEmployee(store.getEmployee(employeeId)), rows };
+    return { employee: publicEmployee(employee), rows };
   });
 
   add("GET", "/api/admin/finance/overview", async () => {
@@ -2100,7 +2114,7 @@ function createRouter(store) {
     return { table: publicTable(store, table) };
   });
   add("POST", "/api/admin/employees", async (body) => {
-    const employee = { employeeId: newId("emp"), merchantId: store.data.settings.merchantId, storeId: store.data.settings.storeId, name: body.name, phone: body.phone, role: body.role || "staff", loginAccount: body.loginAccount || body.phone, passwordHash: body.password || "demo", status: "active", createdAt: now() };
+    const employee = { employeeId: newId("emp"), merchantId: store.data.settings.merchantId, storeId: store.data.settings.storeId, name: body.name, phone: body.phone, role: body.role || "staff", loginAccount: body.loginAccount || body.phone, passwordHash: body.password || "demo", commissionRate: Number(body.commissionRate ?? 0.05), status: "active", createdAt: now() };
     store.data.employees.push(employee);
     store.log(body.operatorId || "emp_admin", "admin", "create_employee", "Employee", employee.employeeId, null, employee, "新增工作人员");
     await store.save();
@@ -2111,6 +2125,7 @@ function createRouter(store) {
     const before = deepClone(employee);
     const { resetPassword: _resetPassword, ...updates } = body;
     Object.assign(employee, updates);
+    if (body.commissionRate !== undefined) employee.commissionRate = Number(body.commissionRate);
     if (body.resetPassword) employee.passwordHash = body.resetPassword;
     store.log(body.operatorId || "emp_admin", "admin", "update_employee", "Employee", employee.employeeId, before, employee, "修改工作人员");
     await store.save();

@@ -87,6 +87,7 @@ const staffWxml = await readFile(join(root, "miniprogram/pages/staff/staff.wxml"
 assert(staffJs.includes("/api/staff/storage"), "staff page calls storage create API");
 assert(staffJs.includes("/api/staff/login"), "staff page calls staff login API");
 assert(staffJs.includes("/api/staff/performance/monthly"), "staff page calls monthly performance API");
+assert(staffJs.includes("commissionText") && staffWxml.includes("预估提成"), "staff page displays commission amount");
 assert(staffJs.includes("/api/staff/employees/") && staffJs.includes("/order-qr"), "staff page calls employee order QR API");
 assert(staffJs.includes("showOrderQr") && staffWxml.includes("orderQrPayload"), "staff page displays employee order QR payload");
 assert(staffJs.includes("/confirm"), "staff page calls pickup confirm API");
@@ -99,7 +100,9 @@ assert(staffJs.includes("/api/staff/password"), "staff page calls password API")
 assert(!staffJs.includes("/api/staff/lottery-records/") && !staffJs.includes("/api/staff/coupons/"), "staff page hides coupon and lottery confirm flows");
 
 const adminJs = await readFile(join(root, "miniprogram/pages/admin/admin.js"), "utf8");
+const adminWxml = await readFile(join(root, "miniprogram/pages/admin/admin.wxml"), "utf8");
 assert(adminJs.includes("/api/admin/dashboard"), "admin page calls dashboard API");
+assert(adminJs.includes("staffSales") && adminWxml.includes("员工销售提成"), "admin page displays staff sales commissions");
 assert(adminJs.includes("/refund"), "admin page calls refund API");
 assert(adminJs.includes("/transfer-storage"), "admin page calls transfer storage API");
 assert(adminJs.includes("/api/admin/stock/adjust"), "admin page calls stock adjust API");
@@ -113,7 +116,6 @@ assert(adminJs.includes("/api/admin/products") && adminJs.includes("createProduc
 assert(adminJs.includes("/api/admin/products/"), "admin page calls product update API");
 assert(adminJs.includes("storageDays") && adminJs.includes("warningQty"), "admin page supports SKU warning stock and storage days");
 assert(adminJs.includes("/api/admin/finance/overview"), "admin page calls finance API");
-const adminWxml = await readFile(join(root, "miniprogram/pages/admin/admin.wxml"), "utf8");
 assert(!adminJs.includes("/api/admin/recharge-configs") && !adminWxml.includes("新增充值"), "admin page hides recharge config operations");
 assert(adminJs.includes("/api/admin/consumption-records"), "admin page calls consumption records API");
 assert(adminJs.includes("/api/admin/member-levels"), "admin page calls member level API");

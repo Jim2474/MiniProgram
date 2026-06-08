@@ -94,8 +94,10 @@ async function main() {
     assert(dashboard.todayOrderCount >= 1 && dashboard.todayRevenue >= paid.order.amount, "后台看板统计订单和营收");
     assert(typeof dashboard.revenueDelta === "number" && typeof dashboard.orderCountDelta === "number" && typeof dashboard.newMemberDelta === "number", "后台看板返回较昨日对比数据");
     assert(dashboard.staffSales.some((item) => item.employeeId === "emp_anna" && item.sales >= paid.order.amount), "后台员工业绩统计正确");
+    assert(dashboard.staffSales.some((item) => item.employeeId === "emp_anna" && item.commissionRate === 0.08 && item.commissionAmount > 0), "后台员工业绩统计提成金额");
     const monthlyPerformance = await request(baseUrl, "/api/staff/performance/monthly?employeeId=emp_anna&months=6");
     assert(monthlyPerformance.rows.length === 6 && monthlyPerformance.rows[0].sales >= paid.order.amount, "员工端返回最近六个月业绩");
+    assert(monthlyPerformance.rows[0].commissionRate === 0.08 && monthlyPerformance.rows[0].commissionAmount > 0, "员工端返回近六月提成金额");
     assert(!("passwordHash" in monthlyPerformance.employee), "员工业绩接口不暴露密码字段");
 
     const transfer = await request(baseUrl, `/api/admin/orders/${orderData.order.orderId}/transfer-storage`, {
@@ -333,8 +335,8 @@ async function main() {
     const storageLedgerAfterExpired = await request(baseUrl, `/api/admin/storage-ledgers?storageId=${expiredStorage.storage.storageId}&actionType=expired_dispose`);
     assert(storageLedgerAfterExpired.ledgers.length === 1 && storageLedgerAfterExpired.ledgers[0].reason.includes("过期人工确认"), "客户存酒账记录过期人工处理");
 
-    const employee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "新员工", phone: "13900009999", role: "staff" } });
-    assert(employee.employee.status === "active" && !("passwordHash" in employee.employee), "后台可新增工作人员且不返回密码字段");
+    const employee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "新员工", phone: "13900009999", role: "staff", commissionRate: 0.06 } });
+    assert(employee.employee.status === "active" && employee.employee.commissionRate === 0.06 && !("passwordHash" in employee.employee), "后台可新增工作人员并配置提成且不返回密码字段");
     const employeesList = await request(baseUrl, "/api/admin/employees");
     assert(employeesList.employees.every((item) => !("passwordHash" in item)), "后台人员列表不暴露密码字段");
     const disabledEmployee = await request(baseUrl, `/api/admin/employees/${employee.employee.employeeId}`, { method: "PATCH", body: { status: "disabled", resetPassword: "123456" } });

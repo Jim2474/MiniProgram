@@ -3,6 +3,7 @@ const { request, showError, money, statusText } = require("../../utils/api")
 Page({
   data: {
     dashboard: {},
+    staffSales: [],
     orders: [],
     products: [],
     productCategories: [],
@@ -98,7 +99,13 @@ Page({
         revenueDeltaText: money(data.revenueDelta),
         lowStockCount: data.lowStock.length,
         pendingOrderCount: data.pendingOrders.length
-      }
+      },
+      staffSales: (data.staffSales || []).map((item) => ({
+        ...item,
+        salesText: money(item.sales),
+        commissionText: money(item.commissionAmount),
+        commissionRateText: `${Math.round(item.commissionRate * 10000) / 100}%`
+      }))
     })
   },
 

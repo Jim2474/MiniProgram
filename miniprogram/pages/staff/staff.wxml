@@ -31,13 +31,17 @@
       <view class="metric-value">{{orders.length}}</view>
       <view class="metric-label">个人订单数</view>
     </view>
+    <view class="metric">
+      <view class="metric-value">{{commissionText}}</view>
+      <view class="metric-label">预估提成</view>
+    </view>
   </view>
 
   <view class="section">
     <view class="section-title">近六个月业绩</view>
     <view wx:for="{{performanceRows}}" wx:key="month" class="row">
       <view class="row-title">{{item.month}} · {{item.salesText}}</view>
-      <view class="muted">订单 {{item.orderCount}} 笔</view>
+      <view class="muted">订单 {{item.orderCount}} 笔 · 提成 {{item.commissionText}} · 比例 {{item.commissionRateText}}</view>
     </view>
   </view>
 

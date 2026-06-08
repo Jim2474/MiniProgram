@@ -20,6 +20,7 @@ Page({
     pointReason: "现场服务补偿",
     orders: [],
     salesText: "¥0",
+    commissionText: "¥0",
     performanceRows: [],
     pickupRequests: [],
     verifyResult: null,
@@ -68,8 +69,10 @@ Page({
 
   async loadPerformance() {
     const data = await request(`/api/staff/performance/monthly?employeeId=${this.data.selectedEmployee.employeeId}&months=6`)
+    const commission = data.rows.reduce((sum, item) => sum + item.commissionAmount, 0)
     this.setData({
-      performanceRows: data.rows.map((item) => ({ ...item, salesText: money(item.sales) }))
+      commissionText: money(commission),
+      performanceRows: data.rows.map((item) => ({ ...item, salesText: money(item.sales), commissionText: money(item.commissionAmount), commissionRateText: `${Math.round(item.commissionRate * 10000) / 100}%` }))
     })
   },
 

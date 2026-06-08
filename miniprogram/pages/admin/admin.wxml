@@ -32,6 +32,14 @@
   </view>
 
   <view class="section">
+    <view class="section-title">员工销售提成</view>
+    <view wx:for="{{staffSales}}" wx:key="employeeId" class="row">
+      <view class="row-title">{{item.name}} · {{item.salesText}}</view>
+      <view class="muted">订单 {{item.orderCount}} 笔 · 提成 {{item.commissionText}} · 比例 {{item.commissionRateText}}</view>
+    </view>
+  </view>
+
+  <view class="section">
     <view class="section-title">SKU 库存</view>
     <input class="input" value="{{productKeyword}}" bindinput="onProductKeyword" placeholder="按商品名/规格筛选" />
     <view class="btn-row">
