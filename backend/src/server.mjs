@@ -225,6 +225,47 @@ function resolveWechatPayNotify(body, ctx) {
   };
 }
 
+async function createWechatRefund(order, payment, reason) {
+  const missing = requiredWechatPayEnv.filter((key) => !process.env[key]);
+  if (missing.length) throw new HttpError(501, missingConfigMessage("微信支付退款", missing));
+  const outRefundNo = `refund_${order.orderId}_${Date.now().toString(36)}`;
+  const bodyObject = {
+    out_trade_no: order.orderId,
+    out_refund_no: outRefundNo,
+    reason,
+    amount: {
+      refund: Math.round(Number(order.amount || 0) * 100),
+      total: Math.round(Number(order.amount || 0) * 100),
+      currency: "CNY",
+    },
+  };
+  if (payment?.wxTransactionId) {
+    delete bodyObject.out_trade_no;
+    bodyObject.transaction_id = payment.wxTransactionId;
+  }
+  const body = JSON.stringify(bodyObject);
+  const urlPath = "/v3/refund/domestic/refunds";
+  if (process.env.WECHAT_PAY_DRY_RUN === "true") {
+    return { refundId: `dry_refund_${order.orderId}`, outRefundNo, status: "PROCESSING", provider: "wechat_refund_dry_run" };
+  }
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const nonceStr = createNonce();
+  const response = await fetch(`https://api.mch.weixin.qq.com${urlPath}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+      authorization: wechatPayAuthorization("POST", urlPath, body, timestamp, nonceStr),
+    },
+    body,
+  });
+  const data = await response.json();
+  if (!response.ok || !data.refund_id) {
+    throw new HttpError(502, `微信退款申请失败：${data.message || data.code || response.statusText}`);
+  }
+  return { refundId: data.refund_id, outRefundNo: data.out_refund_no || outRefundNo, status: data.status || "PROCESSING", provider: "wechat_refund" };
+}
+
 async function createWechatJsapiPrepay(order, user) {
   const missing = requiredWechatPayEnv.filter((key) => !process.env[key]);
   if (missing.length) throw new HttpError(501, missingConfigMessage("微信支付 JSAPI", missing));
@@ -942,6 +983,34 @@ function markOrderPaid(store, order, payment, transactionId, reason = "微信支
   return { alreadyPaid: false };
 }
 
+function markOrderRefunded(store, order, refund, operatorId = "system", reason = "退款成功") {
+  if (order.orderStatus === "refunded") return { alreadyRefunded: true };
+  if (order.payStatus !== "paid") throw new HttpError(400, "只有已支付订单可退款");
+  const before = deepClone(order);
+  order.payStatus = "refunded";
+  order.orderStatus = "refunded";
+  order.refundedAt = now();
+  refund.status = "refunded";
+  refund.completedAt = order.refundedAt;
+  const payment = store.data.payments.find((item) => item.orderId === order.orderId);
+  if (payment) {
+    payment.status = "refunded";
+    payment.refundedAt = order.refundedAt;
+  }
+  const orderItems = store.data.orderItems.filter((item) => item.orderId === order.orderId);
+  for (const item of orderItems) {
+    store.createStockLedger(store.getSku(item.skuId), item.quantity, "refund", "order", order.orderId, operatorId, "退款恢复库存");
+  }
+  const user = store.getUser(order.userId);
+  if (user.pointsBalance >= order.pointsAwarded) {
+    store.createPointsLedger(user, -order.pointsAwarded, "退款扣回积分", "refund", order.orderId, operatorId);
+  } else {
+    store.createPointsLedger(user, 0, `积分不足扣回，应扣 ${order.pointsAwarded}`, "refund_exception", order.orderId, operatorId);
+  }
+  store.log(operatorId, "admin", "refund_order", "Order", order.orderId, before, order, reason);
+  return { alreadyRefunded: false };
+}
+
 function createVoiceEvent(store, game, eventType, message) {
   const event = {
     eventId: newId("voice"),
@@ -1328,42 +1397,67 @@ function createRouter(store) {
   });
 
   add("POST", "/api/admin/orders/:orderId/refund", async (body, params) => {
-    requireMockWechat("微信退款");
     const order = store.getOrder(params.orderId);
     if (order.payStatus !== "paid") throw new HttpError(400, "只有已支付订单可退款");
     if (order.orderStatus === "refunded") return { order: publicOrder(store, order), idempotent: true };
-    const before = deepClone(order);
-    order.payStatus = "refunded";
-    order.orderStatus = "refunded";
-    order.refundedAt = now();
-    store.data.refunds.push({
+    const existingRefund = store.data.refunds.find((item) => item.orderId === order.orderId && item.status !== "failed");
+    if (existingRefund) return { order: publicOrder(store, order), refund: existingRefund, refundProvider: existingRefund.provider, idempotent: true };
+    const payment = store.data.payments.find((item) => item.orderId === order.orderId);
+    const reason = body.reason || "管理员退款";
+    const refund = {
       refundId: newId("refund"),
       orderId: order.orderId,
       amount: order.amount,
-      reason: body.reason || "管理员退款",
+      reason,
       provider: "mock_wechat",
-      status: "refunded",
+      status: "created",
+      wxRefundId: "",
+      outRefundNo: "",
       operatorId: body.operatorId || "emp_admin",
       createdAt: now(),
-    });
-    const payment = store.data.payments.find((item) => item.orderId === order.orderId);
-    if (payment) {
-      payment.status = "refunded";
-      payment.refundedAt = order.refundedAt;
+      completedAt: null,
+    };
+    store.data.refunds.push(refund);
+    if (!mockWechatEnabled()) {
+      const wechatRefund = await createWechatRefund(order, payment, reason);
+      refund.provider = wechatRefund.provider;
+      refund.status = wechatRefund.status === "SUCCESS" ? "refunded" : "processing";
+      refund.wxRefundId = wechatRefund.refundId;
+      refund.outRefundNo = wechatRefund.outRefundNo;
+      store.log(body.operatorId || "emp_admin", "admin", "request_refund", "Order", order.orderId, null, refund, reason);
+      if (wechatRefund.status === "SUCCESS") {
+        markOrderRefunded(store, order, refund, body.operatorId || "emp_admin", "微信退款申请同步成功");
+      }
+      await store.save();
+      return { order: publicOrder(store, order), refund, refundProvider: refund.provider };
     }
-    const orderItems = store.data.orderItems.filter((item) => item.orderId === order.orderId);
-    for (const item of orderItems) {
-      store.createStockLedger(store.getSku(item.skuId), item.quantity, "refund", "order", order.orderId, body.operatorId || "emp_admin", "退款恢复库存");
-    }
-    const user = store.getUser(order.userId);
-    if (user.pointsBalance >= order.pointsAwarded) {
-      store.createPointsLedger(user, -order.pointsAwarded, "退款扣回积分", "refund", order.orderId, body.operatorId || "emp_admin");
-    } else {
-      store.createPointsLedger(user, 0, `积分不足扣回，应扣 ${order.pointsAwarded}`, "refund_exception", order.orderId, body.operatorId || "emp_admin");
-    }
-    store.log(body.operatorId || "emp_admin", "admin", "refund_order", "Order", order.orderId, before, order, body.reason || "管理员退款");
+    refund.provider = "mock_wechat";
+    markOrderRefunded(store, order, refund, body.operatorId || "emp_admin", reason);
     await store.save();
-    return { order: publicOrder(store, order), refundProvider: "mock_wechat" };
+    return { order: publicOrder(store, order), refund, refundProvider: "mock_wechat" };
+  });
+
+  add("POST", "/api/admin/refunds/:refundId/confirm", async (body, params) => {
+    const refund = store.data.refunds.find((item) => item.refundId === params.refundId || item.outRefundNo === params.refundId || item.wxRefundId === params.refundId);
+    if (!refund) throw new HttpError(404, "退款记录不存在");
+    const order = store.getOrder(refund.orderId);
+    if (refund.status === "refunded" || order.orderStatus === "refunded") {
+      return { order: publicOrder(store, order), refund, idempotent: true };
+    }
+    if (!mockWechatEnabled() && process.env.WECHAT_PAY_DRY_RUN !== "true" && !body.confirmedByWechat) {
+      throw new HttpError(400, "真实微信退款需由微信退款成功通知确认");
+    }
+    if (body.wxRefundId) refund.wxRefundId = body.wxRefundId;
+    if (body.outRefundNo) refund.outRefundNo = body.outRefundNo;
+    if (body.status && body.status !== "SUCCESS") {
+      refund.status = String(body.status).toLowerCase();
+      await store.save();
+      return { order: publicOrder(store, order), refund, ignored: true };
+    } else {
+      markOrderRefunded(store, order, refund, body.operatorId || "emp_admin", body.reason || "微信退款成功确认");
+    }
+    await store.save();
+    return { order: publicOrder(store, order), refund };
   });
 
   add("POST", "/api/admin/orders/:orderId/transfer-storage", async (body, params) => {

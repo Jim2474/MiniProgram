@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V28
+# 德扑棋牌门店小程序 V29
 
 本仓库包含：
 
@@ -71,10 +71,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V28 验收状态
+## V29 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V29.md`
 - `docs/ACCEPTANCE-V28.md`
 - `docs/ACCEPTANCE-V27.md`
 - `docs/ACCEPTANCE-V26.md`
@@ -106,10 +107,17 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：147 项。
+- 后端业务自验收：152 项。
 - 小程序结构与 API 调用校验：123 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V29 新增能力
+
+- 生产环境后台退款支持创建微信支付 V3 退款申请。
+- 退款申请与退款成功确认拆分，微信未确认前不提前改订单、库存或积分。
+- 新增 `/api/admin/refunds/:refundId/confirm`，退款成功确认后统一恢复库存、扣回积分并标记订单已退款。
+- 同一订单已有未失败退款单时，退款申请幂等返回已有记录。
 
 ## V28 新增能力
 

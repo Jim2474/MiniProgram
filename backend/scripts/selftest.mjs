@@ -662,6 +662,29 @@ async function main() {
         });
         assert(dryNotify.order.payStatus === "paid" && dryNotify.payment.status === "paid", "微信支付回调确认后订单进入已支付");
         assert(dryNotify.payment.wxTransactionId === "wx_signed_tx" && dryNotify.payment.notifyVerifiedBy === "wechat_pay_v3", "微信支付回调通过平台证书验签和资源解密");
+
+        process.env.WECHAT_PAY_DRY_RUN = "true";
+        const dryAdminSession = await request(dryRunBaseUrl, "/api/staff/login", { method: "POST", body: { account: "admin", password: "demo" } });
+        const dryAdminHeaders = { "x-staff-session": dryAdminSession.session.sessionId };
+        const refundProductsBefore = await request(dryRunBaseUrl, "/api/products");
+        const refundBudBefore = refundProductsBefore.products.find((item) => item.skuId === "sku_bud");
+        const refundRequest = await request(dryRunBaseUrl, `/api/admin/orders/${signedOrder.order.orderId}/refund`, {
+          method: "POST",
+          headers: dryAdminHeaders,
+          body: { operatorId: "emp_admin", reason: "生产 dry-run 退款" },
+        });
+        assert(refundRequest.refundProvider === "wechat_refund_dry_run" && refundRequest.refund.status === "processing", "生产环境配置齐全时创建微信退款申请");
+        assert(refundRequest.order.payStatus === "paid", "微信退款申请中不会提前标记订单已退款");
+        const refundProductsAfterRequest = await request(dryRunBaseUrl, "/api/products");
+        assert(refundProductsAfterRequest.products.find((item) => item.skuId === "sku_bud").stockQty === refundBudBefore.stockQty, "微信退款申请中不会提前恢复库存");
+        const refundConfirmed = await request(dryRunBaseUrl, `/api/admin/refunds/${refundRequest.refund.refundId}/confirm`, {
+          method: "POST",
+          headers: dryAdminHeaders,
+          body: { operatorId: "emp_admin", confirmedByWechat: true, wxRefundId: "wx_refund_dryrun" },
+        });
+        assert(refundConfirmed.order.payStatus === "refunded" && refundConfirmed.refund.status === "refunded", "微信退款确认后订单进入已退款");
+        const refundProductsAfterConfirm = await request(dryRunBaseUrl, "/api/products");
+        assert(refundProductsAfterConfirm.products.find((item) => item.skuId === "sku_bud").stockQty === refundBudBefore.stockQty + 1, "微信退款确认后恢复库存");
       } finally {
         await new Promise((resolveClose) => dryRunServer.close(resolveClose));
         await rm(dryRunDataFile, { force: true });
