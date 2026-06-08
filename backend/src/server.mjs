@@ -1110,6 +1110,20 @@ function publicStorageLedger(store, ledger) {
   };
 }
 
+function publicPointsLedger(store, ledger) {
+  const sourceOrder = ["order", "refund", "refund_exception"].includes(ledger.sourceType)
+    ? store.data.orders.find((order) => order.orderId === ledger.sourceId) || null
+    : null;
+  const operator = publicEmployee(store.data.employees.find((employee) => employee.employeeId === ledger.operatorId));
+  return {
+    ...ledger,
+    user: store.data.users.find((user) => user.userId === ledger.userId) || null,
+    operator,
+    sourceOrder: sourceOrder ? publicOrder(store, sourceOrder) : null,
+    serviceEmployee: sourceOrder?.employeeId ? publicEmployee(store.data.employees.find((employee) => employee.employeeId === sourceOrder.employeeId)) : operator,
+  };
+}
+
 function publicPickupRequest(store, request) {
   const storage = store.data.customerStorage.find((item) => item.storageId === request.storageId) || null;
   const user = store.data.users.find((item) => item.userId === request.userId) || null;
@@ -2295,7 +2309,7 @@ function createRouter(store) {
     return { ledgers: ledgers.map((ledger) => publicStorageLedger(store, ledger)) };
   });
   add("GET", "/api/admin/users", async () => ({ users: store.data.users.map((user) => publicAdminUser(store, user)) }));
-  add("GET", "/api/admin/points-ledgers", async () => ({ ledgers: store.data.pointsLedgers }));
+  add("GET", "/api/admin/points-ledgers", async () => ({ ledgers: store.data.pointsLedgers.map((ledger) => publicPointsLedger(store, ledger)) }));
   add("GET", "/api/admin/consumption-records", async (_body, _params, query) => {
     const userId = query.get("userId");
     let orders = store.data.orders.filter((order) => order.payStatus === "paid");

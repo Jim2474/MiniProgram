@@ -289,6 +289,15 @@
       <switch checked="{{pointsConfigForm.checkinEnabled}}" bindchange="onCheckinEnabledChange" /> 签到启用
       <button size="mini" class="secondary" bindtap="updatePointsConfig">更新积分配置</button>
     </view>
+    <view class="row">
+      <view class="row-title">积分明细</view>
+      <view class="muted">消费赠分、手动增减、扫码取积分均记录客户、变动、余额、原因和服务人员。</view>
+    </view>
+    <view wx:if="{{pointsLedgers.length === 0}}" class="muted">暂无积分明细。</view>
+    <view wx:for="{{pointsLedgers}}" wx:key="ledgerId" class="row">
+      <view class="row-title">{{item.userPhone}} · {{item.changeAmount}} 分</view>
+      <view class="muted">余额 {{item.balanceAfter}} · {{item.reason}} · 服务人员 {{item.serviceEmployeeName}} · {{item.sourceText}}</view>
+    </view>
   </view>
 
   <view class="section">

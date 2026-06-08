@@ -68,6 +68,7 @@ Page({
     finance: {},
     businessDetails: [],
     consumptionRecords: [],
+    pointsLedgers: [],
     memberLevels: [],
     pointsConfig: {},
     memberLevelForm: {
@@ -279,13 +280,14 @@ Page({
   },
 
   async loadV3Admin() {
-    const [finance, business, consumptionRecords, users, levels, pointsConfig, stockRequests, stockLedgers, stockCounts, storageLedgers, scanRecords, system, blind] = await Promise.all([
+    const [finance, business, consumptionRecords, users, levels, pointsConfig, pointsLedgers, stockRequests, stockLedgers, stockCounts, storageLedgers, scanRecords, system, blind] = await Promise.all([
       request("/api/admin/finance/overview"),
       request("/api/admin/business-details"),
       request("/api/admin/consumption-records"),
       request("/api/admin/users"),
       request("/api/admin/member-levels"),
       request("/api/admin/points-config"),
+      request("/api/admin/points-ledgers"),
       request("/api/admin/stock-requests"),
       request("/api/admin/stock-ledgers"),
       request("/api/admin/stock-counts"),
@@ -304,6 +306,12 @@ Page({
       businessDetails: business.details,
       users: users.users.map((item) => ({ ...item, totalSpendText: money(item.totalSpend) })),
       consumptionRecords: consumptionRecords.records.map((item) => ({ ...item, amountText: money(item.amount), statusText: statusText(item.orderStatus) })),
+      pointsLedgers: pointsLedgers.ledgers.slice(0, 8).map((item) => ({
+        ...item,
+        userPhone: item.user ? item.user.phone : item.userId,
+        serviceEmployeeName: item.serviceEmployee ? item.serviceEmployee.name : (item.operator ? item.operator.name : "系统"),
+        sourceText: item.sourceOrder ? `订单 ${item.sourceOrder.orderId}` : item.sourceType
+      })),
       memberLevels: levels.levels,
       pointsConfig: pointsConfig.config,
       pointsConfigForm: {
