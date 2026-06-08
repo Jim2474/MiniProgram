@@ -20,6 +20,7 @@ Page({
     storageLedgers: [],
     pickupRecords: [],
     pickupQty: 1,
+    pointsQrAmount: 5,
     tables: [],
     reservations: [],
     reservationDate: new Date().toISOString().slice(0, 10),
@@ -373,6 +374,10 @@ Page({
     this.setData({ pickupQty: Number(event.detail.value || 1) })
   },
 
+  onPointsQrAmount(event) {
+    this.setData({ pointsQrAmount: Number(event.detail.value || 0) })
+  },
+
   async createReservation(event) {
     try {
       const reservationTime = `${this.data.reservationDate}T${this.data.reservationClock}:00+08:00`
@@ -435,10 +440,11 @@ Page({
     try {
       const type = event.currentTarget.dataset.type
       const payload = { userId: app.globalData.userId, type }
-      if (type === "points") payload.pointsAmount = 5
+      if (type === "points") payload.pointsAmount = this.data.pointsQrAmount
       if (type === "storage") {
-        const storage = this.data.storage.find((item) => item.status === "available" && item.quantity > 0)
+        const storage = this.data.storage.find((item) => item.storageId === event.currentTarget.dataset.id)
         if (!storage) throw new Error("暂无可取存酒")
+        if (storage.status !== "available" || storage.quantity <= 0) throw new Error("当前存酒不可取")
         payload.storageId = storage.storageId
       }
       const data = await request("/api/verification-codes", { method: "POST", data: payload })

@@ -90,6 +90,8 @@ assert(!customerJs.includes("/api/leaderboard/points") && !customerWxml.includes
 assert(!customerJs.includes("/api/coupons/exchange") && !customerWxml.includes("积分兑换酒水券"), "customer page hides points coupon exchange");
 assert(customerJs.includes("/api/verification-codes"), "customer page calls verification code API");
 assert(customerJs.includes("qrImageUrl") && customerWxml.includes("qr-image") && customerWxml.includes("qr-thumb"), "customer page displays verification QR images");
+assert(customerJs.includes("pointsQrAmount") && customerJs.includes("onPointsQrAmount") && customerWxml.includes("取积分数量") && !customerJs.includes("pointsAmount = 5"), "customer page supports real points QR amount input");
+assert(customerWxml.includes('data-id="{{item.storageId}}"') && customerJs.includes("item.storageId === event.currentTarget.dataset.id") && !customerJs.includes("this.data.storage.find((item) => item.status === \"available\""), "customer page creates storage QR for selected storage record");
 assert(customerJs.includes("wx.scanCode"), "customer page uses WeChat scanCode");
 assert(customerJs.includes("wx.openLocation"), "customer page uses WeChat openLocation");
 assert(customerJs.includes("wx.makePhoneCall"), "customer page uses WeChat makePhoneCall");
