@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V20
+# 德扑棋牌门店小程序 V21
 
 本仓库包含：
 
@@ -68,10 +68,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V20 验收状态
+## V21 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V21.md`
 - `docs/ACCEPTANCE-V20.md`
 - `docs/ACCEPTANCE-V19.md`
 - `docs/ACCEPTANCE-V18.md`
@@ -93,10 +94,16 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：115 项。
+- 后端业务自验收：116 项。
 - 小程序结构与 API 调用校验：111 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V21 新增能力
+
+- API 路由增加单进程写请求串行队列，降低库存、积分、退款等关键写路径并发竞态。
+- JSON 数据保存改为临时文件写入后原子替换，降低异常中断造成坏文件的风险。
+- 新增并发库存自测：同一低库存 SKU 同时加购时只允许一个请求成功，另一个返回库存不足。
 
 ## V20 新增能力
 

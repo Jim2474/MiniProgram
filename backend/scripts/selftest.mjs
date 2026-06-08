@@ -313,6 +313,18 @@ async function main() {
     const rejectedRequest = await request(baseUrl, `/api/admin/stock-requests/${rejectRequest.request.requestId}/reject`, { method: "POST", body: { operatorId: "emp_admin", reason: "单据错误" } });
     assert(rejectedRequest.request.status === "rejected", "出入库申请可驳回");
 
+    const raceProduct = await request(baseUrl, "/api/admin/products", {
+      method: "POST",
+      body: { categoryId: "cat_beer", name: "并发测试 SKU", spec: "1 件", unit: "件", price: 1, stockQty: 1, warningQty: 0 },
+    });
+    const raceAttempts = await Promise.allSettled([
+      request(baseUrl, "/api/cart/items", { method: "POST", body: { userId: "user_demo", skuId: raceProduct.product.skuId, quantity: 1 } }),
+      request(baseUrl, "/api/cart/items", { method: "POST", body: { userId: "user_demo", skuId: raceProduct.product.skuId, quantity: 1 } }),
+    ]);
+    const raceSuccesses = raceAttempts.filter((item) => item.status === "fulfilled").length;
+    const raceFailures = raceAttempts.filter((item) => item.status === "rejected" && item.reason.message.includes("库存不足")).length;
+    assert(raceSuccesses === 1 && raceFailures === 1, "并发加购同一低库存 SKU 时只允许一个请求成功");
+
     const pointsConfig = await request(baseUrl, "/api/admin/points-config", { method: "PATCH", body: { checkinPoints: 12, pointExpireDays: 180, pointsVisible: true } });
     assert(pointsConfig.config.checkinPoints === 12 && pointsConfig.config.pointExpireDays === 180 && pointsConfig.config.pointsVisible === true, "后台可配置积分明细显示和有效期规则");
 

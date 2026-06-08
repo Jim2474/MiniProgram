@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { existsSync, createReadStream } from "node:fs";
-import { extname, join, resolve } from "node:path";
+import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -343,10 +343,11 @@ class Store {
   constructor(filePath = defaultDataFile) {
     this.filePath = filePath;
     this.data = null;
+    this.saveQueue = Promise.resolve();
   }
 
   async load() {
-    await mkdir(dataDir, { recursive: true });
+    await mkdir(dirname(this.filePath), { recursive: true });
     if (!existsSync(this.filePath)) {
       this.data = seedData();
       await this.save();
@@ -381,8 +382,14 @@ class Store {
   }
 
   async save() {
-    await mkdir(dataDir, { recursive: true });
-    await writeFile(this.filePath, JSON.stringify(this.data, null, 2), "utf8");
+    const previousSave = this.saveQueue.catch(() => {});
+    this.saveQueue = previousSave.then(async () => {
+      await mkdir(dirname(this.filePath), { recursive: true });
+      const tempFile = `${this.filePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+      await writeFile(tempFile, JSON.stringify(this.data, null, 2), "utf8");
+      await rename(tempFile, this.filePath);
+    });
+    return this.saveQueue;
   }
 
   log(operatorId, role, action, targetType, targetId, beforeValue, afterValue, reason = "") {
@@ -728,6 +735,7 @@ function matchRoute(method, path, pattern) {
 
 function createRouter(store) {
   const routes = [];
+  let requestQueue = Promise.resolve();
   const add = (method, pattern, handler) => routes.push({ method, pattern, handler });
 
   add("GET", "/api/health", async () => ({ ok: true, time: now(), runtime: runtimeInfo() }));
@@ -2168,8 +2176,14 @@ function createRouter(store) {
       const params = matchRoute(req.method, path, route.pattern);
       if (!params) continue;
       const body = req.method === "GET" ? {} : await readBody(req);
-      const result = await route.handler(body, params, query);
-      await store.save();
+      const previousRequest = requestQueue.catch(() => {});
+      const operation = previousRequest.then(async () => {
+        const result = await route.handler(body, params, query);
+        await store.save();
+        return result;
+      });
+      requestQueue = operation;
+      const result = await operation;
       sendJson(res, 200, result);
       return true;
     }
