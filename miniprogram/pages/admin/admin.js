@@ -33,6 +33,10 @@ Page({
     stockRequests: [],
     stockLedgers: [],
     stockCounts: [],
+    stockCountForm: {
+      countedQty: 10,
+      reason: "闭店盘点"
+    },
     storageLedgers: [],
     finance: {},
     businessDetails: [],
@@ -287,8 +291,9 @@ Page({
         method: "POST",
         data: {
           skuId: event.currentTarget.dataset.id,
-          countedQty: Number(event.currentTarget.dataset.current) + 10,
-          reason: "小程序后台补货"
+          countedQty: this.data.stockCountForm.countedQty,
+          reason: this.data.stockCountForm.reason,
+          operatorId: "emp_admin"
         }
       })
       wx.showToast({ title: "盘点已入账" })
@@ -297,6 +302,14 @@ Page({
     } catch (error) {
       showError(error)
     }
+  },
+
+  onStockCountQty(event) {
+    this.setData({ "stockCountForm.countedQty": Number(event.detail.value || 0) })
+  },
+
+  onStockCountReason(event) {
+    this.setData({ "stockCountForm.reason": event.detail.value })
   },
 
   onProductKeyword(event) {

@@ -70,11 +70,16 @@
     <input class="input" type="number" value="{{productForm.warningQty}}" bindinput="onProductWarning" placeholder="预警库存" />
     <input class="input" type="number" value="{{productForm.storageDays}}" bindinput="onProductStorageDays" placeholder="存酒有效期天数" />
     <button size="mini" class="primary" bindtap="createProduct">新增 SKU</button>
+    <view class="row">
+      <view class="row-title">库存盘点表单</view>
+      <input class="input" type="number" value="{{stockCountForm.countedQty}}" bindinput="onStockCountQty" placeholder="实盘库存" />
+      <input class="input" value="{{stockCountForm.reason}}" bindinput="onStockCountReason" placeholder="盘点原因" />
+    </view>
     <view wx:for="{{products}}" wx:key="skuId" class="row">
       <view class="row-title">{{item.name}} · {{item.spec}}</view>
       <view class="muted">{{item.priceText}} · 成本 {{item.costPrice}} · {{item.supplierName || '未填供应商'}} · 库存 {{item.stockQty}} · 预警 {{item.warningQty}} · 存酒 {{item.storageDays}}天</view>
       <view class="btn-row">
-        <button size="mini" class="secondary" data-id="{{item.skuId}}" data-current="{{item.stockQty}}" bindtap="addStock">盘点 +10</button>
+        <button size="mini" class="secondary" data-id="{{item.skuId}}" bindtap="addStock">创建盘点单</button>
         <button size="mini" class="secondary" data-id="{{item.skuId}}" data-direction="in" bindtap="createStockRequest">入库申请</button>
         <button size="mini" class="secondary" data-id="{{item.skuId}}" data-direction="out" bindtap="createStockRequest">出库申请</button>
         <button size="mini" class="secondary" data-id="{{item.skuId}}" data-status="{{item.status}}" bindtap="toggleProduct">上下架</button>

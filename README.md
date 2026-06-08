@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V40
+# 德扑棋牌门店小程序 V41
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V40 验收状态
+## V41 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V41.md`
 - `docs/ACCEPTANCE-V40.md`
 - `docs/ACCEPTANCE-V39.md`
 - `docs/ACCEPTANCE-V38.md`
@@ -246,6 +247,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V41 新增能力
+
+- 后台 SKU 库存区新增盘点表单，可填写实盘库存和盘点原因。
+- 商品行盘点按钮从“盘点 +10”改为“创建盘点单”，避免演示式固定调整。
+- 自动验收覆盖后台真实盘点输入入口。
 
 ## V40 新增能力
 
