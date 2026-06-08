@@ -69,12 +69,16 @@
 
   <view class="section">
     <view class="section-title">新增客户存酒</view>
+    <input class="input" value="{{storageCustomerName}}" bindinput="onStorageCustomerName" placeholder="客户姓名" />
     <input class="input" value="{{storagePhone}}" bindinput="onStoragePhone" placeholder="客户手机号" />
     <picker range="{{products}}" range-key="name" value="{{storageSkuIndex}}" bindchange="onStorageSkuChange">
       <view class="input">{{selectedStorageSku.name}}</view>
     </picker>
     <input class="input" type="number" value="{{storageQty}}" bindinput="onStorageQty" placeholder="数量" />
-    <button class="primary" bindtap="addStorage">勾选协议并新增存酒</button>
+    <checkbox-group bindchange="onStorageAgreement">
+      <label class="muted"><checkbox value="accepted" checked="{{storageAgreementAccepted}}" /> 已确认客户寄存协议</label>
+    </checkbox-group>
+    <button class="primary" bindtap="addStorage">新增存酒</button>
   </view>
 
   <view class="section">

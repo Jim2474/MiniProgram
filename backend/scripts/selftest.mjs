@@ -177,8 +177,10 @@ async function main() {
     assert(customerStorageRecords.pickupRequests.some((request) => request.status === "completed"), "客户可查询历史取酒申请状态");
     const multiStorage = await request(baseUrl, "/api/staff/storage", {
       method: "POST",
-      body: { operatorId: "emp_anna", phone: "13800000000", skuId: "sku_bud", quantity: 3, agreementAccepted: true },
+      body: { operatorId: "emp_anna", customerName: "王先生", phone: "13800000000", skuId: "sku_bud", quantity: 3, agreementAccepted: true },
     });
+    assert(multiStorage.user.nickname === "王先生", "员工新增存酒可记录客户姓名");
+    await expectHttpError(baseUrl, "/api/staff/storage", { method: "POST", body: { operatorId: "emp_anna", customerName: "李女士", phone: "13800000001", skuId: "sku_bud", quantity: 1, agreementAccepted: false } }, 400, "员工新增存酒必须勾选寄存协议");
     const multiPickup = await request(baseUrl, `/api/storage/${multiStorage.storage.storageId}/pickup-requests`, {
       method: "POST",
       body: { quantity: 2 },

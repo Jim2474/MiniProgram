@@ -1803,6 +1803,7 @@ function createRouter(store) {
     const quantity = Number(body.quantity || 1);
     if (!body.agreementAccepted) throw new HttpError(400, "需要勾选寄存协议");
     if (quantity < 1) throw new HttpError(400, "存酒数量必须大于 0");
+    const customerName = String(body.customerName || body.name || "").trim();
     let user = store.data.users.find((item) => item.phone === body.phone);
     if (!user) {
       user = {
@@ -1810,7 +1811,7 @@ function createRouter(store) {
         merchantId: store.data.settings.merchantId,
         storeId: store.data.settings.storeId,
         openid: `manual_${body.phone}`,
-        nickname: `客户${String(body.phone || "").slice(-4)}`,
+        nickname: customerName || `客户${String(body.phone || "").slice(-4)}`,
         avatar: "",
         phone: body.phone,
         pointsBalance: 0,
@@ -1819,6 +1820,8 @@ function createRouter(store) {
         createdAt: now(),
       };
       store.data.users.push(user);
+    } else if (customerName) {
+      user.nickname = customerName;
     }
     const storage = {
       storageId: newId("storage"),

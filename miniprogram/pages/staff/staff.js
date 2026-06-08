@@ -15,8 +15,10 @@ Page({
     products: [],
     storageSkuIndex: 0,
     selectedStorageSku: {},
+    storageCustomerName: "示例客户",
     storagePhone: "13800000000",
     storageQty: 1,
+    storageAgreementAccepted: true,
     pointPhone: "13800000000",
     pointAmount: 20,
     pointReason: "现场服务补偿",
@@ -164,8 +166,16 @@ Page({
     this.setData({ storagePhone: event.detail.value })
   },
 
+  onStorageCustomerName(event) {
+    this.setData({ storageCustomerName: event.detail.value })
+  },
+
   onStorageQty(event) {
     this.setData({ storageQty: Number(event.detail.value || 1) })
+  },
+
+  onStorageAgreement(event) {
+    this.setData({ storageAgreementAccepted: event.detail.value.includes("accepted") })
   },
 
   onStorageSkuChange(event) {
@@ -191,10 +201,11 @@ Page({
         method: "POST",
         data: {
           operatorId: this.data.selectedEmployee.employeeId,
+          customerName: this.data.storageCustomerName,
           phone: this.data.storagePhone,
           skuId: this.data.selectedStorageSku.skuId,
           quantity: this.data.storageQty,
-          agreementAccepted: true,
+          agreementAccepted: this.data.storageAgreementAccepted,
           reason: "小程序员工端新增存酒"
         }
       })

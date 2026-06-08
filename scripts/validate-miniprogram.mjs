@@ -100,6 +100,7 @@ assert(!customerJs.includes("requestLotteryRedeem"), "customer page hides lotter
 const staffJs = await readFile(join(root, "miniprogram/pages/staff/staff.js"), "utf8");
 const staffWxml = await readFile(join(root, "miniprogram/pages/staff/staff.wxml"), "utf8");
 assert(staffJs.includes("/api/staff/storage"), "staff page calls storage create API");
+assert(staffJs.includes("storageCustomerName") && staffWxml.includes("客户姓名") && staffWxml.includes("checkbox-group") && staffJs.includes("storageAgreementAccepted") && !staffJs.includes("agreementAccepted: true"), "staff page uses real storage customer name and agreement input");
 assert(staffJs.includes("/api/staff/login"), "staff page calls staff login API");
 assert(staffJs.includes("app.globalData.staffSessionId = data.session.sessionId"), "staff page stores staff session after login");
 assert(staffJs.includes("/api/staff/performance/monthly"), "staff page calls monthly performance API");
