@@ -295,11 +295,11 @@ async function main() {
     assert(activeCategory.category.status === "active", "后台可重新启用商品分类");
     const product = await request(baseUrl, "/api/admin/products", {
       method: "POST",
-      body: { categoryId: category.category.categoryId, name: "苏打水", spec: "330ml", unit: "瓶", price: 18, stockQty: 6, warningQty: 2, storageDays: 15 },
+      body: { categoryId: category.category.categoryId, name: "苏打水", spec: "330ml", unit: "瓶", price: 18, costPrice: 7, supplierName: "软饮供应商", stockQty: 6, warningQty: 2, storageDays: 15 },
     });
-    assert(product.product.name === "苏打水" && product.product.stockQty === 6 && product.product.warningQty === 2 && product.product.storageDays === 15, "后台可新增 SKU 并配置预警库存和存酒有效期");
-    const disabledProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "disabled", price: 20, warningQty: 3, storageDays: 30 } });
-    assert(disabledProduct.product.status === "disabled" && disabledProduct.product.price === 20 && disabledProduct.product.warningQty === 3 && disabledProduct.product.storageDays === 30, "后台可编辑并下架 SKU 且更新有效期配置");
+    assert(product.product.name === "苏打水" && product.product.stockQty === 6 && product.product.warningQty === 2 && product.product.storageDays === 15 && product.product.costPrice === 7 && product.product.supplierName === "软饮供应商", "后台可新增 SKU 并配置预警库存、成本、供应商和存酒有效期");
+    const disabledProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "disabled", price: 20, costPrice: 8, supplierName: "新软饮供应商", warningQty: 3, storageDays: 30 } });
+    assert(disabledProduct.product.status === "disabled" && disabledProduct.product.price === 20 && disabledProduct.product.costPrice === 8 && disabledProduct.product.supplierName === "新软饮供应商" && disabledProduct.product.warningQty === 3 && disabledProduct.product.storageDays === 30, "后台可编辑并下架 SKU 且更新成本、供应商和有效期配置");
     const activeProduct = await request(baseUrl, `/api/admin/products/${product.product.skuId}`, { method: "PATCH", body: { status: "active" } });
     assert(activeProduct.product.status === "active", "后台可重新上架 SKU");
     const filteredProducts = await request(baseUrl, `/api/products?categoryId=${category.category.categoryId}&keyword=${encodeURIComponent("苏打")}`);
@@ -311,6 +311,10 @@ async function main() {
     const stockOutRequest = await request(baseUrl, "/api/admin/stock-requests", { method: "POST", body: { skuId: product.product.skuId, direction: "out", quantity: 2, operatorId: "emp_admin" } });
     const stockOutConfirm = await request(baseUrl, `/api/admin/stock-requests/${stockOutRequest.request.requestId}/confirm`, { method: "POST", body: { operatorId: "emp_admin" } });
     assert(stockOutConfirm.product.stockQty === 8 && stockOutConfirm.ledger.changeType === "stock_out", "确认出库后写入库存账");
+    const stockCount = await request(baseUrl, "/api/admin/stock-counts", { method: "POST", body: { skuId: product.product.skuId, countedQty: 7, operatorId: "emp_admin", reason: "闭店盘点" } });
+    assert(stockCount.count.bookQty === 8 && stockCount.count.countedQty === 7 && stockCount.count.differenceQty === -1 && stockCount.product.stockQty === 7 && stockCount.ledger.changeType === "stock_count_loss", "后台可创建 SKU 盘点单并写入盘亏流水");
+    const stockCounts = await request(baseUrl, "/api/admin/stock-counts");
+    assert(stockCounts.counts.some((count) => count.countId === stockCount.count.countId && count.product.skuId === product.product.skuId), "后台可查询库存盘点单");
     const stockLedgerQuery = await request(baseUrl, "/api/admin/stock-ledgers");
     const storageLedgerQuery = await request(baseUrl, "/api/admin/storage-ledgers");
     assert(stockLedgerQuery.ledgers.some((ledger) => ledger.changeType === "stock_out") && storageLedgerQuery.ledgers.some((ledger) => ledger.actionType === "pickup_confirm"), "后台可分别查询商家库存账和客户存酒账");

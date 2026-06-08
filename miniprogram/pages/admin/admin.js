@@ -31,6 +31,7 @@ Page({
     logs: [],
     stockRequests: [],
     stockLedgers: [],
+    stockCounts: [],
     storageLedgers: [],
     finance: {},
     businessDetails: [],
@@ -69,6 +70,8 @@ Page({
       categoryIndex: 0,
       name: "气泡水",
       price: 18,
+      costPrice: 8,
+      supplierName: "默认供应商",
       stockQty: 12,
       warningQty: 2,
       storageDays: 30
@@ -194,7 +197,7 @@ Page({
   },
 
   async loadV3Admin() {
-    const [finance, business, consumptionRecords, levels, pointsConfig, stockRequests, stockLedgers, storageLedgers, scanRecords, system, blind] = await Promise.all([
+    const [finance, business, consumptionRecords, levels, pointsConfig, stockRequests, stockLedgers, stockCounts, storageLedgers, scanRecords, system, blind] = await Promise.all([
       request("/api/admin/finance/overview"),
       request("/api/admin/business-details"),
       request("/api/admin/consumption-records"),
@@ -202,6 +205,7 @@ Page({
       request("/api/admin/points-config"),
       request("/api/admin/stock-requests"),
       request("/api/admin/stock-ledgers"),
+      request("/api/admin/stock-counts"),
       request("/api/admin/storage-ledgers"),
       request("/api/admin/scan-records"),
       request("/api/admin/system-settings"),
@@ -220,6 +224,7 @@ Page({
       pointsConfig: pointsConfig.config,
       stockRequests: stockRequests.requests.map((item) => ({ ...item, statusText: statusText(item.status), directionText: item.direction === "in" ? "入库" : "出库" })),
       stockLedgers: stockLedgers.ledgers.slice(0, 8),
+      stockCounts: stockCounts.counts.slice(0, 8),
       storageLedgers: storageLedgers.ledgers.slice(0, 8).map((item) => ({ ...item, productName: item.product ? item.product.name : item.skuId, userPhone: item.user ? item.user.phone : item.userId })),
       scanRecords: scanRecords.records.slice(0, 8),
       systemSettings: system.settings,
@@ -273,16 +278,17 @@ Page({
 
   async addStock(event) {
     try {
-      await request("/api/admin/stock/adjust", {
+      await request("/api/admin/stock-counts", {
         method: "POST",
         data: {
           skuId: event.currentTarget.dataset.id,
-          targetQty: Number(event.currentTarget.dataset.current) + 10,
+          countedQty: Number(event.currentTarget.dataset.current) + 10,
           reason: "小程序后台补货"
         }
       })
-      wx.showToast({ title: "库存已调整" })
+      wx.showToast({ title: "盘点已入账" })
       await this.loadProducts()
+      await this.loadV3Admin()
     } catch (error) {
       showError(error)
     }
@@ -306,6 +312,14 @@ Page({
 
   onProductPrice(event) {
     this.setData({ "productForm.price": Number(event.detail.value || 0) })
+  },
+
+  onProductCost(event) {
+    this.setData({ "productForm.costPrice": Number(event.detail.value || 0) })
+  },
+
+  onProductSupplier(event) {
+    this.setData({ "productForm.supplierName": event.detail.value })
   },
 
   onProductStock(event) {
@@ -341,6 +355,8 @@ Page({
           spec: "标准规格",
           unit: "份",
           price: this.data.productForm.price,
+          costPrice: this.data.productForm.costPrice,
+          supplierName: this.data.productForm.supplierName,
           stockQty: this.data.productForm.stockQty,
           warningQty: this.data.productForm.warningQty,
           description: "后台新增 SKU",

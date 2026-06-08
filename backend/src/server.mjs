@@ -175,6 +175,8 @@ function seedData() {
         spec: "330ml 瓶装",
         unit: "瓶",
         price: 28,
+        costPrice: 16,
+        supplierName: "本地酒水供应商",
         stockQty: 60,
         warningQty: 12,
         status: "active",
@@ -191,6 +193,8 @@ function seedData() {
         spec: "700ml",
         unit: "瓶",
         price: 588,
+        costPrice: 360,
+        supplierName: "进口酒水供应商",
         stockQty: 8,
         warningQty: 2,
         status: "active",
@@ -207,6 +211,8 @@ function seedData() {
         spec: "单份",
         unit: "份",
         price: 38,
+        costPrice: 10,
+        supplierName: "门店厨房",
         stockQty: 25,
         warningQty: 5,
         status: "active",
@@ -224,6 +230,7 @@ function seedData() {
     pointsLedgers: [],
     stockLedgers: [],
     stockRequests: [],
+    stockCounts: [],
     scanRecords: [],
     verificationCodes: [],
     staffSessions: [],
@@ -357,6 +364,7 @@ class Store {
     }
     this.data = JSON.parse(await readFile(this.filePath, "utf8"));
     this.data.stockRequests ||= [];
+    this.data.stockCounts ||= [];
     this.data.scanRecords ||= [];
     this.data.verificationCodes ||= [];
     this.data.staffSessions ||= [];
@@ -367,6 +375,10 @@ class Store {
     }
     for (const employee of this.data.employees || []) {
       employee.commissionRate ??= employee.role === "staff" ? 0.05 : 0;
+    }
+    for (const product of this.data.products || []) {
+      product.costPrice ??= 0;
+      product.supplierName ||= "";
     }
     for (const table of this.data.tables || []) {
       table.occupiedStartedAt ||= null;
@@ -1442,6 +1454,8 @@ function createRouter(store) {
       spec: body.spec || "标准规格",
       unit: body.unit || "份",
       price: Number(body.price || 0),
+      costPrice: Number(body.costPrice || 0),
+      supplierName: body.supplierName || "",
       stockQty: Number(body.stockQty || 0),
       warningQty: Number(body.warningQty || 0),
       status: body.status || "active",
@@ -1449,7 +1463,7 @@ function createRouter(store) {
       imageUrl: body.imageUrl || "",
       storageDays: Number(body.storageDays || 0),
     };
-    if (product.price < 0 || product.stockQty < 0) throw new HttpError(400, "价格和库存不能为负数");
+    if (product.price < 0 || product.costPrice < 0 || product.stockQty < 0) throw new HttpError(400, "价格、成本和库存不能为负数");
     store.data.products.push(product);
     if (product.stockQty > 0) {
       store.data.stockLedgers.unshift({
@@ -1474,10 +1488,10 @@ function createRouter(store) {
   add("PATCH", "/api/admin/products/:skuId", async (body, params) => {
     const product = store.getSku(params.skuId);
     const before = deepClone(product);
-    for (const key of ["categoryId", "name", "spec", "unit", "status", "description", "imageUrl"]) {
+    for (const key of ["categoryId", "name", "spec", "unit", "status", "description", "imageUrl", "supplierName"]) {
       if (body[key] !== undefined) product[key] = body[key];
     }
-    for (const key of ["price", "warningQty", "storageDays"]) {
+    for (const key of ["price", "costPrice", "warningQty", "storageDays"]) {
       if (body[key] !== undefined) product[key] = Number(body[key]);
     }
     store.log(body.operatorId || "emp_admin", "admin", "update_product", "ProductSKU", product.skuId, before, product, body.reason || "修改 SKU");
@@ -1490,6 +1504,50 @@ function createRouter(store) {
     const status = query.get("status");
     if (status) requests = requests.filter((item) => item.status === status);
     return { requests: requests.map((request) => publicStockRequest(store, request)) };
+  });
+  add("GET", "/api/admin/stock-counts", async () => ({
+    counts: store.data.stockCounts.map((count) => ({ ...count, product: store.data.products.find((sku) => sku.skuId === count.skuId) })).reverse(),
+  }));
+  add("POST", "/api/admin/stock-counts", async (body) => {
+    const sku = store.getSku(body.skuId);
+    const before = deepClone(sku);
+    const countedQty = Number(body.countedQty);
+    if (countedQty < 0) throw new HttpError(400, "盘点库存不能为负数");
+    const bookQty = sku.stockQty;
+    const differenceQty = countedQty - bookQty;
+    const count = {
+      countId: newId("stockCount"),
+      merchantId: sku.merchantId,
+      storeId: sku.storeId,
+      skuId: sku.skuId,
+      bookQty,
+      countedQty,
+      differenceQty,
+      status: "completed",
+      operatorId: body.operatorId || "emp_admin",
+      reason: body.reason || "后台库存盘点",
+      createdAt: now(),
+    };
+    store.data.stockCounts.unshift(count);
+    sku.stockQty = countedQty;
+    const ledger = {
+      ledgerId: newId("stock"),
+      merchantId: sku.merchantId,
+      storeId: sku.storeId,
+      skuId: sku.skuId,
+      changeQty: differenceQty,
+      stockAfter: sku.stockQty,
+      changeType: differenceQty > 0 ? "stock_count_gain" : differenceQty < 0 ? "stock_count_loss" : "stock_count_even",
+      sourceType: "stock_count",
+      sourceId: count.countId,
+      operatorId: count.operatorId,
+      reason: count.reason,
+      createdAt: now(),
+    };
+    store.data.stockLedgers.unshift(ledger);
+    store.log(count.operatorId, "admin", "stock_count", "ProductSKU", sku.skuId, before, sku, count.reason);
+    await store.save();
+    return { count: { ...count, product: sku }, product: sku, ledger };
   });
   add("POST", "/api/admin/stock-requests", async (body) => {
     const employee = store.getEmployee(body.operatorId || "emp_admin");

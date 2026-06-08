@@ -109,7 +109,7 @@ assert(adminJs.includes("app.globalData.staffSessionId = data.session.sessionId"
 assert(adminJs.includes("staffSales") && adminWxml.includes("员工销售提成"), "admin page displays staff sales commissions");
 assert(adminJs.includes("/refund"), "admin page calls refund API");
 assert(adminJs.includes("/transfer-storage"), "admin page calls transfer storage API");
-assert(adminJs.includes("/api/admin/stock/adjust"), "admin page calls stock adjust API");
+assert(adminJs.includes("/api/admin/stock-counts"), "admin page calls stock count API");
 assert(adminJs.includes("/api/admin/stock-requests"), "admin page calls stock request workflow API");
 assert(adminJs.includes("/api/admin/storage/") && adminJs.includes("expire-handle"), "admin page calls expired storage handling API");
 assert(adminJs.includes("/api/admin/stock-ledgers"), "admin page calls stock ledger API");
@@ -119,6 +119,8 @@ assert(adminJs.includes("/api/admin/categories/"), "admin page calls category up
 assert(adminJs.includes("/api/admin/products") && adminJs.includes("createProduct"), "admin page supports product create API");
 assert(adminJs.includes("/api/admin/products/"), "admin page calls product update API");
 assert(adminJs.includes("storageDays") && adminJs.includes("warningQty"), "admin page supports SKU warning stock and storage days");
+assert(adminJs.includes("costPrice") && adminJs.includes("supplierName") && adminWxml.includes("成本价") && adminWxml.includes("供应商"), "admin page supports SKU cost and supplier fields");
+assert(adminJs.includes("/api/admin/stock-counts") && adminWxml.includes("库存盘点单"), "admin page supports stock count workflow");
 assert(adminJs.includes("/api/admin/finance/overview"), "admin page calls finance API");
 assert(!adminJs.includes("/api/admin/recharge-configs") && !adminWxml.includes("新增充值"), "admin page hides recharge config operations");
 assert(adminJs.includes("/api/admin/consumption-records"), "admin page calls consumption records API");

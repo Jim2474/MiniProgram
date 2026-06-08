@@ -64,13 +64,15 @@
     </picker>
     <input class="input" value="{{productForm.name}}" bindinput="onProductName" placeholder="SKU 名称" />
     <input class="input" type="number" value="{{productForm.price}}" bindinput="onProductPrice" placeholder="售价" />
+    <input class="input" type="number" value="{{productForm.costPrice}}" bindinput="onProductCost" placeholder="成本价" />
+    <input class="input" value="{{productForm.supplierName}}" bindinput="onProductSupplier" placeholder="供应商" />
     <input class="input" type="number" value="{{productForm.stockQty}}" bindinput="onProductStock" placeholder="初始库存" />
     <input class="input" type="number" value="{{productForm.warningQty}}" bindinput="onProductWarning" placeholder="预警库存" />
     <input class="input" type="number" value="{{productForm.storageDays}}" bindinput="onProductStorageDays" placeholder="存酒有效期天数" />
     <button size="mini" class="primary" bindtap="createProduct">新增 SKU</button>
     <view wx:for="{{products}}" wx:key="skuId" class="row">
       <view class="row-title">{{item.name}} · {{item.spec}}</view>
-      <view class="muted">{{item.priceText}} · 库存 {{item.stockQty}} · 预警 {{item.warningQty}} · 存酒 {{item.storageDays}}天</view>
+      <view class="muted">{{item.priceText}} · 成本 {{item.costPrice}} · {{item.supplierName || '未填供应商'}} · 库存 {{item.stockQty}} · 预警 {{item.warningQty}} · 存酒 {{item.storageDays}}天</view>
       <view class="btn-row">
         <button size="mini" class="secondary" data-id="{{item.skuId}}" data-current="{{item.stockQty}}" bindtap="addStock">盘点 +10</button>
         <button size="mini" class="secondary" data-id="{{item.skuId}}" data-direction="in" bindtap="createStockRequest">入库申请</button>
@@ -89,6 +91,14 @@
         <button size="mini" class="primary" data-id="{{item.requestId}}" bindtap="confirmStockRequest">确认入账</button>
         <button size="mini" class="secondary" data-id="{{item.requestId}}" bindtap="rejectStockRequest">驳回</button>
       </view>
+    </view>
+    <view class="row">
+      <view class="row-title">库存盘点单</view>
+      <view class="muted">记录 SKU 账面库存、实盘库存、盘盈盘亏。</view>
+    </view>
+    <view wx:for="{{stockCounts}}" wx:key="countId" class="row">
+      <view class="row-title">{{item.product.name}} · 实盘 {{item.countedQty}}</view>
+      <view class="muted">账面 {{item.bookQty}} · 差异 {{item.differenceQty}} · {{item.reason}}</view>
     </view>
     <view class="row">
       <view class="row-title">商家库存流水</view>
