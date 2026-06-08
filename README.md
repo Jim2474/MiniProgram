@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V29
+# 德扑棋牌门店小程序 V30
 
 本仓库包含：
 
@@ -26,6 +26,7 @@ APP_ENV=development  # 默认，允许本地模拟微信登录/支付/退款
 APP_ENV=production   # 默认禁止模拟微信能力
 ALLOW_MOCK_WECHAT=true  # 仅用于生产前沙箱演示，显式允许模拟微信能力
 REQUIRE_AUTH=true       # 开发/沙箱环境也强制后台和员工接口校验员工会话
+ALLOW_JSON_STORE_IN_PRODUCTION=true  # 仅沙箱演示；生产无 DATABASE_URL 默认拒绝启动
 ```
 
 生产环境变量可参考 `.env.example`。`/api/health` 会返回 `runtime.deployment`，列出真实微信支付/登录和数据库配置缺口。
@@ -71,10 +72,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V29 验收状态
+## V30 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V30.md`
 - `docs/ACCEPTANCE-V29.md`
 - `docs/ACCEPTANCE-V28.md`
 - `docs/ACCEPTANCE-V27.md`
@@ -107,10 +109,16 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：152 项。
+- 后端业务自验收：153 项。
 - 小程序结构与 API 调用校验：123 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V30 新增能力
+
+- 生产环境没有 `DATABASE_URL` 时默认拒绝启动，防止误用 JSON Store 上线。
+- 仅沙箱演示可显式设置 `ALLOW_JSON_STORE_IN_PRODUCTION=true` 继续使用本地 JSON Store。
+- 健康检查暴露 `jsonStoreAllowedInProduction` 标记。
 
 ## V29 新增能力
 

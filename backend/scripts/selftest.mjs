@@ -506,12 +506,21 @@ async function main() {
       "WECHAT_PAY_NOTIFY_URL",
       "WECHAT_LOGIN_DRY_RUN",
       "WECHAT_PAY_DRY_RUN",
+      "ALLOW_JSON_STORE_IN_PRODUCTION",
     ]) {
       envSnapshot[key] = process.env[key];
     }
     process.env.APP_ENV = "production";
     delete process.env.ALLOW_MOCK_WECHAT;
     try {
+      let productionStoreError = "";
+      try {
+        await createApp({ dataFile: join(rootDir, "data", "test-store-prod-forbidden.json") });
+      } catch (error) {
+        productionStoreError = error.message;
+      }
+      assert(productionStoreError.includes("生产环境缺少 DATABASE_URL"), "生产环境默认拒绝使用 JSON Store");
+      process.env.ALLOW_JSON_STORE_IN_PRODUCTION = "true";
       const blockedDataFile = join(rootDir, "data", "test-store-prod-block.json");
       await rm(blockedDataFile, { force: true });
       const { server: blockedServer } = await createApp({ dataFile: blockedDataFile });

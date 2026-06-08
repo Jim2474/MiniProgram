@@ -21,6 +21,7 @@ const addDays = (days) => {
 const currentAppEnv = () => process.env.APP_ENV || process.env.NODE_ENV || "development";
 const mockWechatEnabled = () => process.env.ALLOW_MOCK_WECHAT === "true" || currentAppEnv() !== "production";
 const authRequired = () => process.env.REQUIRE_AUTH === "true" || currentAppEnv() === "production";
+const jsonStoreAllowedInProduction = () => process.env.ALLOW_JSON_STORE_IN_PRODUCTION === "true";
 const requiredWechatLoginEnv = ["WECHAT_APPID", "WECHAT_APP_SECRET"];
 const requiredWechatPayEnv = [
   "WECHAT_APPID",
@@ -47,6 +48,7 @@ const deploymentChecks = () => {
     wechatPayDryRun: process.env.WECHAT_PAY_DRY_RUN === "true",
     databaseConfigured: Boolean(process.env.DATABASE_URL),
     usingJsonStore: !process.env.DATABASE_URL,
+    jsonStoreAllowedInProduction: jsonStoreAllowedInProduction(),
   };
 };
 const runtimeInfo = () => ({
@@ -2725,6 +2727,9 @@ async function serveStatic(req, res) {
 }
 
 export async function createApp(options = {}) {
+  if (currentAppEnv() === "production" && !process.env.DATABASE_URL && !jsonStoreAllowedInProduction()) {
+    throw new HttpError(501, "生产环境缺少 DATABASE_URL；如仅沙箱演示需显式设置 ALLOW_JSON_STORE_IN_PRODUCTION=true");
+  }
   const store = new Store(options.dataFile || process.env.DATA_FILE || defaultDataFile);
   await store.load();
   const router = createRouter(store);
