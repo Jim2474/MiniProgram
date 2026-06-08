@@ -34,3 +34,30 @@
   border-radius: 8rpx;
   background: #ffffff;
 }
+
+.checkin-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8rpx;
+  margin: 12rpx 0;
+}
+
+.checkin-day {
+  height: 48rpx;
+  line-height: 48rpx;
+  text-align: center;
+  border-radius: 8rpx;
+  background: #eef1ec;
+  color: #5e6a61;
+  font-size: 22rpx;
+}
+
+.checkin-day.signed {
+  background: #0f7b59;
+  color: #ffffff;
+}
+
+.checkin-day.today {
+  border: 2rpx solid #d6a642;
+  line-height: 44rpx;
+}

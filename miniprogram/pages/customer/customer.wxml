@@ -80,7 +80,7 @@
     <view wx:if="{{todayOrders.length === 0}}" class="muted">今日暂无订单。</view>
     <view wx:for="{{todayOrders}}" wx:key="orderId" class="row">
       <view class="row-title">{{item.orderId}}</view>
-      <view class="muted">{{item.statusText}} · {{item.amountText}} · {{item.employeeName}} · {{item.orderDate}}</view>
+      <view class="muted">{{item.statusText}} · {{item.amountText}} · 赠送 {{item.pointsAwardedText}} · {{item.employeeName}} · {{item.orderDate}}</view>
     </view>
   </view>
 
@@ -89,7 +89,7 @@
     <view wx:if="{{historyOrders.length === 0}}" class="muted">暂无历史订单。</view>
     <view wx:for="{{historyOrders}}" wx:key="orderId" class="row">
       <view class="row-title">{{item.orderId}}</view>
-      <view class="muted">{{item.statusText}} · {{item.amountText}} · {{item.employeeName}} · {{item.orderDate}}</view>
+      <view class="muted">{{item.statusText}} · {{item.amountText}} · 赠送 {{item.pointsAwardedText}} · {{item.employeeName}} · {{item.orderDate}}</view>
     </view>
   </view>
 
@@ -143,6 +143,9 @@
     </view>
     <view class="row">
       <view class="row-title">签到记录</view>
+      <view class="checkin-calendar">
+        <view wx:for="{{checkinCalendar}}" wx:key="date" class="checkin-day {{item.signed ? 'signed' : ''}} {{item.isToday ? 'today' : ''}}">{{item.day}}</view>
+      </view>
       <view wx:for="{{checkinRecords}}" wx:key="checkinId" class="muted">{{item.date}} · +{{item.points}}</view>
     </view>
     <view class="row">

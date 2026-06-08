@@ -271,6 +271,8 @@ async function main() {
 
     const checkin = await request(baseUrl, "/api/checkin", { method: "POST", body: { userId: "user_demo" } });
     assert(checkin.record.points === 10, "签到送积分");
+    const checkinState = await request(baseUrl, "/api/checkin?userId=user_demo");
+    assert(checkinState.calendar.length >= 28 && checkinState.calendar.some((day) => day.isToday && day.signed), "签到页面返回本月日历并标记今日已签到");
     let duplicateCheckin = "";
     try {
       await request(baseUrl, "/api/checkin", { method: "POST", body: { userId: "user_demo" } });

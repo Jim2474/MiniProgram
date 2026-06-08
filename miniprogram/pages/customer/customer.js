@@ -27,6 +27,7 @@ Page({
     bindPhoneValue: "13800000000",
     currentUserId: "user_demo",
     checkinRecords: [],
+    checkinCalendar: [],
     verificationCodes: [],
     qrText: "",
     qrImageUrl: "",
@@ -86,6 +87,7 @@ Page({
       ...item,
       statusText: statusText(item.orderStatus),
       amountText: money(item.amount),
+      pointsAwardedText: `+${item.pointsAwarded || 0}积分`,
       employeeName: item.employee ? item.employee.name : "自然订单",
       orderDate: (item.paidAt || item.createdAt || "").slice(0, 10)
     }))
@@ -160,6 +162,7 @@ Page({
       loginPhone: profile.user.phone || this.data.loginPhone,
       bindPhoneValue: profile.user.phone || this.data.bindPhoneValue,
       checkinRecords: checkin.records,
+      checkinCalendar: checkin.calendar || [],
       verificationCodes: verificationCodes.codes.map((item) => ({ ...item, statusText: statusText(item.status) })),
       storeLocation: location.location,
       supportPhone: support.phone

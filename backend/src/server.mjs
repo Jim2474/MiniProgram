@@ -141,6 +141,18 @@ function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function checkinCalendar(records, referenceDate = new Date()) {
+  const month = referenceDate.toISOString().slice(0, 7);
+  const [year, monthValue] = month.split("-").map(Number);
+  const daysInMonth = new Date(Date.UTC(year, monthValue, 0)).getUTCDate();
+  const signedDates = new Set(records.map((record) => record.date));
+  return Array.from({ length: daysInMonth }, (_, index) => {
+    const day = String(index + 1).padStart(2, "0");
+    const date = `${month}-${day}`;
+    return { date, day: index + 1, signed: signedDates.has(date), isToday: date === dayKey() };
+  });
+}
+
 const passwordHashPrefix = "scrypt";
 function hashPassword(password) {
   const salt = randomBytes(16).toString("base64url");
@@ -2370,7 +2382,8 @@ function createRouter(store) {
 
   add("GET", "/api/checkin", async (_body, _params, query) => {
     const userId = query.get("userId") || "user_demo";
-    return { records: store.data.checkins.filter((item) => item.userId === userId), settings: { enabled: store.data.settings.checkinEnabled, points: store.data.settings.checkinPoints } };
+    const records = store.data.checkins.filter((item) => item.userId === userId);
+    return { records, calendar: checkinCalendar(records), settings: { enabled: store.data.settings.checkinEnabled, points: store.data.settings.checkinPoints } };
   });
 
   add("POST", "/api/checkin", async (body) => {
@@ -2385,7 +2398,8 @@ function createRouter(store) {
     store.createPointsLedger(user, record.points, "签到送积分", "checkin", record.checkinId, "system");
     store.log(user.userId, "customer", "checkin", "Checkin", record.checkinId, null, record, "日历签到");
     await store.save();
-    return { record, user };
+    const records = store.data.checkins.filter((item) => item.userId === user.userId);
+    return { record, user, calendar: checkinCalendar(records) };
   });
 
   add("GET", "/api/coupons", async (_body, _params, query) => {

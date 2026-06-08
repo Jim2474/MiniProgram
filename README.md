@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V36
+# 德扑棋牌门店小程序 V37
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V36 验收状态
+## V37 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V37.md`
 - `docs/ACCEPTANCE-V36.md`
 - `docs/ACCEPTANCE-V35.md`
 - `docs/ACCEPTANCE-V34.md`
@@ -116,10 +117,17 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：171 项。
-- 小程序结构与 API 调用校验：130 项。
+- 后端业务自验收：172 项。
+- 小程序结构与 API 调用校验：132 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V37 新增能力
+
+- 签到接口返回本月日历格，标记每日是否已签到和今日位置。
+- 客户页“会员营销”展示签到日历，已签到日期高亮。
+- 今日订单和历史订单展示本单赠送积分数，对齐 Excel 中“订单显示赠送积分”。
+- 自动验收覆盖签到日历返回、客户页日历展示和订单赠分展示。
 
 ## V36 新增能力
 

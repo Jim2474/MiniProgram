@@ -62,6 +62,7 @@ for (const page of ["customer", "staff", "admin", "dealer"]) {
 
 const customerJs = await readFile(join(root, "miniprogram/pages/customer/customer.js"), "utf8");
 const customerWxml = await readFile(join(root, "miniprogram/pages/customer/customer.wxml"), "utf8");
+const customerWxss = await readFile(join(root, "miniprogram/pages/customer/customer.wxss"), "utf8");
 assert(customerJs.includes("/api/cart/items"), "customer page calls cart API");
 assert(customerJs.includes("showProductDetail") && customerWxml.includes("查看详情"), "customer page supports product detail modal");
 assert(customerJs.includes("/api/wechat/login"), "customer page calls WeChat login API");
@@ -72,12 +73,14 @@ assert(customerJs.includes("/api/orders") && customerJs.includes("/pay"), "custo
 assert(customerJs.includes("wx.requestPayment") && customerJs.includes("data.prepay"), "customer page can invoke WeChat requestPayment from prepay params");
 assert(customerWxml.includes("微信支付"), "customer page labels WeChat pay action");
 assert(customerJs.includes("todayOrders") && customerJs.includes("historyOrders"), "customer page separates today and historical orders");
+assert(customerJs.includes("pointsAwardedText") && customerWxml.includes("赠送 {{item.pointsAwardedText}}"), "customer orders display awarded points");
 assert(customerJs.includes("/api/storage/") && customerJs.includes("pickup-requests"), "customer page calls pickup request API");
 assert(customerJs.includes("/api/storage-records"), "customer page calls storage records API");
 assert(customerJs.includes("/api/reservations"), "customer page calls reservation API");
 assert(customerJs.includes("/cancel"), "customer page calls reservation cancel API");
 assert(customerWxml.includes("table-image") && customerWxml.includes("item.imageUrl"), "customer reservation list displays table image");
 assert(customerJs.includes("/api/checkin"), "customer page calls checkin API");
+assert(customerJs.includes("checkinCalendar") && customerWxml.includes("checkin-calendar") && customerWxss.includes(".checkin-day.signed"), "customer page displays checkin calendar");
 assert(!customerJs.includes("/api/recharge") && !customerWxml.includes("微信支付充值"), "customer page hides balance recharge flow");
 assert(!customerJs.includes("/api/lottery/draw") && !customerWxml.includes("积分抽奖"), "customer page hides lottery flow");
 assert(!customerJs.includes("/api/leaderboard/points") && !customerWxml.includes("积分排行榜"), "customer page hides points leaderboard");
