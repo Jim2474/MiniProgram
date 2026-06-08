@@ -55,6 +55,8 @@ Page({
       ...game,
       statusText: statusText(game.status),
       headsUpText: game.currentPlayers === 2 ? " · 单挑阶段" : "",
+      championText: game.currentPlayers === 1 ? " · 冠军产生" : "",
+      isChampion: game.currentPlayers === 1,
       buyinTotalText: money(game.buyinAmount * game.buyinCount)
     }
   },

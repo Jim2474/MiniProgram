@@ -73,10 +73,12 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V87 验收状态
+## V88 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V88.md`
+- `docs/REQUIREMENTS-AUDIT-V88.md`
 - `docs/ACCEPTANCE-V87.md`
 - `docs/REQUIREMENTS-AUDIT-V87.md`
 - `docs/ACCEPTANCE-V86.md`
@@ -181,10 +183,17 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：213 项。
-- 小程序结构与 API 调用校验：173 项。
+- 后端业务自验收：232 项。
+- 小程序结构与 API 调用校验：201 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V88 新增能力
+
+- 淘汰动作从多人进入剩余 1 人时生成 `champion` 冠军事件。
+- 荷官端剩余 1 人时展示“冠军产生”状态。
+- 荷官端自动展示后台配置的冠军背景面板和图片预览。
+- 自动验收覆盖后端冠军事件和荷官端冠军背景展示。
 
 ## V37 新增能力
 

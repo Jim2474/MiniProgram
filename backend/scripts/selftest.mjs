@@ -275,6 +275,12 @@ async function main() {
     });
     const headsUpTimer = await request(baseUrl, `/api/staff/blind-games/${headsUpGame.game.gameId}/timer`);
     assert(headsUpTimer.timer.latestEvents.some((event) => event.eventType === "heads_up" && event.message.includes("单挑阶段")), "荷官淘汰到剩余2人时提示单挑阶段");
+    await request(baseUrl, `/api/staff/blind-games/${headsUpGame.game.gameId}`, {
+      method: "PATCH",
+      body: { action: "eliminate", operatorId: "emp_dealer" },
+    });
+    const championTimer = await request(baseUrl, `/api/staff/blind-games/${headsUpGame.game.gameId}/timer`);
+    assert(championTimer.game.currentPlayers === 1 && championTimer.timer.latestEvents.some((event) => event.eventType === "champion" && event.message.includes("冠军产生")), "荷官淘汰到剩余1人时提示冠军产生");
     const silentHeadsUpGame = await request(baseUrl, "/api/staff/blind-games", {
       method: "POST",
       body: { operatorId: "emp_dealer", initialPlayers: 3, smallBlind: 1, bigBlind: 2, voiceEnabled: false },

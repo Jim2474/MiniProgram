@@ -1351,6 +1351,13 @@ function maybeCreateHeadsUpEvent(store, game, beforePlayers) {
   return null;
 }
 
+function maybeCreateChampionEvent(store, game, beforePlayers) {
+  if (game.voiceEnabled && beforePlayers > 1 && game.currentPlayers === 1) {
+    return createVoiceEvent(store, game, "champion", "剩余1人，冠军产生");
+  }
+  return null;
+}
+
 function publicVerificationCode(store, code) {
   return {
     ...code,
@@ -2452,6 +2459,7 @@ function createRouter(store) {
         game.currentPlayers = Math.max(1, game.currentPlayers - 1);
       }
       maybeCreateHeadsUpEvent(store, game, beforePlayers);
+      maybeCreateChampionEvent(store, game, beforePlayers);
     }
     if (action === "restore") {
       if (body.seatNo !== undefined) {

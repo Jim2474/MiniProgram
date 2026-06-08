@@ -234,6 +234,7 @@ assert(dealerJs.includes("/api/staff/blind-settings") && !dealerJs.includes("/ap
 assert(dealerWxml.includes("championBackgroundImage") && dealerWxml.includes("voiceTerms") && dealerWxml.includes("blindLevelsText"), "dealer page displays advanced blind settings and blind sequence");
 assert(dealerWxml.includes("titleMap.prizePlayer") && dealerWxml.includes("titleMap.nextBreak") && dealerWxml.includes("titleMap.totalChips"), "dealer page displays full blind title map");
 assert(dealerJs.includes("headsUpText") && dealerJs.includes("单挑阶段") && dealerWxml.includes("game.headsUpText"), "dealer page displays heads-up stage prompt");
+assert(dealerJs.includes("championText") && dealerJs.includes("冠军产生") && dealerJs.includes("isChampion") && dealerWxml.includes("champion-panel") && dealerWxml.includes("blindSettings.championBackgroundImage"), "dealer page displays champion stage and champion background");
 
 console.log(`Miniprogram validation passed: ${checks.length} checks`);
 for (const check of checks) console.log(`- ${check}`);

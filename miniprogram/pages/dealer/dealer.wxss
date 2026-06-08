@@ -13,3 +13,24 @@
   border-radius: 12rpx;
   padding: 12rpx;
 }
+
+.champion-panel {
+  margin-top: 12rpx;
+  border: 1rpx solid #d8ded6;
+  border-radius: 12rpx;
+  overflow: hidden;
+  background: #111827;
+  color: #f8d66d;
+}
+
+.champion-image {
+  width: 100%;
+  height: 180rpx;
+  display: block;
+}
+
+.champion-copy {
+  padding: 12rpx;
+  font-size: 24rpx;
+  word-break: break-all;
+}
