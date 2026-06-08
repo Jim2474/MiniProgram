@@ -367,8 +367,14 @@
       <picker mode="selector" range="{{blindThemeOptions}}" range-key="label" value="{{blindForm.themeIndex}}" bindchange="onBlindThemeChange">
         <view class="input">主题风格：{{blindThemeOptions[blindForm.themeIndex].label}}</view>
       </picker>
+      <picker mode="selector" range="{{blindBackgroundOptions}}" range-key="label" value="{{blindForm.backgroundImageIndex}}" bindchange="onBlindBackgroundChange">
+        <view class="input">系统背景图库：{{blindBackgroundOptions[blindForm.backgroundImageIndex].label}}</view>
+      </picker>
       <input class="input" value="{{blindForm.backgroundImage}}" data-key="backgroundImage" bindinput="onBlindField" placeholder="背景图 URL" />
       <input class="input" value="{{blindForm.logo}}" data-key="logo" bindinput="onBlindField" placeholder="Logo URL" />
+      <picker mode="selector" range="{{blindChampionBackgroundOptions}}" range-key="label" value="{{blindForm.championBackgroundImageIndex}}" bindchange="onBlindChampionBackgroundChange">
+        <view class="input">冠军背景图库：{{blindChampionBackgroundOptions[blindForm.championBackgroundImageIndex].label}}</view>
+      </picker>
       <input class="input" value="{{blindForm.championBackgroundImage}}" data-key="championBackgroundImage" bindinput="onBlindField" placeholder="冠军背景图 URL" />
       <input class="input" value="{{blindForm.fontColor}}" data-key="fontColor" bindinput="onBlindField" placeholder="字体颜色" />
       <input class="input" value="{{blindForm.timerColor}}" data-key="timerColor" bindinput="onBlindField" placeholder="计时颜色" />

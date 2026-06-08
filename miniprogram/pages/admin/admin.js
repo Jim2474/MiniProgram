@@ -12,6 +12,19 @@ const defaultBlindTitleMap = {
   avgChipsTitle: "AVG CHIPS",
   totalChipsTitle: "TOTAL CHIPS"
 }
+const blindBackgroundLibrary = [
+  { label: "自定义 URL", value: "" },
+  { label: "经典绿桌背景", value: "https://dummyimage.com/1280x720/123326/f4d9a6&text=Classic+Poker" },
+  { label: "霓虹竞技背景", value: "https://dummyimage.com/1280x720/15152f/7dd3fc&text=Neon+Arena" },
+  { label: "暗金俱乐部背景", value: "https://dummyimage.com/1280x720/21180f/f8d66d&text=Gold+Club" },
+  { label: "电视赛场背景", value: "https://dummyimage.com/1280x720/111827/e5e7eb&text=Broadcast+Stage" }
+]
+const blindChampionBackgroundLibrary = [
+  { label: "自定义 URL", value: "" },
+  { label: "冠军金色背景", value: "https://dummyimage.com/1280x720/2b1d07/f8d66d&text=Champion" },
+  { label: "奖杯聚光背景", value: "https://dummyimage.com/1280x720/0f172a/f4d9a6&text=Trophy+Spotlight" },
+  { label: "胜者烟花背景", value: "https://dummyimage.com/1280x720/301934/f0abfc&text=Winner+Fireworks" }
+]
 
 Page({
   data: {
@@ -124,6 +137,8 @@ Page({
       { label: "库房", value: "warehouse" }
     ],
     blindSettings: {},
+    blindBackgroundOptions: blindBackgroundLibrary,
+    blindChampionBackgroundOptions: blindChampionBackgroundLibrary,
     blindThemeOptions: [
       { label: "经典绿桌", value: "classic" },
       { label: "霓虹竞技", value: "neon" },
@@ -143,6 +158,7 @@ Page({
     blindForm: {
       themeIndex: 0,
       theme: "classic",
+      backgroundImageIndex: 0,
       backgroundImage: "",
       logo: "",
       fontColor: "#FFFFFF",
@@ -154,6 +170,7 @@ Page({
       fontFamily: "system",
       registrationStatusIndex: 0,
       registrationStatus: "accepting",
+      championBackgroundImageIndex: 0,
       championBackgroundImage: "",
       voiceType: "default",
       voiceStartText: "开始提示音",
@@ -413,6 +430,8 @@ Page({
         ...this.data.blindForm,
         ...blind.settings,
         themeIndex: Math.max(0, this.data.blindThemeOptions.findIndex((item) => item.value === blind.settings.theme)),
+        backgroundImageIndex: Math.max(0, this.data.blindBackgroundOptions.findIndex((item) => item.value === blind.settings.backgroundImage)),
+        championBackgroundImageIndex: Math.max(0, this.data.blindChampionBackgroundOptions.findIndex((item) => item.value === blind.settings.championBackgroundImage)),
         fontFamilyIndex: Math.max(0, this.data.blindFontFamilyOptions.findIndex((item) => item.value === blind.settings.fontFamily)),
         registrationStatusIndex: Math.max(0, this.data.registrationStatusOptions.findIndex((item) => item.value === blind.settings.registrationStatus)),
         levelTitle: blind.settings.titleMap?.level || this.data.blindForm.levelTitle,
@@ -1190,6 +1209,22 @@ Page({
     const themeIndex = Number(event.detail.value || 0)
     const option = this.data.blindThemeOptions[themeIndex] || this.data.blindThemeOptions[0]
     this.setData({ "blindForm.themeIndex": themeIndex, "blindForm.theme": option.value })
+  },
+
+  onBlindBackgroundChange(event) {
+    const backgroundImageIndex = Number(event.detail.value || 0)
+    const option = this.data.blindBackgroundOptions[backgroundImageIndex] || this.data.blindBackgroundOptions[0]
+    const updates = { "blindForm.backgroundImageIndex": backgroundImageIndex }
+    if (option.value) updates["blindForm.backgroundImage"] = option.value
+    this.setData(updates)
+  },
+
+  onBlindChampionBackgroundChange(event) {
+    const championBackgroundImageIndex = Number(event.detail.value || 0)
+    const option = this.data.blindChampionBackgroundOptions[championBackgroundImageIndex] || this.data.blindChampionBackgroundOptions[0]
+    const updates = { "blindForm.championBackgroundImageIndex": championBackgroundImageIndex }
+    if (option.value) updates["blindForm.championBackgroundImage"] = option.value
+    this.setData(updates)
   },
 
   onBlindFontFamilyChange(event) {
