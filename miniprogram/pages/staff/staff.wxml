@@ -87,8 +87,8 @@
     <input class="input" value="{{pickupRejectReason}}" bindinput="onPickupRejectReason" placeholder="拒绝取酒原因" />
     <view wx:if="{{pickupRequests.length === 0}}" class="muted">暂无取酒申请。</view>
     <view wx:for="{{pickupRequests}}" wx:key="requestId" class="row">
-      <view class="row-title">{{item.requestId}}</view>
-      <view class="muted">{{item.statusText}} · 数量 {{item.quantity}}</view>
+      <view class="row-title">{{item.userPhone}} · {{item.productName}}</view>
+      <view class="muted">{{item.statusText}} · 申请 {{item.quantity}} · 存酒余量 {{item.storageQuantity}} · {{item.requestId}}</view>
       <view wx:if="{{item.status === 'pending'}}" class="btn-row">
         <button size="mini" class="primary" data-id="{{item.requestId}}" bindtap="confirmPickup">确认取酒</button>
         <button size="mini" class="secondary" data-id="{{item.requestId}}" bindtap="rejectPickup">拒绝</button>

@@ -111,7 +111,13 @@ Page({
   async loadPickupRequests() {
     const data = await request("/api/admin/customer-storage")
     this.setData({
-      pickupRequests: data.pickupRequests.map((item) => ({ ...item, statusText: statusText(item.status) }))
+      pickupRequests: data.pickupRequests.map((item) => ({
+        ...item,
+        statusText: statusText(item.status),
+        productName: item.product ? item.product.name : "未知商品",
+        userPhone: item.user ? item.user.phone : item.userId,
+        storageQuantity: item.storage ? item.storage.quantity : 0
+      }))
     })
   },
 

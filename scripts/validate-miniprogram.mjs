@@ -115,6 +115,7 @@ assert(staffJs.includes("/api/staff/employees/") && staffJs.includes("/order-qr"
 assert(staffJs.includes("showOrderQr") && staffWxml.includes("orderQrPayload"), "staff page displays employee order QR payload");
 assert(staffJs.includes("orderQrImageUrl") && staffWxml.includes("qr-image"), "staff page displays employee order QR image");
 assert(staffJs.includes("/confirm"), "staff page calls pickup confirm API");
+assert(staffJs.includes("productName") && staffJs.includes("userPhone") && staffJs.includes("storageQuantity") && staffWxml.includes("存酒余量"), "staff page displays pickup request customer product context");
 assert(staffJs.includes("pickupRejectReason") && staffJs.includes("onPickupRejectReason") && staffWxml.includes("拒绝取酒原因") && !staffJs.includes("员工端拒绝取酒"), "staff page supports real pickup rejection reason");
 assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adjust API");
 assert(staffJs.includes("pointPhone") && staffWxml.includes("客户手机号") && staffWxml.includes("调整客户积分") && !staffWxml.includes("调整示例客户积分"), "staff page adjusts customer points by phone");

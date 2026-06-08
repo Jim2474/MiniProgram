@@ -182,6 +182,7 @@ async function main() {
     const customerStorageRecords = await request(baseUrl, "/api/storage-records?userId=user_demo");
     assert(customerStorageRecords.ledgers.some((ledger) => ledger.actionType === "from_order") && customerStorageRecords.ledgers.some((ledger) => ledger.actionType === "pickup_confirm"), "客户可查询历史存取酒流水");
     assert(customerStorageRecords.pickupRequests.some((request) => request.status === "completed"), "客户可查询历史取酒申请状态");
+    assert(customerStorageRecords.pickupRequests.some((request) => request.product?.skuId === "sku_whisky" && request.user?.userId === "user_demo" && request.storage?.storageId === transfer.storage.storageId), "取酒申请返回客户、商品和存酒上下文");
     const multiStorage = await request(baseUrl, "/api/staff/storage", {
       method: "POST",
       body: { operatorId: "emp_anna", customerName: "王先生", phone: "13800000000", skuId: "sku_bud", quantity: 3, agreementAccepted: true },

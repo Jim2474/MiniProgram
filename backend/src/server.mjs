@@ -1110,6 +1110,18 @@ function publicStorageLedger(store, ledger) {
   };
 }
 
+function publicPickupRequest(store, request) {
+  const storage = store.data.customerStorage.find((item) => item.storageId === request.storageId) || null;
+  const user = store.data.users.find((item) => item.userId === request.userId) || null;
+  return {
+    ...request,
+    storage,
+    user,
+    product: storage ? store.data.products.find((sku) => sku.skuId === storage.skuId) || null : null,
+    handledByEmployee: request.handledBy ? publicEmployee(store.data.employees.find((employee) => employee.employeeId === request.handledBy)) : null,
+  };
+}
+
 function publicEmployee(employee) {
   if (!employee) return null;
   const { passwordHash: _passwordHash, resetPassword: _resetPassword, ...safe } = employee;
@@ -1816,7 +1828,7 @@ function createRouter(store) {
       .map((ledger) => publicStorageLedger(store, ledger));
     const pickupRequests = store.data.storagePickupRequests
       .filter((request) => request.userId === userId)
-      .map((request) => ({ ...request, storage: store.data.customerStorage.find((storage) => storage.storageId === request.storageId) || null }));
+      .map((request) => publicPickupRequest(store, request));
     return { ledgers, pickupRequests };
   });
 
@@ -2268,7 +2280,7 @@ function createRouter(store) {
   });
   add("GET", "/api/admin/customer-storage", async () => ({
     storage: store.data.customerStorage.map((item) => ({ ...item, user: store.data.users.find((user) => user.userId === item.userId), product: store.getSku(item.skuId) })),
-    pickupRequests: store.data.storagePickupRequests,
+    pickupRequests: store.data.storagePickupRequests.map((request) => publicPickupRequest(store, request)),
   }));
   add("GET", "/api/admin/storage-ledgers", async (_body, _params, query) => {
     let ledgers = store.data.customerStorageLedgers;
