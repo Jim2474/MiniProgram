@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const rootDir = resolve(__dirname, "..");
-const publicDir = join(rootDir, "public");
+const publicDir = resolve(rootDir, "..", "legacy-web", "public");
 const dataDir = join(rootDir, "data");
 const defaultDataFile = join(dataDir, "store.json");
 
@@ -59,6 +59,13 @@ function seedData() {
       orderTimeoutMinutes: 15,
       staffPointLimit: 200,
       storageAgreement: "客户确认酒水寄存在本店，需在有效期内申请取酒；过期后由管理员人工处理。",
+      pointsVisible: true,
+      checkinEnabled: true,
+      checkinPoints: 10,
+      pointExpireDays: 365,
+      couponExchangePoints: 100,
+      supportPhone: "021-88886666",
+      location: { latitude: 31.2304, longitude: 121.4737, address: "上海市静安区示例路 88 号" },
     },
     merchants: [{ merchantId, name: "河岸德扑酒馆", status: "active", createdAt }],
     stores: [
@@ -82,6 +89,8 @@ function seedData() {
         avatar: "",
         phone: "13800000000",
         pointsBalance: 120,
+        balance: 0,
+        memberLevel: "普通会员",
         createdAt,
       },
     ],
@@ -236,6 +245,80 @@ function seedData() {
         status: "reserved",
       },
     ],
+    tableTypes: [
+      { typeId: "type_normal", name: "普通卡座", capacity: 9, status: "active" },
+      { typeId: "type_vip", name: "VIP卡座", capacity: 9, status: "active" },
+    ],
+    seats: Array.from({ length: 9 }, (_, index) => ({
+      seatNo: index + 1,
+      status: "available",
+      userId: null,
+      eliminated: false,
+      updatedAt: createdAt,
+    })),
+    rechargeConfigs: [
+      { configId: "recharge_500", amount: 500, giftAmount: 50, status: "active", createdAt },
+      { configId: "recharge_1000", amount: 1000, giftAmount: 120, status: "active", createdAt },
+    ],
+    rechargeRecords: [],
+    coupons: [
+      {
+        couponId: "coupon_demo",
+        userId: "user_demo",
+        title: "威士忌取酒券",
+        skuId: "sku_whisky",
+        quantity: 1,
+        status: "available",
+        createdAt,
+      },
+    ],
+    couponRecords: [],
+    checkins: [],
+    lotterySettings: { enabled: true, dailyLimit: 3, cooldownMinutes: 0, costPoints: 20 },
+    lotteryPrizes: [
+      { prizeId: "prize_beer", name: "百威啤酒 1 瓶", winRate: 50, status: "active", createdAt },
+      { prizeId: "prize_points", name: "积分 30", winRate: 50, status: "active", createdAt },
+    ],
+    lotteryRecords: [],
+    memberLevels: [
+      { levelId: "level_normal", name: "普通会员", minPoints: 0, status: "active" },
+      { levelId: "level_gold", name: "黄金会员", minPoints: 500, status: "active" },
+      { levelId: "level_vip", name: "VIP会员", minPoints: 1500, status: "active" },
+    ],
+    blindSettings: {
+      theme: "classic",
+      backgroundImage: "",
+      logo: "",
+      fontColor: "#FFFFFF",
+      timerColor: "#F8D66D",
+      breakColor: "#7DD3FC",
+      dialogColor: "#15221B",
+      fontSize: 48,
+      fontFamily: "system",
+      titleMap: {
+        level: "LEVEL",
+        playerLeft: "PLAYER LEFT",
+        entrants: "ENTRANTS",
+        prizePlayer: "PRIZE PLAYER",
+        blinds: "BLINDS",
+        ante: "ANTE",
+        nextLevel: "NEXT LEVEL",
+        nextBreak: "NEXT BREAK IN",
+        avgChips: "AVG CHIPS",
+        totalChips: "TOTAL CHIPS",
+      },
+      showBeijingTime: true,
+      showRegistrationCountdown: true,
+      autoStartAfterCountdown: false,
+      registrationStatus: "accepting",
+      championBackgroundImage: "",
+      voiceType: "default",
+      voiceStartText: "开始提示音",
+      voiceEndText: "结束提示音",
+      voiceTerms: { smallBlind: "小盲", bigBlind: "大盲", ante: "前注" },
+      entrants: 9,
+      totalBuyins: 0,
+    },
     blindGames: [],
     operationLogs: [],
   };
@@ -423,6 +506,23 @@ function dashboard(store) {
   };
 }
 
+function calculateMemberLevel(store, user) {
+  const levels = [...store.data.memberLevels].filter((level) => level.status === "active").sort((a, b) => b.minPoints - a.minPoints);
+  return levels.find((level) => user.pointsBalance >= level.minPoints) || levels[levels.length - 1] || null;
+}
+
+function monthKey(dateValue = new Date()) {
+  return new Date(dateValue).toISOString().slice(0, 7);
+}
+
+function publicCoupon(store, coupon) {
+  return {
+    ...coupon,
+    user: store.data.users.find((user) => user.userId === coupon.userId),
+    product: coupon.skuId ? store.data.products.find((sku) => sku.skuId === coupon.skuId) : null,
+  };
+}
+
 async function readBody(req) {
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);
@@ -437,7 +537,12 @@ async function readBody(req) {
 }
 
 function sendJson(res, status, value) {
-  res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
+  res.writeHead(status, {
+    "content-type": "application/json; charset=utf-8",
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET,POST,PATCH,DELETE,OPTIONS",
+    "access-control-allow-headers": "content-type",
+  });
   res.end(JSON.stringify(value));
 }
 
@@ -481,6 +586,7 @@ function createRouter(store) {
     store: store.data.stores[0],
     user: store.getUser(),
     employees: store.data.employees,
+    seats: store.data.seats,
   }));
 
   add("POST", "/api/wechat/login", async (body) => {
@@ -1013,6 +1119,290 @@ function createRouter(store) {
 
   add("GET", "/api/staff/blind-games", async () => ({ games: store.data.blindGames }));
 
+  add("GET", "/api/user/profile", async (_body, _params, query) => {
+    const user = store.getUser(query.get("userId") || "user_demo");
+    const level = calculateMemberLevel(store, user);
+    user.memberLevel = level?.name || user.memberLevel || "普通会员";
+    return {
+      user,
+      level,
+      pointsVisible: store.data.settings.pointsVisible,
+      orderCount: store.data.orders.filter((order) => order.userId === user.userId).length,
+      storageCount: store.data.customerStorage.filter((item) => item.userId === user.userId && item.quantity > 0).length,
+      couponCount: store.data.coupons.filter((item) => item.userId === user.userId && item.status === "available").length,
+    };
+  });
+
+  add("GET", "/api/leaderboard/points", async (_body, _params, query) => {
+    const userId = query.get("userId") || "user_demo";
+    const ranked = [...store.data.users]
+      .sort((a, b) => b.pointsBalance - a.pointsBalance)
+      .map((user, index) => ({ rank: index + 1, userId: user.userId, nickname: user.nickname, phone: user.phone, pointsBalance: user.pointsBalance }));
+    return { top10: ranked.slice(0, 10), mine: ranked.find((item) => item.userId === userId) || null };
+  });
+
+  add("GET", "/api/checkin", async (_body, _params, query) => {
+    const userId = query.get("userId") || "user_demo";
+    return { records: store.data.checkins.filter((item) => item.userId === userId), settings: { enabled: store.data.settings.checkinEnabled, points: store.data.settings.checkinPoints } };
+  });
+
+  add("POST", "/api/checkin", async (body) => {
+    if (!store.data.settings.checkinEnabled) throw new HttpError(400, "签到未开启");
+    const user = store.getUser(body.userId || "user_demo");
+    const today = dayKey();
+    if (store.data.checkins.some((item) => item.userId === user.userId && item.date === today)) {
+      throw new HttpError(409, "今日已签到");
+    }
+    const record = { checkinId: newId("checkin"), userId: user.userId, date: today, points: store.data.settings.checkinPoints, createdAt: now() };
+    store.data.checkins.unshift(record);
+    store.createPointsLedger(user, record.points, "签到送积分", "checkin", record.checkinId, "system");
+    store.log(user.userId, "customer", "checkin", "Checkin", record.checkinId, null, record, "日历签到");
+    await store.save();
+    return { record, user };
+  });
+
+  add("GET", "/api/coupons", async (_body, _params, query) => {
+    const userId = query.get("userId") || "user_demo";
+    return { coupons: store.data.coupons.filter((coupon) => coupon.userId === userId).map((coupon) => publicCoupon(store, coupon)), records: store.data.couponRecords.filter((record) => record.userId === userId) };
+  });
+
+  add("POST", "/api/coupons/:couponId/redeem-request", async (body, params) => {
+    const coupon = store.data.coupons.find((item) => item.couponId === params.couponId);
+    if (!coupon) throw new HttpError(404, "酒水券不存在");
+    if (coupon.status !== "available") throw new HttpError(400, "酒水券不可兑换");
+    const before = deepClone(coupon);
+    coupon.status = "pending";
+    const record = { recordId: newId("couponRecord"), couponId: coupon.couponId, userId: coupon.userId, action: "redeem_request", status: "pending", operatorId: body.operatorId || coupon.userId, createdAt: now() };
+    store.data.couponRecords.unshift(record);
+    store.log(coupon.userId, "customer", "coupon_redeem_request", "Coupon", coupon.couponId, before, coupon, "客户申请兑换酒水券");
+    await store.save();
+    return { coupon: publicCoupon(store, coupon), record };
+  });
+
+  add("POST", "/api/staff/coupons/:couponId/confirm", async (body, params) => {
+    const employee = store.getEmployee(body.operatorId || "emp_anna");
+    const coupon = store.data.coupons.find((item) => item.couponId === params.couponId);
+    if (!coupon) throw new HttpError(404, "酒水券不存在");
+    if (coupon.status !== "pending") throw new HttpError(400, "酒水券不是待确认状态");
+    const before = deepClone(coupon);
+    coupon.status = "completed";
+    coupon.completedAt = now();
+    const record = { recordId: newId("couponRecord"), couponId: coupon.couponId, userId: coupon.userId, action: "redeem_confirm", status: "completed", operatorId: employee.employeeId, createdAt: now() };
+    store.data.couponRecords.unshift(record);
+    store.log(employee.employeeId, employee.role, "coupon_confirm", "Coupon", coupon.couponId, before, coupon, "员工确认酒水券兑换");
+    await store.save();
+    return { coupon: publicCoupon(store, coupon), record };
+  });
+
+  add("GET", "/api/recharge-records", async (_body, _params, query) => {
+    const userId = query.get("userId") || "user_demo";
+    return { records: store.data.rechargeRecords.filter((record) => record.userId === userId), configs: store.data.rechargeConfigs.filter((config) => config.status === "active") };
+  });
+
+  add("POST", "/api/recharge", async (body) => {
+    const user = store.getUser(body.userId || "user_demo");
+    const config = body.configId ? store.data.rechargeConfigs.find((item) => item.configId === body.configId) : null;
+    const amount = Number(body.amount || config?.amount || 0);
+    const giftAmount = Number(body.giftAmount ?? config?.giftAmount ?? 0);
+    if (amount <= 0) throw new HttpError(400, "充值金额必须大于 0");
+    const before = deepClone(user);
+    user.balance = Number(user.balance || 0) + amount + giftAmount;
+    const record = { recordId: newId("recharge"), userId: user.userId, amount, giftAmount, balanceAfter: user.balance, payMethod: "mock_wechat", status: "paid", createdAt: now() };
+    store.data.rechargeRecords.unshift(record);
+    store.log(user.userId, "customer", "recharge", "User", user.userId, before, user, `充值${amount}赠送${giftAmount}`);
+    await store.save();
+    return { user, record };
+  });
+
+  add("GET", "/api/store/location", async () => ({ location: store.data.settings.location, store: store.data.stores[0] }));
+  add("GET", "/api/support/contact", async () => ({ phone: store.data.settings.supportPhone }));
+  add("POST", "/api/scan/employee", async (body) => ({ employee: store.getEmployee(body.employeeId || "emp_anna"), scene: "employee_qr" }));
+
+  add("POST", "/api/lottery/draw", async (body) => {
+    if (!store.data.lotterySettings.enabled) throw new HttpError(400, "抽奖未开启");
+    const user = store.getUser(body.userId || "user_demo");
+    const today = dayKey();
+    const todayCount = store.data.lotteryRecords.filter((record) => record.userId === user.userId && record.createdAt.startsWith(today)).length;
+    if (todayCount >= store.data.lotterySettings.dailyLimit) throw new HttpError(429, "今日抽奖次数已用完");
+    const cost = store.data.lotterySettings.costPoints;
+    if (user.pointsBalance < cost) throw new HttpError(400, "积分不足");
+    const prizes = store.data.lotteryPrizes.filter((prize) => prize.status === "active");
+    const prize = prizes[store.data.lotteryRecords.length % prizes.length];
+    store.createPointsLedger(user, -cost, "积分抽奖消耗", "lottery", prize.prizeId, "system");
+    const record = { recordId: newId("lottery"), userId: user.userId, prizeId: prize.prizeId, prizeName: prize.name, costPoints: cost, status: "won", createdAt: now() };
+    store.data.lotteryRecords.unshift(record);
+    store.log(user.userId, "customer", "lottery_draw", "LotteryRecord", record.recordId, null, record, "积分抽奖");
+    await store.save();
+    return { record, prize, user };
+  });
+
+  add("GET", "/api/lottery/records", async (_body, _params, query) => {
+    const userId = query.get("userId") || "user_demo";
+    return { records: store.data.lotteryRecords.filter((record) => record.userId === userId), settings: store.data.lotterySettings, prizes: store.data.lotteryPrizes };
+  });
+
+  add("POST", "/api/staff/password", async (body) => {
+    const employee = store.getEmployee(body.operatorId || "emp_anna");
+    const before = deepClone(employee);
+    employee.passwordHash = body.newPassword || "demo";
+    employee.passwordChangedAt = now();
+    store.log(employee.employeeId, employee.role, "change_password", "Employee", employee.employeeId, before, employee, "员工修改密码");
+    await store.save();
+    return { employee };
+  });
+
+  add("POST", "/api/staff/verify-code", async (body) => {
+    const user = store.getUser(body.userId || "user_demo");
+    return { user, pointsBalance: user.pointsBalance, storage: store.data.customerStorage.filter((item) => item.userId === user.userId), coupons: store.data.coupons.filter((item) => item.userId === user.userId) };
+  });
+
+  add("POST", "/api/staff/seats/:seatNo/sit", async (body, params) => {
+    const seatNo = Number(params.seatNo);
+    const seat = store.data.seats.find((item) => item.seatNo === seatNo);
+    if (!seat) throw new HttpError(404, "座位不存在");
+    const before = deepClone(seat);
+    seat.status = "occupied";
+    seat.userId = body.userId || "user_demo";
+    seat.eliminated = false;
+    seat.updatedAt = now();
+    store.log(body.operatorId || "emp_anna", "staff", "seat_sit", "Seat", String(seatNo), before, seat, "确认入座");
+    await store.save();
+    return { seat };
+  });
+
+  add("POST", "/api/staff/seats/:seatNo/eliminate", async (body, params) => {
+    const seat = store.data.seats.find((item) => item.seatNo === Number(params.seatNo));
+    if (!seat) throw new HttpError(404, "座位不存在");
+    const before = deepClone(seat);
+    seat.status = "eliminated";
+    seat.eliminated = true;
+    seat.updatedAt = now();
+    store.log(body.operatorId || "emp_anna", "staff", "seat_eliminate", "Seat", String(seat.seatNo), before, seat, "淘汰座位");
+    await store.save();
+    return { seat };
+  });
+
+  add("POST", "/api/staff/seats/:seatNo/restore", async (body, params) => {
+    const seat = store.data.seats.find((item) => item.seatNo === Number(params.seatNo));
+    if (!seat) throw new HttpError(404, "座位不存在");
+    const before = deepClone(seat);
+    seat.status = seat.userId ? "occupied" : "available";
+    seat.eliminated = false;
+    seat.updatedAt = now();
+    store.log(body.operatorId || "emp_anna", "staff", "seat_restore", "Seat", String(seat.seatNo), before, seat, "恢复座位");
+    await store.save();
+    return { seat };
+  });
+
+  add("GET", "/api/staff/performance/monthly", async (_body, _params, query) => {
+    const employeeId = query.get("employeeId") || "emp_anna";
+    const months = Number(query.get("months") || 6);
+    const paid = store.data.orders.filter((order) => order.employeeId === employeeId && order.payStatus === "paid");
+    const rows = [];
+    for (let index = 0; index < months; index += 1) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - index);
+      const key = monthKey(date);
+      const orders = paid.filter((order) => monthKey(order.paidAt || order.createdAt) === key);
+      rows.push({ month: key, orderCount: orders.length, sales: orders.reduce((sum, order) => sum + order.amount, 0) });
+    }
+    return { employee: store.getEmployee(employeeId), rows };
+  });
+
+  add("GET", "/api/admin/finance/overview", async () => {
+    const paid = store.data.orders.filter((order) => order.payStatus === "paid");
+    const today = dayKey();
+    const currentMonth = monthKey();
+    return {
+      todayRevenue: paid.filter((order) => order.paidAt?.startsWith(today)).reduce((sum, order) => sum + order.amount, 0),
+      monthRevenue: paid.filter((order) => monthKey(order.paidAt || order.createdAt) === currentMonth).reduce((sum, order) => sum + order.amount, 0),
+      rechargeRevenue: store.data.rechargeRecords.reduce((sum, record) => sum + record.amount, 0),
+      trend: Array.from({ length: 7 }, (_, index) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (6 - index));
+        const key = date.toISOString().slice(0, 10);
+        return { date: key, revenue: paid.filter((order) => order.paidAt?.startsWith(key)).reduce((sum, order) => sum + order.amount, 0) };
+      }),
+    };
+  });
+
+  add("GET", "/api/admin/business-details", async () => ({ details: store.data.orders.filter((order) => order.payStatus === "paid").map((order) => publicOrder(store, order)).reverse() }));
+  add("GET", "/api/admin/recharge-configs", async () => ({ configs: store.data.rechargeConfigs }));
+  add("POST", "/api/admin/recharge-configs", async (body) => {
+    const config = { configId: newId("rechargeConfig"), amount: Number(body.amount), giftAmount: Number(body.giftAmount || 0), status: body.status || "active", createdAt: now() };
+    if (config.amount <= 0) throw new HttpError(400, "充值金额必须大于 0");
+    store.data.rechargeConfigs.unshift(config);
+    store.log(body.operatorId || "emp_admin", "admin", "create_recharge_config", "RechargeConfig", config.configId, null, config, "新增充值配置");
+    await store.save();
+    return { config };
+  });
+  add("GET", "/api/admin/recharge-records", async () => ({ records: store.data.rechargeRecords }));
+  add("GET", "/api/admin/member-levels", async () => ({ levels: store.data.memberLevels }));
+  add("POST", "/api/admin/member-levels", async (body) => {
+    const level = { levelId: newId("level"), name: body.name, minPoints: Number(body.minPoints || 0), status: body.status || "active" };
+    store.data.memberLevels.push(level);
+    await store.save();
+    return { level };
+  });
+  add("GET", "/api/admin/lottery/overview", async () => {
+    const month = monthKey();
+    const records = store.data.lotteryRecords;
+    return {
+      totalDraws: records.length,
+      monthDraws: records.filter((record) => monthKey(record.createdAt) === month).length,
+      wins: records.filter((record) => record.status === "won").length,
+      todayCostPoints: records.filter((record) => record.createdAt.startsWith(dayKey())).reduce((sum, record) => sum + record.costPoints, 0),
+      records,
+    };
+  });
+  add("GET", "/api/admin/lottery/prizes", async () => ({ prizes: store.data.lotteryPrizes, settings: store.data.lotterySettings }));
+  add("POST", "/api/admin/lottery/prizes", async (body) => {
+    const prize = { prizeId: newId("prize"), name: body.name, winRate: Number(body.winRate || 0), status: body.status || "active", createdAt: now() };
+    store.data.lotteryPrizes.push(prize);
+    await store.save();
+    return { prize };
+  });
+  add("PATCH", "/api/admin/lottery/settings", async (body) => {
+    store.data.lotterySettings = { ...store.data.lotterySettings, ...body };
+    await store.save();
+    return { settings: store.data.lotterySettings };
+  });
+  add("GET", "/api/admin/table-types", async () => ({ tableTypes: store.data.tableTypes }));
+  add("POST", "/api/admin/table-types", async (body) => {
+    const type = { typeId: newId("tableType"), name: body.name, capacity: Number(body.capacity || 1), status: body.status || "active" };
+    store.data.tableTypes.push(type);
+    await store.save();
+    return { type };
+  });
+  add("POST", "/api/admin/employees", async (body) => {
+    const employee = { employeeId: newId("emp"), merchantId: store.data.settings.merchantId, storeId: store.data.settings.storeId, name: body.name, phone: body.phone, role: body.role || "staff", loginAccount: body.loginAccount || body.phone, passwordHash: body.password || "demo", status: "active", createdAt: now() };
+    store.data.employees.push(employee);
+    store.log(body.operatorId || "emp_admin", "admin", "create_employee", "Employee", employee.employeeId, null, employee, "新增工作人员");
+    await store.save();
+    return { employee };
+  });
+  add("PATCH", "/api/admin/employees/:employeeId", async (body, params) => {
+    const employee = store.getEmployee(params.employeeId);
+    const before = deepClone(employee);
+    Object.assign(employee, body);
+    if (body.resetPassword) employee.passwordHash = body.resetPassword;
+    store.log(body.operatorId || "emp_admin", "admin", "update_employee", "Employee", employee.employeeId, before, employee, "修改工作人员");
+    await store.save();
+    return { employee };
+  });
+  add("GET", "/api/admin/blind-settings", async () => ({ settings: store.data.blindSettings }));
+  add("PATCH", "/api/admin/blind-settings", async (body) => {
+    store.data.blindSettings = { ...store.data.blindSettings, ...body };
+    await store.save();
+    return { settings: store.data.blindSettings };
+  });
+  add("GET", "/api/admin/system-settings", async () => ({ settings: store.data.settings }));
+  add("PATCH", "/api/admin/system-settings", async (body) => {
+    store.data.settings = { ...store.data.settings, ...body };
+    await store.save();
+    return { settings: store.data.settings };
+  });
+
   return async function route(req, res) {
     const { path, params: query } = parseUrl(req);
     for (const route of routes) {
@@ -1051,6 +1441,10 @@ export async function createApp(options = {}) {
   const router = createRouter(store);
   const server = createServer(async (req, res) => {
     try {
+      if (req.method === "OPTIONS") {
+        sendJson(res, 200, { ok: true });
+        return;
+      }
       if (req.url?.startsWith("/api/")) {
         const handled = await router(req, res);
         if (!handled) sendJson(res, 404, { error: "接口不存在" });
@@ -1069,6 +1463,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 3000);
   const { server } = await createApp();
   server.listen(port, () => {
-    console.log(`MiniProgram V1 prototype running at http://localhost:${port}`);
+    console.log(`MiniProgram backend running at http://localhost:${port}`);
   });
 }

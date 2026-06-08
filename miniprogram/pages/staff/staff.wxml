@@ -1,0 +1,103 @@
+<view class="page">
+  <view class="hero">
+    <view class="eyebrow">STAFF DESK</view>
+    <view class="title">员工二维码、业绩与存取酒</view>
+    <view class="subtitle">员工订单归属、客户存酒处理和积分调整都写入操作日志。</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">当前员工</view>
+    <picker range="{{employees}}" range-key="name" value="{{employeeIndex}}" bindchange="onEmployeeChange">
+      <view class="input">{{selectedEmployee.name}} · {{selectedEmployee.role}}</view>
+    </picker>
+    <view class="row">
+      <view class="row-title">专属二维码参数</view>
+      <view class="muted">employeeId={{selectedEmployee.employeeId}}</view>
+    </view>
+  </view>
+
+  <view class="metrics">
+    <view class="metric">
+      <view class="metric-value">{{salesText}}</view>
+      <view class="metric-label">个人销售额</view>
+    </view>
+    <view class="metric">
+      <view class="metric-value">{{orders.length}}</view>
+      <view class="metric-label">个人订单数</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">个人订单</view>
+    <view wx:if="{{orders.length === 0}}" class="muted">暂无订单。</view>
+    <view wx:for="{{orders}}" wx:key="orderId" class="row">
+      <view class="row-title">{{item.orderId}}</view>
+      <view class="muted">{{item.statusText}} · {{item.amountText}}</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">新增客户存酒</view>
+    <input class="input" value="{{storagePhone}}" bindinput="onStoragePhone" placeholder="客户手机号" />
+    <picker range="{{products}}" range-key="name" value="{{storageSkuIndex}}" bindchange="onStorageSkuChange">
+      <view class="input">{{selectedStorageSku.name}}</view>
+    </picker>
+    <input class="input" type="number" value="{{storageQty}}" bindinput="onStorageQty" placeholder="数量" />
+    <button class="primary" bindtap="addStorage">勾选协议并新增存酒</button>
+  </view>
+
+  <view class="section">
+    <view class="section-title">取酒申请</view>
+    <view wx:if="{{pickupRequests.length === 0}}" class="muted">暂无取酒申请。</view>
+    <view wx:for="{{pickupRequests}}" wx:key="requestId" class="row">
+      <view class="row-title">{{item.requestId}}</view>
+      <view class="muted">{{item.statusText}} · 数量 {{item.quantity}}</view>
+      <view wx:if="{{item.status === 'pending'}}" class="btn-row">
+        <button size="mini" class="primary" data-id="{{item.requestId}}" bindtap="confirmPickup">确认取酒</button>
+        <button size="mini" class="secondary" data-id="{{item.requestId}}" bindtap="rejectPickup">拒绝</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">积分调整</view>
+    <input class="input" type="number" value="{{pointAmount}}" bindinput="onPointAmount" placeholder="积分变动" />
+    <input class="input" value="{{pointReason}}" bindinput="onPointReason" placeholder="调整原因" />
+    <button class="secondary" bindtap="adjustPoints">调整示例客户积分</button>
+  </view>
+
+  <view class="section">
+    <view class="section-title">核销与酒水券</view>
+    <button class="primary" bindtap="verifyCode">扫码核销模拟</button>
+    <view wx:if="{{verifyResult}}" class="row">
+      <view class="row-title">{{verifyResult.user.phone}}</view>
+      <view class="muted">积分 {{verifyResult.pointsBalance}} · 存酒 {{verifyResult.storage.length}} · 券 {{verifyResult.coupons.length}}</view>
+    </view>
+    <view wx:for="{{couponConfirmList}}" wx:key="couponId" class="row">
+      <view class="row-title">{{item.title}}</view>
+      <view class="muted">{{item.statusText}}</view>
+      <button wx:if="{{item.status === 'pending'}}" size="mini" class="primary" data-id="{{item.couponId}}" bindtap="confirmCoupon">确认酒水券</button>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">座位管理</view>
+    <view class="seat-grid">
+      <view wx:for="{{seats}}" wx:key="seatNo" class="seat">
+        <view class="row-title">{{item.seatNo}}号位</view>
+        <view class="muted">{{item.statusText}}</view>
+        <view class="btn-row">
+          <button size="mini" data-seat="{{item.seatNo}}" bindtap="sitSeat">入座</button>
+          <button size="mini" data-seat="{{item.seatNo}}" bindtap="eliminateSeat">淘汰</button>
+          <button size="mini" data-seat="{{item.seatNo}}" bindtap="restoreSeat">恢复</button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">修改密码</view>
+    <input class="input" value="{{newPassword}}" bindinput="onNewPassword" placeholder="新密码" />
+    <button class="secondary" bindtap="changePassword">修改密码</button>
+  </view>
+</view>

@@ -1,0 +1,40 @@
+{
+  "pages": [
+    "pages/customer/customer",
+    "pages/staff/staff",
+    "pages/admin/admin",
+    "pages/dealer/dealer"
+  ],
+  "window": {
+    "navigationBarTitleText": "河岸德扑酒馆",
+    "navigationBarBackgroundColor": "#15221b",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f7f8f4"
+  },
+  "tabBar": {
+    "color": "#647067",
+    "selectedColor": "#0f7b59",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/customer/customer",
+        "text": "客户点单"
+      },
+      {
+        "pagePath": "pages/staff/staff",
+        "text": "员工端"
+      },
+      {
+        "pagePath": "pages/admin/admin",
+        "text": "商家后台"
+      },
+      {
+        "pagePath": "pages/dealer/dealer",
+        "text": "荷官升盲"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

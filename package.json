@@ -1,13 +1,12 @@
 {
-  "name": "mini-program-prd-v1",
-  "version": "1.0.0",
-  "description": "德扑棋牌门店小程序 V1 可运行原型",
+  "name": "mini-program-v2-workspace",
+  "version": "2.0.0",
+  "description": "德扑棋牌门店小程序 V2：后端 API + 微信小程序前端",
   "type": "module",
   "scripts": {
-    "start": "node src/server.mjs",
-    "test": "node scripts/selftest.mjs"
-  },
-  "engines": {
-    "node": ">=18"
+    "start": "npm --prefix backend start",
+    "test": "npm --prefix backend test && node scripts/validate-miniprogram.mjs",
+    "test:backend": "npm --prefix backend test",
+    "test:miniprogram": "node scripts/validate-miniprogram.mjs"
   }
 }

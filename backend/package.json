@@ -1,0 +1,13 @@
+{
+  "name": "mini-program-backend",
+  "version": "2.0.0",
+  "description": "德扑棋牌门店小程序 V2 后端 API",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node scripts/selftest.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

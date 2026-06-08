@@ -1,5 +1,9 @@
 node_modules/
 data/store.json
 data/test-store.json
+backend/data/store.json
+backend/data/test-store.json
 *.log
 .env
+project.private.config.json
+miniprogram/project.private.config.json

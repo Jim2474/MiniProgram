@@ -1,0 +1,15 @@
+.input {
+  width: auto;
+}
+
+.seat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+}
+
+.seat {
+  border: 1rpx solid #d8ded6;
+  border-radius: 12rpx;
+  padding: 12rpx;
+}

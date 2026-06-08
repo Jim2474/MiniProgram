@@ -139,6 +139,79 @@ async function main() {
     const logs = await request(baseUrl, "/api/admin/operation-logs");
     assert(logs.logs.length >= 8, "关键业务操作写入操作日志");
 
+    const profile = await request(baseUrl, "/api/user/profile?userId=user_demo");
+    assert(profile.user.phone === "13800000000" && profile.level.name, "个人中心聚合会员与等级");
+
+    const leaderboard = await request(baseUrl, "/api/leaderboard/points?userId=user_demo");
+    assert(leaderboard.top10.length >= 1 && leaderboard.mine.userId === "user_demo", "积分排行榜返回Top10和个人排行");
+
+    const checkin = await request(baseUrl, "/api/checkin", { method: "POST", body: { userId: "user_demo" } });
+    assert(checkin.record.points === 10, "签到送积分");
+    let duplicateCheckin = "";
+    try {
+      await request(baseUrl, "/api/checkin", { method: "POST", body: { userId: "user_demo" } });
+    } catch (error) {
+      duplicateCheckin = error.message;
+    }
+    assert(duplicateCheckin.includes("今日已签到"), "同日重复签到被拦截");
+
+    const rechargeConfig = await request(baseUrl, "/api/admin/recharge-configs", { method: "POST", body: { amount: 300, giftAmount: 30 } });
+    const recharge = await request(baseUrl, "/api/recharge", { method: "POST", body: { userId: "user_demo", configId: rechargeConfig.config.configId } });
+    assert(recharge.user.balance === 330, "客户充值后余额增加含赠送金额");
+    const rechargeRecords = await request(baseUrl, "/api/recharge-records?userId=user_demo");
+    assert(rechargeRecords.records.length === 1, "充值记录可查询");
+
+    const couponsBefore = await request(baseUrl, "/api/coupons?userId=user_demo");
+    const coupon = couponsBefore.coupons.find((item) => item.status === "available");
+    const couponRequest = await request(baseUrl, `/api/coupons/${coupon.couponId}/redeem-request`, { method: "POST", body: { userId: "user_demo" } });
+    assert(couponRequest.coupon.status === "pending", "客户可发起酒水券兑换");
+    const couponConfirm = await request(baseUrl, `/api/staff/coupons/${coupon.couponId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
+    assert(couponConfirm.coupon.status === "completed", "员工可确认酒水券兑换");
+
+    const lottery = await request(baseUrl, "/api/lottery/draw", { method: "POST", body: { userId: "user_demo" } });
+    assert(lottery.record.status === "won" && lottery.record.costPoints === 20, "积分抽奖扣积分并生成中奖记录");
+    const lotteryOverview = await request(baseUrl, "/api/admin/lottery/overview");
+    assert(lotteryOverview.totalDraws >= 1 && lotteryOverview.todayCostPoints >= 20, "后台抽奖概况更新");
+
+    const finance = await request(baseUrl, "/api/admin/finance/overview");
+    assert(typeof finance.todayRevenue === "number" && Array.isArray(finance.trend), "财务概览返回营收和趋势");
+    const businessDetails = await request(baseUrl, "/api/admin/business-details");
+    assert(Array.isArray(businessDetails.details), "营业明细可查询");
+
+    const level = await request(baseUrl, "/api/admin/member-levels", { method: "POST", body: { name: "黑金会员", minPoints: 2000 } });
+    assert(level.level.name === "黑金会员", "后台可新增会员等级");
+
+    const employee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "新员工", phone: "13900009999", role: "staff" } });
+    assert(employee.employee.status === "active", "后台可新增工作人员");
+    const disabledEmployee = await request(baseUrl, `/api/admin/employees/${employee.employee.employeeId}`, { method: "PATCH", body: { status: "disabled", resetPassword: "123456" } });
+    assert(disabledEmployee.employee.status === "disabled" && disabledEmployee.employee.passwordHash === "123456", "后台可禁用员工并重置密码");
+    const password = await request(baseUrl, "/api/staff/password", { method: "POST", body: { operatorId: "emp_anna", newPassword: "new-demo" } });
+    assert(password.employee.passwordHash === "new-demo", "员工可修改密码");
+
+    const verifyCode = await request(baseUrl, "/api/staff/verify-code", { method: "POST", body: { userId: "user_demo" } });
+    assert(verifyCode.pointsBalance >= 0 && Array.isArray(verifyCode.coupons), "员工核销码可查询客户积分存酒券");
+
+    const seatSit = await request(baseUrl, "/api/staff/seats/3/sit", { method: "POST", body: { userId: "user_demo", operatorId: "emp_anna" } });
+    assert(seatSit.seat.status === "occupied", "员工可确认座位入座");
+    const seatEliminate = await request(baseUrl, "/api/staff/seats/3/eliminate", { method: "POST", body: { operatorId: "emp_anna" } });
+    assert(seatEliminate.seat.eliminated === true, "员工可淘汰座位");
+    const seatRestore = await request(baseUrl, "/api/staff/seats/3/restore", { method: "POST", body: { operatorId: "emp_anna" } });
+    assert(seatRestore.seat.eliminated === false && seatRestore.seat.status === "occupied", "员工可恢复座位");
+
+    const tableType = await request(baseUrl, "/api/admin/table-types", { method: "POST", body: { name: "超级VIP卡", capacity: 9 } });
+    assert(tableType.type.name === "超级VIP卡", "后台可新增咖位类型");
+
+    const blindSettings = await request(baseUrl, "/api/admin/blind-settings", { method: "PATCH", body: { theme: "neon", fontSize: 56, registrationStatus: "stopped" } });
+    assert(blindSettings.settings.theme === "neon" && blindSettings.settings.registrationStatus === "stopped", "后台可配置升盲样式和报名状态");
+
+    const systemSettings = await request(baseUrl, "/api/admin/system-settings", { method: "PATCH", body: { pointsVisible: false, supportPhone: "400-000-0000" } });
+    assert(systemSettings.settings.pointsVisible === false && systemSettings.settings.supportPhone === "400-000-0000", "后台可配置系统设置");
+
+    const location = await request(baseUrl, "/api/store/location");
+    assert(location.location.address.includes("上海"), "门店位置可查询");
+    const support = await request(baseUrl, "/api/support/contact");
+    assert(support.phone === "400-000-0000", "客服电话可查询");
+
     console.log(`Selftest passed: ${checks.length} checks`);
     for (const check of checks) console.log(`- ${check}`);
   } finally {

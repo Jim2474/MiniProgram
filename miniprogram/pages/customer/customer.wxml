@@ -1,0 +1,117 @@
+<view class="page">
+  <view class="hero">
+    <view class="eyebrow">CUSTOMER ORDER</view>
+    <view class="title">扫码点单与会员权益</view>
+    <view class="subtitle">选择员工代表二维码来源，支付后自动扣库存、发积分并归属业绩。</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">扫码员工</view>
+    <picker range="{{employees}}" range-key="name" value="{{employeeIndex}}" bindchange="onEmployeeChange">
+      <view class="input">{{selectedEmployee.name || '自然订单'}}</view>
+    </picker>
+  </view>
+
+  <view class="section">
+    <view class="section-title">商品</view>
+    <view wx:for="{{products}}" wx:key="skuId" class="row">
+      <view class="row-title">{{item.name}}</view>
+      <view class="muted">{{item.spec}} · {{item.description}}</view>
+      <view>
+        <text class="tag">{{item.priceText}}</text>
+        <text class="tag {{item.lowStock ? 'danger' : ''}}">库存 {{item.stockQty}}</text>
+      </view>
+      <view class="btn-row">
+        <button size="mini" class="primary" data-sku="{{item.skuId}}" bindtap="addToCart">加入购物车</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">购物车</view>
+    <view wx:if="{{cartItems.length === 0}}" class="muted">购物车为空。</view>
+    <view wx:for="{{cartItems}}" wx:key="cartItemId" class="row">
+      <view class="row-title">{{item.product.name}} x {{item.quantity}}</view>
+      <view class="muted">{{item.product.spec}} · {{item.subtotalText}}</view>
+      <button size="mini" class="secondary" data-id="{{item.cartItemId}}" bindtap="removeCartItem">删除</button>
+    </view>
+    <view class="row">
+      <view class="row-title">合计：{{cartTotalText}}</view>
+      <view class="muted">预计赠送 {{cartTotal}} 积分</view>
+    </view>
+    <view class="btn-row">
+      <button class="primary" bindtap="createOrder">创建订单</button>
+      <button class="dark" disabled="{{!currentOrder}}" bindtap="payOrder">模拟微信支付</button>
+    </view>
+    <view class="muted" wx:if="{{resultText}}">{{resultText}}</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">我的订单</view>
+    <view wx:for="{{orders}}" wx:key="orderId" class="row">
+      <view class="row-title">{{item.orderId}}</view>
+      <view class="muted">{{item.statusText}} · {{item.amountText}} · {{item.employeeName}}</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">积分与存酒</view>
+    <view class="metrics">
+      <view class="metric">
+        <view class="metric-value">{{points.balance}}</view>
+        <view class="metric-label">当前积分</view>
+      </view>
+      <view class="metric">
+        <view class="metric-value">{{storage.length}}</view>
+        <view class="metric-label">存酒记录</view>
+      </view>
+    </view>
+    <view wx:for="{{storage}}" wx:key="storageId" class="row">
+      <view class="row-title">{{item.product.name}} · {{item.quantity}}{{item.product.unit}}</view>
+      <view class="muted">{{item.statusText}} · 到期 {{item.expireDate}}</view>
+      <button wx:if="{{item.status === 'available' && item.quantity > 0}}" size="mini" class="primary" data-id="{{item.storageId}}" bindtap="requestPickup">申请取酒</button>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">会员营销</view>
+    <view class="metrics">
+      <view class="metric">
+        <view class="metric-value">{{profile.levelName}}</view>
+        <view class="metric-label">会员等级</view>
+      </view>
+      <view class="metric">
+        <view class="metric-value">{{profile.balanceText}}</view>
+        <view class="metric-label">余额</view>
+      </view>
+    </view>
+    <view class="btn-row">
+      <button size="mini" class="primary" bindtap="checkin">签到送积分</button>
+      <button size="mini" class="secondary" bindtap="recharge">充值500送50</button>
+      <button size="mini" class="secondary" bindtap="drawLottery">积分抽奖</button>
+    </view>
+    <view class="row">
+      <view class="row-title">积分排行榜</view>
+      <view wx:for="{{leaderboard}}" wx:key="userId" class="muted">{{item.rank}}. {{item.nickname}} · {{item.pointsBalance}}分</view>
+      <view class="muted" wx:if="{{myRank}}">我的排名：{{myRank.rank}}</view>
+    </view>
+    <view class="row">
+      <view class="row-title">酒水券</view>
+      <view wx:for="{{coupons}}" wx:key="couponId" class="muted">{{item.title}} · {{item.statusText}}</view>
+      <button wx:if="{{redeemableCouponId}}" size="mini" class="primary" data-id="{{redeemableCouponId}}" bindtap="requestCouponRedeem">申请兑换</button>
+    </view>
+    <view class="row">
+      <view class="row-title">门店服务</view>
+      <view class="muted">{{storeLocation.address}} · 客服 {{supportPhone}}</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">桌位预约</view>
+    <view wx:for="{{tables}}" wx:key="tableId" class="row">
+      <view class="row-title">{{item.name}} · {{item.capacity}}人</view>
+      <view class="muted">{{item.type}} · {{item.statusText}}</view>
+      <button size="mini" class="secondary" data-id="{{item.tableId}}" bindtap="createReservation">提交预约</button>
+    </view>
+  </view>
+</view>

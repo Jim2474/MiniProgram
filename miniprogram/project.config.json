@@ -1,0 +1,20 @@
+{
+  "description": "德扑棋牌门店小程序 V2",
+  "packOptions": {
+    "ignore": []
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": false,
+    "newFeature": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.8.0",
+  "appid": "touristappid",
+  "projectname": "MiniProgram-V2",
+  "miniprogramRoot": "./",
+  "condition": {}
+}

@@ -1,0 +1,148 @@
+page {
+  background: #f7f8f4;
+  color: #17211b;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+}
+
+.page {
+  padding: 28rpx;
+}
+
+.hero {
+  background: #15221b;
+  color: #f8fbf5;
+  border-radius: 16rpx;
+  padding: 30rpx;
+  margin-bottom: 24rpx;
+}
+
+.eyebrow {
+  color: #b6c4b9;
+  font-size: 22rpx;
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.title {
+  font-size: 42rpx;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.subtitle {
+  color: #617066;
+  line-height: 1.5;
+  margin-top: 8rpx;
+}
+
+.section {
+  background: #ffffff;
+  border: 1rpx solid #d8ded6;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 22rpx;
+}
+
+.section-title {
+  font-size: 32rpx;
+  font-weight: 800;
+  margin-bottom: 16rpx;
+}
+
+.row {
+  border-top: 1rpx solid #edf0ec;
+  padding: 18rpx 0;
+}
+
+.row:first-child {
+  border-top: 0;
+}
+
+.row-title {
+  font-weight: 700;
+  margin-bottom: 8rpx;
+}
+
+.muted {
+  color: #647067;
+  line-height: 1.45;
+}
+
+.tag {
+  display: inline-block;
+  background: #eef2ed;
+  color: #425044;
+  border-radius: 999rpx;
+  padding: 6rpx 14rpx;
+  font-size: 22rpx;
+  margin: 8rpx 8rpx 0 0;
+}
+
+.danger {
+  color: #b4252a;
+}
+
+.btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 16rpx;
+}
+
+button {
+  border-radius: 12rpx;
+  font-size: 26rpx;
+}
+
+.primary {
+  background: #0f7b59;
+  color: #ffffff;
+}
+
+.secondary {
+  background: #ffffff;
+  color: #0f7b59;
+  border: 1rpx solid #0f7b59;
+}
+
+.dark {
+  background: #23372c;
+  color: #ffffff;
+}
+
+.input,
+picker {
+  min-height: 78rpx;
+  border: 1rpx solid #d8ded6;
+  border-radius: 12rpx;
+  padding: 0 18rpx;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  margin-bottom: 14rpx;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14rpx;
+  margin-bottom: 22rpx;
+}
+
+.metric {
+  background: #ffffff;
+  border: 1rpx solid #d8ded6;
+  border-radius: 16rpx;
+  padding: 22rpx;
+}
+
+.metric-value {
+  font-size: 38rpx;
+  font-weight: 800;
+}
+
+.metric-label {
+  color: #647067;
+  margin-top: 6rpx;
+}

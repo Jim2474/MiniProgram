@@ -1,0 +1,118 @@
+<view class="page">
+  <view class="hero">
+    <view class="eyebrow">ADMIN</view>
+    <view class="title">商家经营后台</view>
+    <view class="subtitle">订单、库存、存酒、预约、员工业绩与操作日志集中管理。</view>
+  </view>
+
+  <view class="metrics">
+    <view class="metric"><view class="metric-value">{{dashboard.todayRevenueText}}</view><view class="metric-label">今日营业额</view></view>
+    <view class="metric"><view class="metric-value">{{dashboard.todayOrderCount}}</view><view class="metric-label">今日订单</view></view>
+    <view class="metric"><view class="metric-value">{{dashboard.memberCount}}</view><view class="metric-label">会员数</view></view>
+    <view class="metric"><view class="metric-value">{{dashboard.tableUsageRate}}%</view><view class="metric-label">卡座使用率</view></view>
+    <view class="metric"><view class="metric-value">{{dashboard.lowStockCount}}</view><view class="metric-label">低库存</view></view>
+    <view class="metric"><view class="metric-value">{{dashboard.pendingOrderCount}}</view><view class="metric-label">待处理订单</view></view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">订单管理</view>
+    <view wx:if="{{orders.length === 0}}" class="muted">暂无订单。</view>
+    <view wx:for="{{orders}}" wx:key="orderId" class="row">
+      <view class="row-title">{{item.orderId}} · {{item.amountText}}</view>
+      <view class="muted">{{item.statusText}} · {{item.employeeName}} · {{item.user.phone}}</view>
+      <view class="btn-row">
+        <button size="mini" class="primary" data-id="{{item.orderId}}" bindtap="completeOrder">完成</button>
+        <button size="mini" class="secondary" data-id="{{item.orderId}}" bindtap="refundOrder">退款</button>
+        <button size="mini" class="secondary" data-id="{{item.orderId}}" bindtap="transferStorage">转存威士忌</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">SKU 库存</view>
+    <view wx:for="{{products}}" wx:key="skuId" class="row">
+      <view class="row-title">{{item.name}} · {{item.spec}}</view>
+      <view class="muted">{{item.priceText}} · 库存 {{item.stockQty}} · 预警 {{item.warningQty}}</view>
+      <button size="mini" class="secondary" data-id="{{item.skuId}}" data-current="{{item.stockQty}}" bindtap="addStock">库存 +10</button>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">客户存酒</view>
+    <view wx:for="{{storage}}" wx:key="storageId" class="row">
+      <view class="row-title">{{item.user.phone}} · {{item.product.name}}</view>
+      <view class="muted">{{item.statusText}} · 数量 {{item.quantity}} · 到期 {{item.expireDate}}</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">预约管理</view>
+    <view wx:if="{{reservations.length === 0}}" class="muted">暂无预约。</view>
+    <view wx:for="{{reservations}}" wx:key="reservationId" class="row">
+      <view class="row-title">{{item.table.name}} · {{item.user.phone}}</view>
+      <view class="muted">{{item.statusText}} · {{item.reservationDate}}</view>
+      <button wx:if="{{item.status === 'pending'}}" size="mini" class="primary" data-id="{{item.reservationId}}" bindtap="confirmReservation">确认预约</button>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">操作日志</view>
+    <view wx:for="{{logs}}" wx:key="logId" class="row">
+      <view class="row-title">{{item.action}}</view>
+      <view class="muted">{{item.role}} · {{item.reason}} · {{item.createdAt}}</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">财务与营业</view>
+    <view class="metrics">
+      <view class="metric"><view class="metric-value">{{finance.todayRevenueText}}</view><view class="metric-label">今日营收</view></view>
+      <view class="metric"><view class="metric-value">{{finance.monthRevenueText}}</view><view class="metric-label">本月营收</view></view>
+      <view class="metric"><view class="metric-value">{{finance.rechargeRevenueText}}</view><view class="metric-label">充值收入</view></view>
+      <view class="metric"><view class="metric-value">{{businessDetails.length}}</view><view class="metric-label">营业明细</view></view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">充值与会员等级</view>
+    <button size="mini" class="primary" bindtap="createRechargeConfig">新增充值300送30</button>
+    <button size="mini" class="secondary" bindtap="createMemberLevel">新增黑金会员</button>
+    <view wx:for="{{rechargeConfigs}}" wx:key="configId" class="row">
+      <view class="row-title">充 {{item.amount}} 送 {{item.giftAmount}}</view>
+      <view class="muted">{{item.status}}</view>
+    </view>
+    <view wx:for="{{memberLevels}}" wx:key="levelId" class="row">
+      <view class="row-title">{{item.name}}</view>
+      <view class="muted">最低积分 {{item.minPoints}}</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">积分抽奖配置</view>
+    <view class="metrics">
+      <view class="metric"><view class="metric-value">{{lotteryOverview.totalDraws}}</view><view class="metric-label">累计抽奖</view></view>
+      <view class="metric"><view class="metric-value">{{lotteryOverview.todayCostPoints}}</view><view class="metric-label">今日消耗积分</view></view>
+    </view>
+    <button size="mini" class="primary" bindtap="createPrize">新增奖品</button>
+    <button size="mini" class="secondary" bindtap="toggleLottery">切换抽奖开关</button>
+    <view wx:for="{{lotteryPrizes}}" wx:key="prizeId" class="row">
+      <view class="row-title">{{item.name}}</view>
+      <view class="muted">中奖率 {{item.winRate}} · {{item.status}}</view>
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">人员与系统设置</view>
+    <button size="mini" class="primary" bindtap="createEmployee">新增测试员工</button>
+    <button size="mini" class="secondary" bindtap="updateSystemSettings">隐藏积分并改客服电话</button>
+    <button size="mini" class="secondary" bindtap="updateBlindSettings">更新升盲主题</button>
+    <view class="row">
+      <view class="row-title">系统设置</view>
+      <view class="muted">积分显示 {{systemSettings.pointsVisible}} · 客服 {{systemSettings.supportPhone}}</view>
+    </view>
+    <view class="row">
+      <view class="row-title">升盲设置</view>
+      <view class="muted">主题 {{blindSettings.theme}} · 字号 {{blindSettings.fontSize}} · 报名 {{blindSettings.registrationStatus}}</view>
+    </view>
+  </view>
+</view>
