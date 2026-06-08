@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V71 验收状态
+## V72 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V72.md`
 - `docs/ACCEPTANCE-V71.md`
 - `docs/REQUIREMENTS-AUDIT-V71.md`
 - `docs/ACCEPTANCE-V70.md`
@@ -281,6 +282,14 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V72 新增能力
+
+- 后端新增员工软删除接口，删除操作人员时保留历史业绩和操作记录。
+- 管理员账号禁止删除，避免误删后台入口。
+- 员工删除、启停、重置密码均保持密码字段脱敏，并写入操作日志。
+- 后台人员管理新增员工列表，支持启停员工、按表单密码重置和删除操作人员。
+- 自动验收覆盖员工软删除、管理员不可删除、操作日志脱敏和小程序后台人员管理入口。
 
 ## V71 新增能力
 

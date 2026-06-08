@@ -13,6 +13,7 @@ Page({
     productCategories: [],
     productKeyword: "",
     users: [],
+    employees: [],
     storage: [],
     pickupRequests: [],
     reservations: [],
@@ -62,7 +63,8 @@ Page({
       expiredStorageExtendDays: 30,
       expiredStorageNote: "管理员人工确认过期处理",
       tableMaintenanceReason: "设备或卫生维护",
-      tableDeleteReason: "桌台下线停用"
+      tableDeleteReason: "桌台下线停用",
+      employeeDeleteReason: "工作人员离职停用"
     },
     storageLedgers: [],
     finance: {},
@@ -296,7 +298,7 @@ Page({
   },
 
   async loadV3Admin() {
-    const [finance, business, consumptionRecords, users, levels, pointsConfig, pointsLedgers, stockRequests, stockLedgers, stockCounts, storageLedgers, scanRecords, system, blind] = await Promise.all([
+    const [finance, business, consumptionRecords, users, levels, pointsConfig, pointsLedgers, stockRequests, stockLedgers, stockCounts, storageLedgers, scanRecords, employees, system, blind] = await Promise.all([
       request("/api/admin/finance/overview"),
       request("/api/admin/business-details"),
       request("/api/admin/consumption-records"),
@@ -309,6 +311,7 @@ Page({
       request("/api/admin/stock-counts"),
       request("/api/admin/storage-ledgers"),
       request("/api/admin/scan-records"),
+      request("/api/admin/employees"),
       request("/api/admin/system-settings"),
       request("/api/admin/blind-settings")
     ])
@@ -341,6 +344,12 @@ Page({
       stockCounts: stockCounts.counts.slice(0, 8),
       storageLedgers: storageLedgers.ledgers.slice(0, 8).map((item) => ({ ...item, productName: item.product ? item.product.name : item.skuId, userPhone: item.user ? item.user.phone : item.userId })),
       scanRecords: scanRecords.records.slice(0, 8),
+      employees: employees.employees.map((item) => ({
+        ...item,
+        statusText: statusText(item.status),
+        commissionRateText: `${Math.round((item.commissionRate || 0) * 10000) / 100}%`,
+        deletedText: item.deletedAt ? item.deletedAt.slice(0, 16) : "未删除"
+      })),
       systemSettings: system.settings,
       systemSettingsForm: {
         supportPhone: system.settings.supportPhone,
@@ -915,6 +924,43 @@ Page({
       })
       wx.showToast({ title: "已新增员工" })
       await this.loadDashboard()
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async toggleEmployee(event) {
+    try {
+      const status = event.currentTarget.dataset.status === "active" ? "disabled" : "active"
+      await request(`/api/admin/employees/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status, operatorId: "emp_admin" } })
+      wx.showToast({ title: status === "active" ? "员工已启用" : "员工已停用" })
+      await this.loadDashboard()
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async resetEmployeePassword(event) {
+    try {
+      await request(`/api/admin/employees/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { resetPassword: this.data.employeeForm.password, operatorId: "emp_admin" } })
+      wx.showToast({ title: "密码已重置" })
+      await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  async deleteEmployee(event) {
+    try {
+      await request(`/api/admin/employees/${event.currentTarget.dataset.id}`, {
+        method: "DELETE",
+        data: { operatorId: "emp_admin", reason: this.data.operationForm.employeeDeleteReason }
+      })
+      wx.showToast({ title: "员工已删除" })
+      await this.loadDashboard()
+      await this.loadV3Admin()
     } catch (error) {
       showError(error)
     }

@@ -490,6 +490,11 @@ async function main() {
     assert(disabledEmployee.employee.status === "disabled" && !("passwordHash" in disabledEmployee.employee), "后台可禁用员工并重置密码但不返回密码字段");
     const disabledStoredEmployee = store.data.employees.find((item) => item.employeeId === employee.employee.employeeId);
     assert(disabledStoredEmployee.passwordHash.startsWith("scrypt$") && disabledStoredEmployee.passwordHash !== "123456" && disabledStoredEmployee.passwordHash !== "malicious-raw", "后台重置密码不会保存明文或接受 passwordHash 覆盖");
+    const deletableEmployee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "待删除员工", phone: "13900008888", role: "staff", operatorId: "emp_admin" } });
+    const deletedEmployee = await request(baseUrl, `/api/admin/employees/${deletableEmployee.employee.employeeId}`, { method: "DELETE", body: { operatorId: "emp_admin", reason: "验收删除工作人员" } });
+    assert(deletedEmployee.employee.status === "disabled" && deletedEmployee.employee.deletedAt && !("passwordHash" in deletedEmployee.employee), "后台可软删除工作人员并脱敏返回");
+    assert(store.data.operationLogs.some((log) => log.action === "delete_employee" && log.targetId === deletableEmployee.employee.employeeId && !log.beforeJson.includes("passwordHash") && !log.afterJson.includes("passwordHash")), "删除工作人员写入脱敏操作日志");
+    await expectHttpError(baseUrl, "/api/admin/employees/emp_admin", { method: "DELETE", body: { operatorId: "emp_admin" } }, 400, "管理员账号不能被删除");
     const password = await request(baseUrl, "/api/staff/password", { method: "POST", body: { operatorId: "emp_anna", newPassword: "new-demo" } });
     assert(password.employee.passwordChangedAt && !("passwordHash" in password.employee), "员工可修改密码且不返回密码字段");
     const annaAfterPasswordChange = store.data.employees.find((item) => item.employeeId === "emp_anna");

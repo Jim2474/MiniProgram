@@ -195,6 +195,9 @@ assert(adminJs.includes("autoStartAfterCountdown") && adminJs.includes("onBlindA
 assert(adminJs.includes("/api/admin/system-settings"), "admin page calls system settings API");
 assert(adminJs.includes("systemSettingsForm") && adminJs.includes("onSystemLocationAddress") && adminWxml.includes("保存系统设置") && adminWxml.includes("门店地址") && !adminWxml.includes("隐藏积分并改客服电话"), "admin page supports real system settings form");
 assert(adminJs.includes("employeeForm") && adminJs.includes("onEmployeeCommissionRate") && adminWxml.includes("新增员工表单") && adminWxml.includes("提成率") && !adminWxml.includes("新增测试员工"), "admin page supports real employee create form");
+assert(adminJs.includes("/api/admin/employees") && adminJs.includes("employees.employees.map") && adminWxml.includes('wx:for="{{employees}}"'), "admin page displays employee management list");
+assert(adminJs.includes("toggleEmployee") && adminJs.includes("resetEmployeePassword") && adminJs.includes("deleteEmployee") && adminWxml.includes("启停员工") && adminWxml.includes("按表单密码重置") && adminWxml.includes("删除操作人员"), "admin page supports employee enable reset and delete actions");
+assert(adminJs.includes("employeeDeleteReason") && adminWxml.includes("删除/停用员工原因") && !adminJs.includes("passwordHash"), "admin employee management uses real delete reason and does not expose password hash");
 
 const dealerJs = await readFile(join(root, "miniprogram/pages/dealer/dealer.js"), "utf8");
 const dealerWxml = await readFile(join(root, "miniprogram/pages/dealer/dealer.wxml"), "utf8");

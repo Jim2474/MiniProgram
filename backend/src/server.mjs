@@ -2988,6 +2988,17 @@ function createRouter(store) {
     await store.save();
     return { employee: publicEmployee(employee) };
   });
+  add("DELETE", "/api/admin/employees/:employeeId", async (body, params) => {
+    const employee = store.getEmployee(params.employeeId);
+    if (employee.role === "admin") throw new HttpError(400, "管理员账号不能删除");
+    const before = deepClone(employee);
+    employee.status = "disabled";
+    employee.deletedAt = now();
+    employee.deletedBy = body.operatorId || "emp_admin";
+    store.log(employee.deletedBy, "admin", "delete_employee", "Employee", employee.employeeId, before, employee, body.reason || "删除工作人员");
+    await store.save();
+    return { employee: publicEmployee(employee) };
+  });
   add("GET", "/api/staff/blind-settings", async () => ({ settings: store.data.blindSettings }));
   add("GET", "/api/admin/blind-settings", async () => ({ settings: store.data.blindSettings }));
   add("PATCH", "/api/admin/blind-settings", async (body) => {
