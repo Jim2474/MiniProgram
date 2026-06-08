@@ -404,12 +404,20 @@
       <input class="input" value="{{blindForm.totalChipsTitle}}" data-key="totalChipsTitle" bindinput="onBlindField" placeholder="标题：总记分牌" />
       <button size="mini" class="secondary" bindtap="restoreBlindTitles">恢复默认标题</button>
       <input class="input" value="{{blindForm.blindLevelsText}}" data-key="blindLevelsText" bindinput="onBlindField" placeholder="升盲规则：1/2,2/4,5/10" />
-      <input class="input" value="{{blindForm.voiceType}}" data-key="voiceType" bindinput="onBlindField" placeholder="语音类型" />
+      <picker mode="selector" range="{{blindVoiceTypeOptions}}" range-key="label" value="{{blindForm.voiceTypeIndex}}" bindchange="onBlindVoiceTypeChange">
+        <view class="input">语音类型：{{blindVoiceTypeOptions[blindForm.voiceTypeIndex].label}}</view>
+      </picker>
       <input class="input" value="{{blindForm.voiceStartText}}" data-key="voiceStartText" bindinput="onBlindField" placeholder="开始语音文案" />
       <input class="input" value="{{blindForm.voiceEndText}}" data-key="voiceEndText" bindinput="onBlindField" placeholder="结束语音文案" />
-      <input class="input" value="{{blindForm.smallBlindTerm}}" data-key="smallBlindTerm" bindinput="onBlindField" placeholder="术语：小盲" />
-      <input class="input" value="{{blindForm.bigBlindTerm}}" data-key="bigBlindTerm" bindinput="onBlindField" placeholder="术语：大盲" />
-      <input class="input" value="{{blindForm.anteTerm}}" data-key="anteTerm" bindinput="onBlindField" placeholder="术语：前注" />
+      <picker mode="selector" range="{{smallBlindTermOptions}}" range-key="label" value="{{blindForm.smallBlindTermIndex}}" bindchange="onSmallBlindTermChange">
+        <view class="input">术语：小盲 {{smallBlindTermOptions[blindForm.smallBlindTermIndex].label}}</view>
+      </picker>
+      <picker mode="selector" range="{{bigBlindTermOptions}}" range-key="label" value="{{blindForm.bigBlindTermIndex}}" bindchange="onBigBlindTermChange">
+        <view class="input">术语：大盲 {{bigBlindTermOptions[blindForm.bigBlindTermIndex].label}}</view>
+      </picker>
+      <picker mode="selector" range="{{anteTermOptions}}" range-key="label" value="{{blindForm.anteTermIndex}}" bindchange="onAnteTermChange">
+        <view class="input">术语：前注 {{anteTermOptions[blindForm.anteTermIndex].label}}</view>
+      </picker>
       <button size="mini" class="secondary" bindtap="updateBlindSettings">保存升盲设置</button>
     </view>
     <view wx:for="{{scanRecords}}" wx:key="recordId" class="row">

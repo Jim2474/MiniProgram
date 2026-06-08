@@ -25,6 +25,23 @@ const blindChampionBackgroundLibrary = [
   { label: "奖杯聚光背景", value: "https://dummyimage.com/1280x720/0f172a/f4d9a6&text=Trophy+Spotlight" },
   { label: "胜者烟花背景", value: "https://dummyimage.com/1280x720/301934/f0abfc&text=Winner+Fireworks" }
 ]
+const voiceTermOptions = {
+  smallBlind: [
+    { label: "小盲", value: "小盲" },
+    { label: "半基础分", value: "半基础分" },
+    { label: "预留分", value: "预留分" }
+  ],
+  bigBlind: [
+    { label: "大盲", value: "大盲" },
+    { label: "基础分", value: "基础分" },
+    { label: "空", value: "空" }
+  ],
+  ante: [
+    { label: "前注", value: "前注" },
+    { label: "预留分", value: "预留分" },
+    { label: "前置预留分", value: "前置预留分" }
+  ]
+}
 
 Page({
   data: {
@@ -139,6 +156,14 @@ Page({
     blindSettings: {},
     blindBackgroundOptions: blindBackgroundLibrary,
     blindChampionBackgroundOptions: blindChampionBackgroundLibrary,
+    blindVoiceTypeOptions: [
+      { label: "默认语音", value: "default" },
+      { label: "自定义语音", value: "custom" },
+      { label: "静音提示", value: "muted" }
+    ],
+    smallBlindTermOptions: voiceTermOptions.smallBlind,
+    bigBlindTermOptions: voiceTermOptions.bigBlind,
+    anteTermOptions: voiceTermOptions.ante,
     blindThemeOptions: [
       { label: "经典绿桌", value: "classic" },
       { label: "霓虹竞技", value: "neon" },
@@ -172,6 +197,7 @@ Page({
       registrationStatus: "accepting",
       championBackgroundImageIndex: 0,
       championBackgroundImage: "",
+      voiceTypeIndex: 0,
       voiceType: "default",
       voiceStartText: "开始提示音",
       voiceEndText: "结束提示音",
@@ -181,8 +207,11 @@ Page({
       showRegistrationCountdown: true,
       autoStartAfterCountdown: true,
       ...defaultBlindTitleMap,
+      smallBlindTermIndex: 0,
       smallBlindTerm: "小盲",
+      bigBlindTermIndex: 0,
       bigBlindTerm: "大盲",
+      anteTermIndex: 0,
       anteTerm: "前注",
       blindLevelsText: "1/2,2/4,5/10,10/20,25/50,50/100"
     },
@@ -434,6 +463,7 @@ Page({
         championBackgroundImageIndex: Math.max(0, this.data.blindChampionBackgroundOptions.findIndex((item) => item.value === blind.settings.championBackgroundImage)),
         fontFamilyIndex: Math.max(0, this.data.blindFontFamilyOptions.findIndex((item) => item.value === blind.settings.fontFamily)),
         registrationStatusIndex: Math.max(0, this.data.registrationStatusOptions.findIndex((item) => item.value === blind.settings.registrationStatus)),
+        voiceTypeIndex: Math.max(0, this.data.blindVoiceTypeOptions.findIndex((item) => item.value === blind.settings.voiceType)),
         levelTitle: blind.settings.titleMap?.level || this.data.blindForm.levelTitle,
         playerLeftTitle: blind.settings.titleMap?.playerLeft || this.data.blindForm.playerLeftTitle,
         entrantsTitle: blind.settings.titleMap?.entrants || this.data.blindForm.entrantsTitle,
@@ -444,8 +474,11 @@ Page({
         nextBreakTitle: blind.settings.titleMap?.nextBreak || this.data.blindForm.nextBreakTitle,
         avgChipsTitle: blind.settings.titleMap?.avgChips || this.data.blindForm.avgChipsTitle,
         totalChipsTitle: blind.settings.titleMap?.totalChips || this.data.blindForm.totalChipsTitle,
+        smallBlindTermIndex: Math.max(0, this.data.smallBlindTermOptions.findIndex((item) => item.value === blind.settings.voiceTerms?.smallBlind)),
         smallBlindTerm: blind.settings.voiceTerms?.smallBlind || this.data.blindForm.smallBlindTerm,
+        bigBlindTermIndex: Math.max(0, this.data.bigBlindTermOptions.findIndex((item) => item.value === blind.settings.voiceTerms?.bigBlind)),
         bigBlindTerm: blind.settings.voiceTerms?.bigBlind || this.data.blindForm.bigBlindTerm,
+        anteTermIndex: Math.max(0, this.data.anteTermOptions.findIndex((item) => item.value === blind.settings.voiceTerms?.ante)),
         anteTerm: blind.settings.voiceTerms?.ante || this.data.blindForm.anteTerm,
         blindLevelsText: (blind.settings.blindLevels || []).map((level) => `${level.smallBlind}/${level.bigBlind}${level.ante ? `/${level.ante}` : ""}`).join(",")
       }
@@ -1231,6 +1264,30 @@ Page({
     const fontFamilyIndex = Number(event.detail.value || 0)
     const option = this.data.blindFontFamilyOptions[fontFamilyIndex] || this.data.blindFontFamilyOptions[0]
     this.setData({ "blindForm.fontFamilyIndex": fontFamilyIndex, "blindForm.fontFamily": option.value })
+  },
+
+  onBlindVoiceTypeChange(event) {
+    const voiceTypeIndex = Number(event.detail.value || 0)
+    const option = this.data.blindVoiceTypeOptions[voiceTypeIndex] || this.data.blindVoiceTypeOptions[0]
+    this.setData({ "blindForm.voiceTypeIndex": voiceTypeIndex, "blindForm.voiceType": option.value })
+  },
+
+  onSmallBlindTermChange(event) {
+    const smallBlindTermIndex = Number(event.detail.value || 0)
+    const option = this.data.smallBlindTermOptions[smallBlindTermIndex] || this.data.smallBlindTermOptions[0]
+    this.setData({ "blindForm.smallBlindTermIndex": smallBlindTermIndex, "blindForm.smallBlindTerm": option.value })
+  },
+
+  onBigBlindTermChange(event) {
+    const bigBlindTermIndex = Number(event.detail.value || 0)
+    const option = this.data.bigBlindTermOptions[bigBlindTermIndex] || this.data.bigBlindTermOptions[0]
+    this.setData({ "blindForm.bigBlindTermIndex": bigBlindTermIndex, "blindForm.bigBlindTerm": option.value })
+  },
+
+  onAnteTermChange(event) {
+    const anteTermIndex = Number(event.detail.value || 0)
+    const option = this.data.anteTermOptions[anteTermIndex] || this.data.anteTermOptions[0]
+    this.setData({ "blindForm.anteTermIndex": anteTermIndex, "blindForm.anteTerm": option.value })
   },
 
   onBlindBeijingTimeChange(event) {
