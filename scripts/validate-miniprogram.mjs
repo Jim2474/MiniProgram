@@ -69,17 +69,16 @@ assert(customerJs.includes("/api/reservations"), "customer page calls reservatio
 assert(customerJs.includes("/cancel"), "customer page calls reservation cancel API");
 assert(customerJs.includes("/api/checkin"), "customer page calls checkin API");
 assert(!customerJs.includes("/api/recharge") && !customerWxml.includes("微信支付充值"), "customer page hides balance recharge flow");
-assert(customerJs.includes("/api/lottery/draw"), "customer page calls lottery API");
-assert(customerJs.includes("/api/leaderboard/points"), "customer page calls leaderboard API");
-assert(customerJs.includes("/api/coupons/"), "customer page calls coupon API");
-assert(customerJs.includes("/api/coupons/exchange"), "customer page calls coupon exchange API");
+assert(!customerJs.includes("/api/lottery/draw") && !customerWxml.includes("积分抽奖"), "customer page hides lottery flow");
+assert(!customerJs.includes("/api/leaderboard/points") && !customerWxml.includes("积分排行榜"), "customer page hides points leaderboard");
+assert(!customerJs.includes("/api/coupons/exchange") && !customerWxml.includes("积分兑换酒水券"), "customer page hides points coupon exchange");
 assert(customerJs.includes("/api/verification-codes"), "customer page calls verification code API");
 assert(customerJs.includes("wx.scanCode"), "customer page uses WeChat scanCode");
 assert(customerJs.includes("wx.openLocation"), "customer page uses WeChat openLocation");
 assert(customerJs.includes("wx.makePhoneCall"), "customer page uses WeChat makePhoneCall");
 assert(customerJs.includes("/api/scan/employee"), "customer page records employee QR scan");
 assert(!customerJs.includes("onEmployeeChange") && !customerWxml.includes('range="{{employees}}"'), "customer page does not manually select employees");
-assert(customerJs.includes("/api/lottery/records/") && customerJs.includes("redeem-request"), "customer page calls lottery redeem request API");
+assert(!customerJs.includes("requestLotteryRedeem"), "customer page hides lottery redeem request");
 
 const staffJs = await readFile(join(root, "miniprogram/pages/staff/staff.js"), "utf8");
 const staffWxml = await readFile(join(root, "miniprogram/pages/staff/staff.wxml"), "utf8");
@@ -95,7 +94,7 @@ assert(staffJs.includes("/api/staff/verification-codes/scan"), "staff page calls
 assert(staffJs.includes("/api/staff/verification-codes/") && staffJs.includes("/confirm"), "staff page calls QR confirm API");
 assert(staffJs.includes("/api/staff/seats/"), "staff page calls seat API");
 assert(staffJs.includes("/api/staff/password"), "staff page calls password API");
-assert(staffJs.includes("/api/staff/lottery-records/"), "staff page calls lottery redeem confirm API");
+assert(!staffJs.includes("/api/staff/lottery-records/") && !staffJs.includes("/api/staff/coupons/"), "staff page hides coupon and lottery confirm flows");
 
 const adminJs = await readFile(join(root, "miniprogram/pages/admin/admin.js"), "utf8");
 assert(adminJs.includes("/api/admin/dashboard"), "admin page calls dashboard API");
@@ -118,8 +117,7 @@ assert(adminJs.includes("/api/admin/consumption-records"), "admin page calls con
 assert(adminJs.includes("/api/admin/member-levels"), "admin page calls member level API");
 assert(adminJs.includes("/api/admin/member-levels/"), "admin page calls member level update API");
 assert(adminJs.includes("/api/admin/points-config"), "admin page calls points config API");
-assert(adminJs.includes("/api/admin/lottery/"), "admin page calls lottery admin API");
-assert(adminJs.includes("/api/admin/lottery/prizes/"), "admin page calls lottery prize update API");
+assert(!adminJs.includes("/api/admin/lottery/") && !adminWxml.includes("积分抽奖配置"), "admin page hides lottery admin flow");
 assert(adminJs.includes("/api/admin/scan-records"), "admin page calls scan records API");
 assert(adminJs.includes("/api/admin/tables"), "admin page calls table management API");
 assert(adminJs.includes("tablePagination") && adminJs.includes("pageSize") && adminJs.includes("tableSummary"), "admin page supports table pagination and summary");

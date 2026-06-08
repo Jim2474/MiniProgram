@@ -25,8 +25,6 @@ Page({
     verifyResult: null,
     qrPayload: "",
     scannedCode: null,
-    couponConfirmList: [],
-    lotteryConfirmList: [],
     seats: [],
     newPassword: "new-demo"
   },
@@ -52,7 +50,7 @@ Page({
       await this.loadPerformance()
       await this.loadOrderQr()
       await this.loadPickupRequests()
-      await this.loadCouponsLotteryAndSeats()
+      await this.loadSeats()
     } catch (error) {
       showError(error)
     }
@@ -91,13 +89,9 @@ Page({
     })
   },
 
-  async loadCouponsLotteryAndSeats() {
-    const coupons = await request("/api/coupons?userId=user_demo")
-    const lottery = await request("/api/lottery/records?userId=user_demo")
+  async loadSeats() {
     const boot = await request("/api/bootstrap")
     this.setData({
-      couponConfirmList: coupons.coupons.map((item) => ({ ...item, statusText: statusText(item.status) })),
-      lotteryConfirmList: lottery.records.map((item) => ({ ...item, statusText: statusText(item.status) })),
       seats: (boot.seats || []).map((item) => ({ ...item, statusText: statusText(item.status) }))
     })
   },
@@ -275,26 +269,6 @@ Page({
     }
   },
 
-  async confirmCoupon(event) {
-    try {
-      await request(`/api/staff/coupons/${event.currentTarget.dataset.id}/confirm`, { method: "POST", data: { operatorId: this.data.selectedEmployee.employeeId } })
-      wx.showToast({ title: "已确认券" })
-      await this.loadCouponsLotteryAndSeats()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  async confirmLottery(event) {
-    try {
-      await request(`/api/staff/lottery-records/${event.currentTarget.dataset.id}/confirm`, { method: "POST", data: { operatorId: this.data.selectedEmployee.employeeId } })
-      wx.showToast({ title: "奖品已核销" })
-      await this.loadCouponsLotteryAndSeats()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
   async sitSeat(event) {
     await this.seatAction(event.currentTarget.dataset.seat, "sit")
   },
@@ -311,7 +285,7 @@ Page({
     try {
       await request(`/api/staff/seats/${seatNo}/${action}`, { method: "POST", data: { operatorId: this.data.selectedEmployee.employeeId, userId: "user_demo" } })
       wx.showToast({ title: "座位已更新" })
-      await this.loadCouponsLotteryAndSeats()
+      await this.loadSeats()
     } catch (error) {
       showError(error)
     }

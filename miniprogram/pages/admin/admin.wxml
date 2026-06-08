@@ -178,28 +178,8 @@
     </view>
     <view class="row">
       <view class="row-title">积分配置</view>
-      <view class="muted">签到 {{pointsConfig.checkinPoints}} · 有效期 {{pointsConfig.pointExpireDays}}天 · 兑换券 {{pointsConfig.couponExchangePoints}}分</view>
+      <view class="muted">签到 {{pointsConfig.checkinPoints}} · 有效期 {{pointsConfig.pointExpireDays}}天 · 积分显示 {{pointsConfig.pointsVisible}}</view>
       <button size="mini" class="secondary" bindtap="updatePointsConfig">更新积分配置</button>
-    </view>
-  </view>
-
-  <view class="section">
-    <view class="section-title">积分抽奖配置</view>
-    <view class="metrics">
-      <view class="metric"><view class="metric-value">{{lotteryOverview.totalDraws}}</view><view class="metric-label">累计抽奖</view></view>
-      <view class="metric"><view class="metric-value">{{lotteryOverview.todayCostPoints}}</view><view class="metric-label">今日消耗积分</view></view>
-    </view>
-    <button size="mini" class="primary" bindtap="createPrize">新增奖品</button>
-    <button size="mini" class="secondary" bindtap="toggleLottery">切换抽奖开关</button>
-    <button size="mini" class="secondary" bindtap="updateLotteryRules">设置冷却与次数</button>
-    <view wx:for="{{lotteryPrizes}}" wx:key="prizeId" class="row">
-      <view class="row-title">{{item.name}}</view>
-      <view class="muted">中奖率 {{item.winRate}} · {{item.status}}</view>
-      <button size="mini" class="secondary" data-id="{{item.prizeId}}" bindtap="disablePrize">停用奖品</button>
-    </view>
-    <view wx:for="{{lotteryOverview.records}}" wx:key="recordId" class="row">
-      <view class="row-title">{{item.prizeName}}</view>
-      <view class="muted">{{item.status}} · 消耗 {{item.costPoints}}</view>
     </view>
   </view>
 

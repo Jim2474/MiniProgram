@@ -81,7 +81,7 @@
   </view>
 
   <view class="section">
-    <view class="section-title">核销与酒水券</view>
+    <view class="section-title">积分与存酒核销</view>
     <button class="primary" bindtap="verifyCode">扫码核销模拟</button>
     <input class="input" value="{{qrPayload}}" bindinput="onQrPayload" placeholder="输入 verify:xxx 二维码码值" />
     <view class="btn-row">
@@ -94,17 +94,7 @@
     </view>
     <view wx:if="{{verifyResult}}" class="row">
       <view class="row-title">{{verifyResult.user.phone}}</view>
-      <view class="muted">积分 {{verifyResult.pointsBalance}} · 存酒 {{verifyResult.storage.length}} · 券 {{verifyResult.coupons.length}}</view>
-    </view>
-    <view wx:for="{{couponConfirmList}}" wx:key="couponId" class="row">
-      <view class="row-title">{{item.title}}</view>
-      <view class="muted">{{item.statusText}}</view>
-      <button wx:if="{{item.status === 'pending'}}" size="mini" class="primary" data-id="{{item.couponId}}" bindtap="confirmCoupon">确认酒水券</button>
-    </view>
-    <view wx:for="{{lotteryConfirmList}}" wx:key="recordId" class="row">
-      <view class="row-title">{{item.prizeName}}</view>
-      <view class="muted">{{item.statusText}} · 消耗 {{item.costPoints}} 积分</view>
-      <button wx:if="{{item.status === 'redeeming' || item.status === 'won'}}" size="mini" class="primary" data-id="{{item.recordId}}" bindtap="confirmLottery">确认中奖核销</button>
+      <view class="muted">积分 {{verifyResult.pointsBalance}} · 存酒 {{verifyResult.storage.length}}</view>
     </view>
   </view>
 

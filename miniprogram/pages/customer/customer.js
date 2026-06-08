@@ -26,14 +26,7 @@ Page({
     loginNickname: "德扑客人",
     bindPhoneValue: "13800000000",
     currentUserId: "user_demo",
-    leaderboard: [],
-    myRank: null,
-    coupons: [],
-    couponRecords: [],
-    redeemableCouponId: "",
     checkinRecords: [],
-    lotteryRecords: [],
-    redeemableLotteryId: "",
     verificationCodes: [],
     qrText: "",
     storeLocation: {},
@@ -149,17 +142,13 @@ Page({
   },
 
   async loadMarketing() {
-    const [profile, leaderboard, coupons, location, support, checkin, lotteryRecords, verificationCodes] = await Promise.all([
+    const [profile, location, support, checkin, verificationCodes] = await Promise.all([
       request(`/api/user/profile?userId=${app.globalData.userId}`),
-      request(`/api/leaderboard/points?userId=${app.globalData.userId}`),
-      request(`/api/coupons?userId=${app.globalData.userId}`),
       request("/api/store/location"),
       request("/api/support/contact"),
       request(`/api/checkin?userId=${app.globalData.userId}`),
-      request(`/api/lottery/records?userId=${app.globalData.userId}`),
       request(`/api/verification-codes?userId=${app.globalData.userId}`)
     ])
-    const lotteryList = lotteryRecords.records || []
     this.setData({
       profile: {
         ...profile,
@@ -168,14 +157,7 @@ Page({
       currentUserId: profile.user.userId,
       loginPhone: profile.user.phone || this.data.loginPhone,
       bindPhoneValue: profile.user.phone || this.data.bindPhoneValue,
-      leaderboard: leaderboard.top10,
-      myRank: leaderboard.mine,
-      coupons: coupons.coupons.map((item) => ({ ...item, statusText: statusText(item.status) })),
-      couponRecords: coupons.records.map((item) => ({ ...item, statusText: statusText(item.status) })),
-      redeemableCouponId: (coupons.coupons.find((item) => item.status === "available") || {}).couponId || "",
       checkinRecords: checkin.records,
-      lotteryRecords: lotteryList.map((item) => ({ ...item, statusText: statusText(item.status) })),
-      redeemableLotteryId: (lotteryList.find((item) => item.status === "won") || {}).recordId || "",
       verificationCodes: verificationCodes.codes.map((item) => ({ ...item, statusText: statusText(item.status) })),
       storeLocation: location.location,
       supportPhone: support.phone
@@ -347,47 +329,6 @@ Page({
     }
   },
 
-  async drawLottery() {
-    try {
-      const data = await request("/api/lottery/draw", { method: "POST", data: { userId: app.globalData.userId } })
-      wx.showToast({ title: data.prize.name, icon: "none" })
-      await this.loadAll()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  async requestLotteryRedeem(event) {
-    try {
-      await request(`/api/lottery/records/${event.currentTarget.dataset.id}/redeem-request`, { method: "POST", data: { userId: app.globalData.userId } })
-      wx.showToast({ title: "已申请核销" })
-      await this.loadMarketing()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  async requestCouponRedeem(event) {
-    try {
-      await request(`/api/coupons/${event.currentTarget.dataset.id}/redeem-request`, { method: "POST", data: { userId: app.globalData.userId } })
-      wx.showToast({ title: "已申请兑换" })
-      await this.loadMarketing()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  async exchangeCoupon() {
-    try {
-      await request("/api/coupons/exchange", { method: "POST", data: { userId: app.globalData.userId, count: 1, skuId: "sku_bud" } })
-      wx.showToast({ title: "已兑换酒水券" })
-      await this.loadPoints()
-      await this.loadMarketing()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
   async createQrCode(event) {
     try {
       const type = event.currentTarget.dataset.type
@@ -397,16 +338,6 @@ Page({
         const storage = this.data.storage.find((item) => item.status === "available" && item.quantity > 0)
         if (!storage) throw new Error("暂无可取存酒")
         payload.storageId = storage.storageId
-      }
-      if (type === "coupon") {
-        const coupon = this.data.coupons.find((item) => item.status === "available" || item.status === "pending")
-        if (!coupon) throw new Error("暂无可用酒水券")
-        payload.couponId = coupon.couponId
-      }
-      if (type === "lottery") {
-        const record = this.data.lotteryRecords.find((item) => item.status === "won" || item.status === "redeeming")
-        if (!record) throw new Error("暂无可核销中奖记录")
-        payload.lotteryRecordId = record.recordId
       }
       const data = await request("/api/verification-codes", { method: "POST", data: payload })
       this.setData({ qrText: data.code.qrPayload })

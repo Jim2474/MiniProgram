@@ -31,9 +31,6 @@ Page({
     businessDetails: [],
     consumptionRecords: [],
     memberLevels: [],
-    lotteryOverview: {},
-    lotteryPrizes: [],
-    lotterySettings: {},
     pointsConfig: {},
     scanRecords: [],
     systemSettings: {},
@@ -163,14 +160,12 @@ Page({
   },
 
   async loadV3Admin() {
-    const [finance, business, consumptionRecords, levels, pointsConfig, lotteryOverview, lotteryPrizes, stockRequests, stockLedgers, storageLedgers, scanRecords, system, blind] = await Promise.all([
+    const [finance, business, consumptionRecords, levels, pointsConfig, stockRequests, stockLedgers, storageLedgers, scanRecords, system, blind] = await Promise.all([
       request("/api/admin/finance/overview"),
       request("/api/admin/business-details"),
       request("/api/admin/consumption-records"),
       request("/api/admin/member-levels"),
       request("/api/admin/points-config"),
-      request("/api/admin/lottery/overview"),
-      request("/api/admin/lottery/prizes"),
       request("/api/admin/stock-requests"),
       request("/api/admin/stock-ledgers"),
       request("/api/admin/storage-ledgers"),
@@ -189,9 +184,6 @@ Page({
       consumptionRecords: consumptionRecords.records.map((item) => ({ ...item, amountText: money(item.amount), statusText: statusText(item.orderStatus) })),
       memberLevels: levels.levels,
       pointsConfig: pointsConfig.config,
-      lotteryOverview,
-      lotteryPrizes: lotteryPrizes.prizes,
-      lotterySettings: lotteryPrizes.settings,
       stockRequests: stockRequests.requests.map((item) => ({ ...item, statusText: statusText(item.status), directionText: item.direction === "in" ? "入库" : "出库" })),
       stockLedgers: stockLedgers.ledgers.slice(0, 8),
       storageLedgers: storageLedgers.ledgers.slice(0, 8).map((item) => ({ ...item, productName: item.product ? item.product.name : item.skuId, userPhone: item.user ? item.user.phone : item.userId })),
@@ -514,48 +506,8 @@ Page({
 
   async updatePointsConfig() {
     try {
-      await request("/api/admin/points-config", { method: "PATCH", data: { checkinPoints: 12, couponExchangePoints: 80, pointExpireDays: 180, pointsVisible: true } })
+      await request("/api/admin/points-config", { method: "PATCH", data: { checkinPoints: 12, pointExpireDays: 180, pointsVisible: true } })
       wx.showToast({ title: "积分配置已更新" })
-      await this.loadV3Admin()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  async createPrize() {
-    try {
-      await request("/api/admin/lottery/prizes", { method: "POST", data: { name: "神秘酒水券", winRate: 10 } })
-      wx.showToast({ title: "已新增奖品" })
-      await this.loadV3Admin()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  async disablePrize(event) {
-    try {
-      await request(`/api/admin/lottery/prizes/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status: "disabled", winRate: 0, operatorId: "emp_admin" } })
-      wx.showToast({ title: "奖品已停用" })
-      await this.loadV3Admin()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  async toggleLottery() {
-    try {
-      await request("/api/admin/lottery/settings", { method: "PATCH", data: { enabled: !this.data.lotterySettings.enabled } })
-      wx.showToast({ title: "抽奖设置已更新" })
-      await this.loadV3Admin()
-    } catch (error) {
-      showError(error)
-    }
-  },
-
-  async updateLotteryRules() {
-    try {
-      await request("/api/admin/lottery/settings", { method: "PATCH", data: { dailyLimit: 5, cooldownMinutes: 10, costPoints: 20 } })
-      wx.showToast({ title: "抽奖规则已更新" })
       await this.loadV3Admin()
     } catch (error) {
       showError(error)

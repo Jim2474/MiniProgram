@@ -63,7 +63,7 @@ function seedData() {
       checkinEnabled: true,
       checkinPoints: 10,
       pointExpireDays: 365,
-      couponExchangePoints: 100,
+      couponExchangePoints: 0,
       supportPhone: "021-88886666",
       location: { latitude: 31.2304, longitude: 121.4737, address: "上海市静安区示例路 88 号" },
     },
@@ -271,20 +271,10 @@ function seedData() {
     })),
     rechargeConfigs: [],
     rechargeRecords: [],
-    coupons: [
-      {
-        couponId: "coupon_demo",
-        userId: "user_demo",
-        title: "威士忌取酒券",
-        skuId: "sku_whisky",
-        quantity: 1,
-        status: "available",
-        createdAt,
-      },
-    ],
+    coupons: [],
     couponRecords: [],
     checkins: [],
-    lotterySettings: { enabled: true, dailyLimit: 3, cooldownMinutes: 0, costPoints: 20 },
+    lotterySettings: { enabled: false, dailyLimit: 0, cooldownMinutes: 0, costPoints: 0 },
     lotteryPrizes: [
       { prizeId: "prize_beer", name: "百威啤酒 1 瓶", winRate: 50, status: "active", createdAt },
       { prizeId: "prize_points", name: "积分 30", winRate: 50, status: "active", createdAt },
@@ -1613,16 +1603,12 @@ function createRouter(store) {
       pointsVisible: store.data.settings.pointsVisible,
       orderCount: store.data.orders.filter((order) => order.userId === user.userId).length,
       storageCount: store.data.customerStorage.filter((item) => item.userId === user.userId && item.quantity > 0).length,
-      couponCount: store.data.coupons.filter((item) => item.userId === user.userId && item.status === "available").length,
     };
   });
 
   add("GET", "/api/leaderboard/points", async (_body, _params, query) => {
     const userId = query.get("userId") || "user_demo";
-    const ranked = [...store.data.users]
-      .sort((a, b) => b.pointsBalance - a.pointsBalance)
-      .map((user, index) => ({ rank: index + 1, userId: user.userId, nickname: user.nickname, phone: user.phone, pointsBalance: user.pointsBalance }));
-    return { top10: ranked.slice(0, 10), mine: ranked.find((item) => item.userId === userId) || null };
+    return { top10: [], mine: null, userId, featureEnabled: false };
   });
 
   add("GET", "/api/checkin", async (_body, _params, query) => {
@@ -1651,28 +1637,8 @@ function createRouter(store) {
   });
 
   add("POST", "/api/coupons/exchange", async (body) => {
-    const user = store.getUser(body.userId || "user_demo");
-    const count = Math.max(1, Number(body.count || 1));
-    const cost = Number(store.data.settings.couponExchangePoints || 100) * count;
-    if (user.pointsBalance < cost) throw new HttpError(400, "积分不足，无法兑换酒水券");
-    const sku = body.skuId ? store.getSku(body.skuId) : store.data.products.find((item) => item.storageDays > 0) || store.data.products[0];
-    store.createPointsLedger(user, -cost, `积分兑换${count}张酒水券`, "coupon_exchange", sku.skuId, "system");
-    const coupons = Array.from({ length: count }, () => ({
-      couponId: newId("coupon"),
-      userId: user.userId,
-      title: `${sku.name}兑换券`,
-      skuId: sku.skuId,
-      quantity: 1,
-      status: "available",
-      createdAt: now(),
-    }));
-    store.data.coupons.unshift(...coupons);
-    for (const coupon of coupons) {
-      store.data.couponRecords.unshift({ recordId: newId("couponRecord"), couponId: coupon.couponId, userId: user.userId, action: "points_exchange", status: "available", operatorId: "system", createdAt: now() });
-    }
-    store.log(user.userId, "customer", "coupon_points_exchange", "Coupon", coupons.map((coupon) => coupon.couponId).join(","), null, coupons, `积分兑换酒水券，消耗${cost}`);
-    await store.save();
-    return { user, coupons: coupons.map((coupon) => publicCoupon(store, coupon)), costPoints: cost };
+    store.getUser(body.userId || "user_demo");
+    throw new HttpError(400, "积分兑换酒水券暂未开放");
   });
 
   add("POST", "/api/coupons/:couponId/redeem-request", async (body, params) => {
@@ -1712,16 +1678,10 @@ function createRouter(store) {
       if (storage.status !== "available") throw new HttpError(400, "存酒状态不可生成二维码");
     }
     if (type === "coupon") {
-      const coupon = store.data.coupons.find((item) => item.couponId === code.couponId);
-      if (!coupon) throw new HttpError(404, "酒水券不存在");
-      if (coupon.userId !== user.userId) throw new HttpError(403, "不能生成他人酒水券二维码");
-      if (coupon.status !== "available" && coupon.status !== "pending") throw new HttpError(400, "酒水券状态不可生成二维码");
+      throw new HttpError(400, "酒水券二维码暂未开放");
     }
     if (type === "lottery") {
-      const record = store.data.lotteryRecords.find((item) => item.recordId === code.lotteryRecordId);
-      if (!record) throw new HttpError(404, "中奖记录不存在");
-      if (record.userId !== user.userId) throw new HttpError(403, "不能生成他人中奖二维码");
-      if (record.status !== "won" && record.status !== "redeeming") throw new HttpError(400, "中奖记录状态不可生成二维码");
+      throw new HttpError(400, "中奖二维码暂未开放");
     }
     if (type === "points") {
       const amount = Math.abs(Number(code.pointsAmount || 0));
@@ -1786,8 +1746,8 @@ function createRouter(store) {
   });
 
   add("POST", "/api/lottery/draw", async (body) => {
-    if (!store.data.lotterySettings.enabled) throw new HttpError(400, "抽奖未开启");
     const user = store.getUser(body.userId || "user_demo");
+    if (!store.data.lotterySettings.enabled) throw new HttpError(400, "积分抽奖暂未开放");
     const today = dayKey();
     const todayCount = store.data.lotteryRecords.filter((record) => record.userId === user.userId && record.createdAt.startsWith(today)).length;
     if (todayCount >= store.data.lotterySettings.dailyLimit) throw new HttpError(429, "今日抽奖次数已用完");
@@ -1810,7 +1770,7 @@ function createRouter(store) {
 
   add("GET", "/api/lottery/records", async (_body, _params, query) => {
     const userId = query.get("userId") || "user_demo";
-    return { records: store.data.lotteryRecords.filter((record) => record.userId === userId), settings: store.data.lotterySettings, prizes: store.data.lotteryPrizes };
+    return { records: store.data.lotteryRecords.filter((record) => record.userId === userId), settings: store.data.lotterySettings, prizes: [], featureEnabled: false };
   });
 
   add("POST", "/api/lottery/records/:recordId/redeem-request", async (body, params) => {
@@ -2023,12 +1983,11 @@ function createRouter(store) {
       checkinEnabled: store.data.settings.checkinEnabled,
       checkinPoints: store.data.settings.checkinPoints,
       pointExpireDays: store.data.settings.pointExpireDays,
-      couponExchangePoints: store.data.settings.couponExchangePoints,
     },
   }));
   add("PATCH", "/api/admin/points-config", async (body) => {
     const before = deepClone(store.data.settings);
-    for (const key of ["pointRate", "checkinPoints", "pointExpireDays", "couponExchangePoints"]) {
+    for (const key of ["pointRate", "checkinPoints", "pointExpireDays"]) {
       if (body[key] !== undefined) store.data.settings[key] = Number(body[key]);
     }
     for (const key of ["pointsVisible", "checkinEnabled"]) {
@@ -2036,42 +1995,20 @@ function createRouter(store) {
     }
     store.log(body.operatorId || "emp_admin", "admin", "update_points_config", "Settings", store.data.settings.storeId, before, store.data.settings, "修改积分配置");
     await store.save();
-    return { config: { pointRate: store.data.settings.pointRate, pointsVisible: store.data.settings.pointsVisible, checkinEnabled: store.data.settings.checkinEnabled, checkinPoints: store.data.settings.checkinPoints, pointExpireDays: store.data.settings.pointExpireDays, couponExchangePoints: store.data.settings.couponExchangePoints } };
+    return { config: { pointRate: store.data.settings.pointRate, pointsVisible: store.data.settings.pointsVisible, checkinEnabled: store.data.settings.checkinEnabled, checkinPoints: store.data.settings.checkinPoints, pointExpireDays: store.data.settings.pointExpireDays } };
   });
   add("GET", "/api/admin/lottery/overview", async () => {
-    const month = monthKey();
-    const records = store.data.lotteryRecords;
-    return {
-      totalDraws: records.length,
-      monthDraws: records.filter((record) => monthKey(record.createdAt) === month).length,
-      wins: records.filter((record) => record.status === "won").length,
-      todayCostPoints: records.filter((record) => record.createdAt.startsWith(dayKey())).reduce((sum, record) => sum + record.costPoints, 0),
-      records,
-    };
+    return { totalDraws: 0, monthDraws: 0, wins: 0, todayCostPoints: 0, records: [], settings: store.data.lotterySettings, featureEnabled: false };
   });
-  add("GET", "/api/admin/lottery/prizes", async () => ({ prizes: store.data.lotteryPrizes, settings: store.data.lotterySettings }));
-  add("POST", "/api/admin/lottery/prizes", async (body) => {
-    const prize = { prizeId: newId("prize"), name: body.name, winRate: Number(body.winRate || 0), status: body.status || "active", createdAt: now() };
-    store.data.lotteryPrizes.push(prize);
-    await store.save();
-    return { prize };
+  add("GET", "/api/admin/lottery/prizes", async () => ({ prizes: [], settings: store.data.lotterySettings, featureEnabled: false }));
+  add("POST", "/api/admin/lottery/prizes", async () => {
+    throw new HttpError(400, "积分抽奖暂未开放");
   });
-  add("PATCH", "/api/admin/lottery/prizes/:prizeId", async (body, params) => {
-    const prize = store.data.lotteryPrizes.find((item) => item.prizeId === params.prizeId);
-    if (!prize) throw new HttpError(404, "奖品不存在");
-    const before = deepClone(prize);
-    if (body.name !== undefined) prize.name = body.name;
-    if (body.winRate !== undefined) prize.winRate = Number(body.winRate);
-    if (body.status !== undefined) prize.status = body.status;
-    prize.updatedAt = now();
-    store.log(body.operatorId || "emp_admin", "admin", "update_lottery_prize", "LotteryPrize", prize.prizeId, before, prize, "修改抽奖奖品");
-    await store.save();
-    return { prize };
+  add("PATCH", "/api/admin/lottery/prizes/:prizeId", async () => {
+    throw new HttpError(400, "积分抽奖暂未开放");
   });
-  add("PATCH", "/api/admin/lottery/settings", async (body) => {
-    store.data.lotterySettings = { ...store.data.lotterySettings, ...body };
-    await store.save();
-    return { settings: store.data.lotterySettings };
+  add("PATCH", "/api/admin/lottery/settings", async () => {
+    throw new HttpError(400, "积分抽奖暂未开放");
   });
   add("GET", "/api/admin/table-types", async () => ({ tableTypes: store.data.tableTypes }));
   add("POST", "/api/admin/table-types", async (body) => {

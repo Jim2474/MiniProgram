@@ -220,9 +220,6 @@ async function main() {
     const profile = await request(baseUrl, "/api/user/profile?userId=user_demo");
     assert(profile.user.phone === "13800000000" && profile.level.name, "个人中心聚合会员与等级");
 
-    const leaderboard = await request(baseUrl, "/api/leaderboard/points?userId=user_demo");
-    assert(leaderboard.top10.length >= 1 && leaderboard.mine.userId === "user_demo", "积分排行榜返回Top10和个人排行");
-
     const checkin = await request(baseUrl, "/api/checkin", { method: "POST", body: { userId: "user_demo" } });
     assert(checkin.record.points === 10, "签到送积分");
     let duplicateCheckin = "";
@@ -243,39 +240,22 @@ async function main() {
     const rechargeRecords = await request(baseUrl, "/api/recharge-records?userId=user_demo");
     assert(rechargeRecords.records.length === 0 && rechargeRecords.configs.length === 0 && rechargeRecords.featureEnabled === false, "充值中心不返回可用充值配置");
 
-    const exchangedCoupons = await request(baseUrl, "/api/coupons/exchange", { method: "POST", body: { userId: "user_demo", count: 1, skuId: "sku_bud" } });
-    assert(exchangedCoupons.coupons.length === 1 && exchangedCoupons.costPoints === 100, "客户可用积分兑换酒水券");
-
-    const couponsBefore = await request(baseUrl, "/api/coupons?userId=user_demo");
-    const coupon = couponsBefore.coupons.find((item) => item.status === "available");
-    const couponRequest = await request(baseUrl, `/api/coupons/${coupon.couponId}/redeem-request`, { method: "POST", body: { userId: "user_demo" } });
-    assert(couponRequest.coupon.status === "pending", "客户可发起酒水券兑换");
-    const couponConfirm = await request(baseUrl, `/api/staff/coupons/${coupon.couponId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
-    assert(couponConfirm.coupon.status === "completed", "员工可确认酒水券兑换");
-
-    const lottery = await request(baseUrl, "/api/lottery/draw", { method: "POST", body: { userId: "user_demo" } });
-    assert(lottery.record.status === "won" && lottery.record.costPoints === 20, "积分抽奖扣积分并生成中奖记录");
-    const lotteryRedeemRequest = await request(baseUrl, `/api/lottery/records/${lottery.record.recordId}/redeem-request`, { method: "POST", body: { userId: "user_demo" } });
-    assert(lotteryRedeemRequest.record.status === "redeeming", "客户可申请中奖记录核销");
-    const lotteryRedeemConfirm = await request(baseUrl, `/api/staff/lottery-records/${lottery.record.recordId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
-    assert(lotteryRedeemConfirm.record.status === "completed" && lotteryRedeemConfirm.record.redeemedBy === "emp_anna", "员工可确认核销中奖记录");
-    const lotteryOverview = await request(baseUrl, "/api/admin/lottery/overview");
-    assert(lotteryOverview.totalDraws >= 1 && lotteryOverview.todayCostPoints >= 20, "后台抽奖概况更新");
-    await request(baseUrl, "/api/staff/points/adjust", { method: "POST", body: { operatorId: "emp_anna", userId: "user_demo", amount: 50, reason: "二维码抽奖测试补积分" } });
-    const lotteryForQr = await request(baseUrl, "/api/lottery/draw", { method: "POST", body: { userId: "user_demo" } });
-    const lotteryQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "lottery", lotteryRecordId: lotteryForQr.record.recordId } });
-    const confirmedLotteryQr = await request(baseUrl, `/api/staff/verification-codes/${lotteryQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
-    assert(confirmedLotteryQr.result.lotteryRecord.status === "completed", "员工可扫码核销中奖二维码");
-    const lotterySettings = await request(baseUrl, "/api/admin/lottery/settings", { method: "PATCH", body: { cooldownMinutes: 10, dailyLimit: 5 } });
-    assert(lotterySettings.settings.cooldownMinutes === 10 && lotterySettings.settings.dailyLimit === 5, "后台可配置抽奖冷却和每日次数");
-    let cooldownError = "";
+    const leaderboard = await request(baseUrl, "/api/leaderboard/points?userId=user_demo");
+    assert(leaderboard.featureEnabled === false && leaderboard.top10.length === 0, "积分排行榜暂不开放");
+    let couponExchangeError = "";
+    try {
+      await request(baseUrl, "/api/coupons/exchange", { method: "POST", body: { userId: "user_demo", count: 1, skuId: "sku_bud" } });
+    } catch (error) {
+      couponExchangeError = error.message;
+    }
+    assert(couponExchangeError.includes("积分兑换酒水券暂未开放"), "积分兑换酒水券暂不开放");
+    let lotteryError = "";
     try {
       await request(baseUrl, "/api/lottery/draw", { method: "POST", body: { userId: "user_demo" } });
     } catch (error) {
-      cooldownError = error.message;
+      lotteryError = error.message;
     }
-    assert(cooldownError.includes("抽奖冷却中"), "抽奖冷却时间生效");
-    await request(baseUrl, "/api/admin/lottery/settings", { method: "PATCH", body: { cooldownMinutes: 0 } });
+    assert(lotteryError.includes("积分抽奖暂未开放"), "积分抽奖暂不开放");
 
     const finance = await request(baseUrl, "/api/admin/finance/overview");
     assert(typeof finance.todayRevenue === "number" && Array.isArray(finance.trend), "财务概览返回营收和趋势");
@@ -320,8 +300,8 @@ async function main() {
     const rejectedRequest = await request(baseUrl, `/api/admin/stock-requests/${rejectRequest.request.requestId}/reject`, { method: "POST", body: { operatorId: "emp_admin", reason: "单据错误" } });
     assert(rejectedRequest.request.status === "rejected", "出入库申请可驳回");
 
-    const pointsConfig = await request(baseUrl, "/api/admin/points-config", { method: "PATCH", body: { couponExchangePoints: 80, checkinPoints: 12, pointExpireDays: 180, pointsVisible: true } });
-    assert(pointsConfig.config.couponExchangePoints === 80 && pointsConfig.config.checkinPoints === 12 && pointsConfig.config.pointExpireDays === 180, "后台可配置积分规则");
+    const pointsConfig = await request(baseUrl, "/api/admin/points-config", { method: "PATCH", body: { checkinPoints: 12, pointExpireDays: 180, pointsVisible: true } });
+    assert(pointsConfig.config.checkinPoints === 12 && pointsConfig.config.pointExpireDays === 180 && pointsConfig.config.pointsVisible === true, "后台可配置积分明细显示和有效期规则");
 
     const expiredStorage = await request(baseUrl, "/api/staff/storage", {
       method: "POST",
@@ -371,12 +351,6 @@ async function main() {
     const confirmedStorageQr = await request(baseUrl, `/api/staff/verification-codes/${storageQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna", quantity: 1 } });
     assert(confirmedStorageQr.result.storage.status === "empty", "员工可扫码核销取酒二维码");
 
-    await request(baseUrl, "/api/staff/points/adjust", { method: "POST", body: { operatorId: "emp_anna", userId: "user_demo", amount: 120, reason: "二维码酒水券测试补积分" } });
-    const qrCouponSource = await request(baseUrl, "/api/coupons/exchange", { method: "POST", body: { userId: "user_demo", count: 1, skuId: "sku_bud" } });
-    const couponQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "coupon", couponId: qrCouponSource.coupons[0].couponId } });
-    const confirmedCouponQr = await request(baseUrl, `/api/staff/verification-codes/${couponQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
-    assert(confirmedCouponQr.result.coupon.status === "completed", "员工可扫码核销酒水券二维码");
-
     const scanRecords = await request(baseUrl, "/api/admin/scan-records");
     assert(scanRecords.records.some((record) => record.employeeId === "emp_anna"), "后台可查看扫码归属记录");
 
@@ -389,9 +363,6 @@ async function main() {
 
     const tableType = await request(baseUrl, "/api/admin/table-types", { method: "POST", body: { name: "超级VIP卡", capacity: 9 } });
     assert(tableType.type.name === "超级VIP卡", "后台可新增咖位类型");
-    const prize = await request(baseUrl, "/api/admin/lottery/prizes", { method: "POST", body: { name: "测试奖品", winRate: 5 } });
-    const disabledPrize = await request(baseUrl, `/api/admin/lottery/prizes/${prize.prize.prizeId}`, { method: "PATCH", body: { status: "disabled", winRate: 0 } });
-    assert(disabledPrize.prize.status === "disabled" && disabledPrize.prize.winRate === 0, "后台可编辑并停用抽奖奖品");
     const table = await request(baseUrl, "/api/admin/tables", { method: "POST", body: { name: "B2 超级桌", type: "超级VIP卡", capacity: 9 } });
     assert(table.table.name === "B2 超级桌", "后台可新增座台信息");
     const occupiedTable = await request(baseUrl, `/api/admin/tables/${table.table.tableId}`, {

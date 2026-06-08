@@ -138,34 +138,10 @@
     </view>
     <view class="btn-row">
       <button size="mini" class="primary" bindtap="checkin">签到送积分</button>
-      <button size="mini" class="secondary" bindtap="drawLottery">积分抽奖</button>
     </view>
     <view class="row">
       <view class="row-title">签到记录</view>
       <view wx:for="{{checkinRecords}}" wx:key="checkinId" class="muted">{{item.date}} · +{{item.points}}</view>
-    </view>
-    <view class="row">
-      <view class="row-title">积分排行榜</view>
-      <view wx:for="{{leaderboard}}" wx:key="userId" class="muted">{{item.rank}}. {{item.nickname}} · {{item.pointsBalance}}分</view>
-      <view class="muted" wx:if="{{myRank}}">我的排名：{{myRank.rank}}</view>
-    </view>
-    <view class="row">
-      <view class="row-title">酒水券</view>
-      <view wx:for="{{coupons}}" wx:key="couponId" class="muted">{{item.title}} · {{item.statusText}}</view>
-      <view class="btn-row">
-        <button size="mini" class="secondary" bindtap="exchangeCoupon">积分兑换酒水券</button>
-        <button wx:if="{{redeemableCouponId}}" size="mini" class="primary" data-id="{{redeemableCouponId}}" bindtap="requestCouponRedeem">申请兑换</button>
-        <button size="mini" class="secondary" data-type="coupon" bindtap="createQrCode">生成酒水券二维码</button>
-      </view>
-      <view wx:for="{{couponRecords}}" wx:key="recordId" class="muted">{{item.action}} · {{item.statusText}}</view>
-    </view>
-    <view class="row">
-      <view class="row-title">中奖记录</view>
-      <view wx:for="{{lotteryRecords}}" wx:key="recordId" class="muted">{{item.prizeName}} · {{item.statusText}}</view>
-      <view class="btn-row">
-        <button wx:if="{{redeemableLotteryId}}" size="mini" class="primary" data-id="{{redeemableLotteryId}}" bindtap="requestLotteryRedeem">申请核销奖品</button>
-        <button size="mini" class="secondary" data-type="lottery" bindtap="createQrCode">生成中奖二维码</button>
-      </view>
     </view>
     <view class="row">
       <view class="row-title">核销二维码</view>
