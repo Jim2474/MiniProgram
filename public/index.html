@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>德扑棋牌门店小程序 V1</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark">盲</span>
+          <div>
+            <strong>河岸德扑酒馆</strong>
+            <small>V1 运营原型</small>
+          </div>
+        </div>
+        <nav>
+          <button class="nav-link active" data-view="customer">客户点单</button>
+          <button class="nav-link" data-view="staff">员工端</button>
+          <button class="nav-link" data-view="admin">商家后台</button>
+          <button class="nav-link" data-view="dealer">荷官升盲</button>
+        </nav>
+        <div class="sidebar-note">
+          <span>模拟微信支付</span>
+          <strong>支付成功会真实扣库存、发积分、写流水。</strong>
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">PRD V1 IMPLEMENTATION</p>
+            <h1 id="viewTitle">客户点单</h1>
+          </div>
+          <button id="refreshBtn" class="ghost-button">刷新数据</button>
+        </header>
+
+        <section id="customer" class="view active">
+          <div class="workspace two-columns">
+            <section class="panel">
+              <div class="section-head">
+                <h2>员工二维码点单</h2>
+                <p>选择员工代表扫码来源，加入购物车后创建并支付订单。</p>
+              </div>
+              <label class="field">
+                <span>扫码员工</span>
+                <select id="customerEmployee"></select>
+              </label>
+              <div id="productList" class="product-list"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <h2>购物车与支付</h2>
+                <p>库存不足会在创建订单前被拦截。</p>
+              </div>
+              <div id="cartList" class="compact-list"></div>
+              <button id="createOrderBtn" class="primary-button">创建订单</button>
+              <button id="payOrderBtn" class="primary-button muted" disabled>模拟微信支付</button>
+              <div id="customerResult" class="result-box"></div>
+            </section>
+          </div>
+
+          <div class="workspace three-columns">
+            <section class="panel">
+              <h2>我的订单</h2>
+              <div id="myOrders" class="compact-list"></div>
+            </section>
+            <section class="panel">
+              <h2>我的积分</h2>
+              <div id="myPoints" class="compact-list"></div>
+            </section>
+            <section class="panel">
+              <h2>我的存酒与预约</h2>
+              <div id="myStorage" class="compact-list"></div>
+              <div id="tableList" class="compact-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="staff" class="view">
+          <div class="workspace two-columns">
+            <section class="panel">
+              <div class="section-head">
+                <h2>员工工作台</h2>
+                <p>专属二维码、订单和个人业绩。</p>
+              </div>
+              <label class="field">
+                <span>当前员工</span>
+                <select id="staffEmployee"></select>
+              </label>
+              <div id="staffQr" class="qr-box"></div>
+              <div id="staffPerformance" class="metric-row"></div>
+              <div id="staffOrders" class="compact-list"></div>
+            </section>
+
+            <section class="panel">
+              <div class="section-head">
+                <h2>存酒与积分处理</h2>
+                <p>员工新增存酒需勾选寄存协议，积分调整受限额控制。</p>
+              </div>
+              <div class="form-grid">
+                <input id="storagePhone" placeholder="客户手机号" value="13800000000" />
+                <select id="storageSku"></select>
+                <input id="storageQty" type="number" min="1" value="1" />
+                <button id="addStorageBtn" class="primary-button">新增存酒</button>
+              </div>
+              <div class="form-grid">
+                <input id="pointAmount" type="number" value="20" />
+                <input id="pointReason" value="现场服务补偿" />
+                <button id="adjustPointsBtn" class="ghost-button">调整积分</button>
+              </div>
+              <div id="pickupRequests" class="compact-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="admin" class="view">
+          <div id="dashboard" class="metric-grid"></div>
+          <div class="workspace two-columns">
+            <section class="panel">
+              <div class="section-head">
+                <h2>订单管理</h2>
+                <p>后台可完成订单、退款、查看归属。</p>
+              </div>
+              <div id="adminOrders" class="compact-list"></div>
+            </section>
+            <section class="panel">
+              <div class="section-head">
+                <h2>商品库存</h2>
+                <p>展示 SKU 库存与预警，支持快速调整。</p>
+              </div>
+              <div id="adminProducts" class="compact-list"></div>
+            </section>
+          </div>
+          <div class="workspace two-columns">
+            <section class="panel">
+              <h2>客户存酒与预约</h2>
+              <div id="adminStorage" class="compact-list"></div>
+              <div id="adminReservations" class="compact-list"></div>
+            </section>
+            <section class="panel">
+              <h2>操作日志</h2>
+              <div id="operationLogs" class="compact-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="dealer" class="view">
+          <div class="workspace two-columns">
+            <section class="panel">
+              <div class="section-head">
+                <h2>创建升盲局</h2>
+                <p>轻量计时与现场人数/代入统计。</p>
+              </div>
+              <div class="form-grid">
+                <input id="smallBlind" type="number" value="1" />
+                <input id="bigBlind" type="number" value="2" />
+                <input id="intervalMinutes" type="number" value="10" />
+                <input id="initialPlayers" type="number" value="9" />
+                <input id="buyinAmount" type="number" value="100" />
+                <button id="createGameBtn" class="primary-button">开始本局</button>
+              </div>
+            </section>
+            <section class="panel">
+              <h2>游戏进行中</h2>
+              <div id="blindGame" class="compact-list"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
