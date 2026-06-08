@@ -131,7 +131,7 @@ async function main() {
     });
     assert(reservation.reservation.status === "pending", "客户可提交桌位预约");
     const publicTables = await request(baseUrl, "/api/tables");
-    assert(publicTables.tables.every((item) => item.capacity >= 1 && item.imageUrl !== undefined), "客户预约页可获取桌台人数和图片字段");
+    assert(publicTables.tables.every((item) => item.capacity >= 1 && item.imageUrl), "客户预约页可获取桌台人数和非空图片字段");
     const confirmedReservation = await request(baseUrl, `/api/admin/reservations/${reservation.reservation.reservationId}`, {
       method: "PATCH",
       body: { status: "confirmed", operatorId: "emp_admin" },

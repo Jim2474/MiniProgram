@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V19
+# 德扑棋牌门店小程序 V20
 
 本仓库包含：
 
@@ -68,10 +68,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V19 验收状态
+## V20 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V20.md`
 - `docs/ACCEPTANCE-V19.md`
 - `docs/ACCEPTANCE-V18.md`
 - `docs/ACCEPTANCE-V17.md`
@@ -96,6 +97,13 @@ node scripts/validate-miniprogram.mjs
 - 小程序结构与 API 调用校验：111 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V20 新增能力
+
+- 修复 V17 桌台默认图片实际落到商品图片上的 seed 数据偏差。
+- 商品图片恢复商品占位图，桌台图片使用桌台/房台占位图。
+- 已有数据、后台新增/编辑桌台若图片为空，会自动补默认桌台图。
+- 自动验收从“有 imageUrl 字段”加强为“预约桌台 imageUrl 非空”。
 
 ## V19 新增能力
 

@@ -177,7 +177,7 @@ function seedData() {
         warningQty: 12,
         status: "active",
         description: "冰镇瓶装啤酒，适合拼桌畅饮。",
-        imageUrl: "https://dummyimage.com/640x360/18241f/f4d9a6&text=A1+Poker+Table",
+        imageUrl: "https://dummyimage.com/640x360/18241f/f4d9a6&text=Budweiser",
         storageDays: 30,
       },
       {
@@ -193,7 +193,7 @@ function seedData() {
         warningQty: 2,
         status: "active",
         description: "可现场饮用，也可转为客户存酒。",
-        imageUrl: "https://dummyimage.com/640x360/261b30/f4d9a6&text=VIP+Room",
+        imageUrl: "https://dummyimage.com/640x360/261b30/f4d9a6&text=Whisky",
         storageDays: 60,
       },
       {
@@ -209,7 +209,7 @@ function seedData() {
         warningQty: 5,
         status: "active",
         description: "现场现做小吃。",
-        imageUrl: "",
+        imageUrl: "https://dummyimage.com/640x360/233326/f4d9a6&text=Fries",
         storageDays: 0,
       },
     ],
@@ -254,7 +254,7 @@ function seedData() {
         name: "A1 德扑桌",
         type: "普通卡座",
         capacity: 9,
-        imageUrl: "",
+        imageUrl: "https://dummyimage.com/640x360/18241f/f4d9a6&text=A1+Poker+Table",
         occupiedStartedAt: null,
         consumptionAmount: 0,
         status: "available",
@@ -266,7 +266,7 @@ function seedData() {
         name: "VIP 房台",
         type: "VIP卡座",
         capacity: 9,
-        imageUrl: "",
+        imageUrl: "https://dummyimage.com/640x360/261b30/f4d9a6&text=VIP+Room",
         occupiedStartedAt: null,
         consumptionAmount: 0,
         status: "reserved",
@@ -368,6 +368,7 @@ class Store {
     for (const table of this.data.tables || []) {
       table.occupiedStartedAt ||= null;
       table.consumptionAmount ||= 0;
+      table.imageUrl ||= defaultTableImage(table);
     }
     for (const storage of this.data.customerStorage || []) {
       storage.handledAt ||= null;
@@ -619,9 +620,17 @@ function employeeOrderQr(employee) {
   };
 }
 
+function defaultTableImage(table) {
+  if (table?.tableId === "table_vip" || table?.type?.includes("VIP") || table?.name?.includes("VIP")) {
+    return "https://dummyimage.com/640x360/261b30/f4d9a6&text=VIP+Room";
+  }
+  return "https://dummyimage.com/640x360/18241f/f4d9a6&text=Poker+Table";
+}
+
 function publicTable(store, table) {
   return {
     ...table,
+    imageUrl: table.imageUrl || defaultTableImage(table),
     reservations: store.data.reservations.filter((reservation) => reservation.tableId === table.tableId && reservation.status === "confirmed"),
   };
 }
@@ -2087,7 +2096,7 @@ function createRouter(store) {
       name: body.name || "新桌台",
       type: body.type || store.data.tableTypes[0]?.name || "普通卡座",
       capacity: Number(body.capacity || 9),
-      imageUrl: body.imageUrl || "",
+      imageUrl: body.imageUrl || defaultTableImage(body),
       occupiedStartedAt: null,
       consumptionAmount: 0,
       status: body.status || "available",
@@ -2105,7 +2114,7 @@ function createRouter(store) {
     if (body.type !== undefined) table.type = body.type;
     if (body.capacity !== undefined) table.capacity = Number(body.capacity);
     if (body.status !== undefined) table.status = body.status;
-    if (body.imageUrl !== undefined) table.imageUrl = body.imageUrl;
+    if (body.imageUrl !== undefined) table.imageUrl = body.imageUrl || defaultTableImage(table);
     if (body.consumptionAmount !== undefined) table.consumptionAmount = Number(body.consumptionAmount || 0);
     if (table.status === "occupied" && !table.occupiedStartedAt) table.occupiedStartedAt = now();
     if (table.status !== "occupied") table.occupiedStartedAt = null;
