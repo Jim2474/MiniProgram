@@ -117,6 +117,10 @@ Page({
       type: "普通卡座",
       capacity: 9,
       imageUrl: "https://dummyimage.com/640x360/183026/f4d9a6&text=Poker+Table"
+    },
+    tableOccupyForm: {
+      consumptionAmount: 0,
+      reason: "后台开台"
     }
   },
 
@@ -568,6 +572,14 @@ Page({
     this.setData({ "tableForm.imageUrl": event.detail.value })
   },
 
+  onTableOccupyAmount(event) {
+    this.setData({ "tableOccupyForm.consumptionAmount": Number(event.detail.value || 0) })
+  },
+
+  onTableOccupyReason(event) {
+    this.setData({ "tableOccupyForm.reason": event.detail.value })
+  },
+
   onTableKeyword(event) {
     this.setData({ tableKeyword: event.detail.value, "tablePagination.page": 1 })
   },
@@ -607,7 +619,15 @@ Page({
 
   async occupyTable(event) {
     try {
-      await request(`/api/admin/tables/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status: "occupied", consumptionAmount: 388, reason: "后台开台" } })
+      await request(`/api/admin/tables/${event.currentTarget.dataset.id}`, {
+        method: "PATCH",
+        data: {
+          status: "occupied",
+          consumptionAmount: this.data.tableOccupyForm.consumptionAmount,
+          reason: this.data.tableOccupyForm.reason,
+          operatorId: "emp_admin"
+        }
+      })
       wx.showToast({ title: "已开台" })
       await this.loadTables()
       await this.loadDashboard()

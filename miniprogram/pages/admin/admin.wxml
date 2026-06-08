@@ -174,6 +174,11 @@
     <input class="input" type="number" value="{{tableForm.capacity}}" bindinput="onTableCapacity" placeholder="人数" />
     <input class="input" value="{{tableForm.imageUrl}}" bindinput="onTableImage" placeholder="桌台图片 URL" />
     <button size="mini" class="primary" bindtap="createTable">新增座台</button>
+    <view class="row">
+      <view class="row-title">开台占用表单</view>
+      <input class="input" type="number" value="{{tableOccupyForm.consumptionAmount}}" bindinput="onTableOccupyAmount" placeholder="开台消费金额" />
+      <input class="input" value="{{tableOccupyForm.reason}}" bindinput="onTableOccupyReason" placeholder="开台原因" />
+    </view>
     <view wx:for="{{tables}}" wx:key="tableId" class="row">
       <view class="row-title">{{item.name}} · {{item.capacity}}人</view>
       <view class="muted">{{item.type}} · {{item.statusText}} · 消费 {{item.consumptionText}} · 图片 {{item.imageUrl ? '已配置' : '未配置'}}</view>

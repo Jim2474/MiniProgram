@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V46
+# 德扑棋牌门店小程序 V47
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V46 验收状态
+## V47 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V47.md`
 - `docs/ACCEPTANCE-V46.md`
 - `docs/ACCEPTANCE-V45.md`
 - `docs/ACCEPTANCE-V44.md`
@@ -252,6 +253,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V47 新增能力
+
+- 后台咖位管理新增开台占用表单，可填写消费金额和开台原因。
+- 开台占用按钮不再固定提交 388 元，而是使用表单值更新桌台状态。
+- 自动验收覆盖真实开台输入入口。
 
 ## V46 新增能力
 
