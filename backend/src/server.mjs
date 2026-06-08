@@ -1018,7 +1018,18 @@ function publicOrder(store, order) {
   });
   const employee = order.employeeId ? publicEmployee(store.data.employees.find((item) => item.employeeId === order.employeeId)) : null;
   const user = store.data.users.find((item) => item.userId === order.userId);
-  return { ...order, items, transferableItems, employee, user };
+  const payment = store.data.payments.find((item) => item.orderId === order.orderId && item.status !== "cancelled") || null;
+  return {
+    ...order,
+    items,
+    transferableItems,
+    employee,
+    user,
+    payment,
+    paymentProvider: payment?.provider || null,
+    paymentPaidAt: payment?.paidAt || order.paidAt || null,
+    paymentMethodText: payment?.provider === "mock_wechat" ? "模拟微信支付" : "微信支付",
+  };
 }
 
 function orderHasStorageTransfer(store, orderId) {

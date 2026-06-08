@@ -393,6 +393,8 @@ async function main() {
     assert(typeof finance.todayRevenue === "number" && Array.isArray(finance.trend), "财务概览返回营收和趋势");
     const businessDetails = await request(baseUrl, "/api/admin/business-details");
     assert(Array.isArray(businessDetails.details), "营业明细可查询");
+    const paidBusinessDetail = businessDetails.details.find((detail) => detail.orderId === paid.order.orderId);
+    assert(paidBusinessDetail.payment?.provider === "mock_wechat" && paidBusinessDetail.paymentProvider === "mock_wechat" && paidBusinessDetail.paymentPaidAt, "营业明细返回支付方式和支付时间");
     const consumptionRecords = await request(baseUrl, "/api/admin/consumption-records?userId=user_demo");
     assert(Array.isArray(consumptionRecords.records), "会员消费记录可查询");
 

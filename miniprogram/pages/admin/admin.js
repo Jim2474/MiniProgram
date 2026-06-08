@@ -331,8 +331,8 @@ Page({
       businessDetails: business.details.slice(0, 10).map((item) => ({
         ...item,
         amountText: money(item.amount),
-        paidAtText: item.paidAt ? item.paidAt.slice(0, 16) : "未支付",
-        paymentMethodText: item.paymentProvider || "wechat_pay",
+        paidAtText: (item.paymentPaidAt || item.paidAt || "").slice(0, 16) || "未支付",
+        paymentMethodText: item.paymentMethodText || item.paymentProvider || "微信支付",
         itemSummary: (item.items || []).map((orderItem) => `${orderItem.product ? orderItem.product.name : orderItem.skuId} x${orderItem.quantity}`).join("；"),
         employeeName: item.employee ? item.employee.name : "自然订单"
       })),

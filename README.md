@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V77 验收状态
+## V78 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V78.md`
 - `docs/ACCEPTANCE-V77.md`
 - `docs/ACCEPTANCE-V76.md`
 - `docs/REQUIREMENTS-AUDIT-V76.md`
@@ -288,6 +289,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V78 新增能力
+
+- 公开订单结构返回关联支付记录、支付提供方、支付时间和支付方式文案。
+- 后台营业明细优先使用后端支付字段展示支付时间和支付方式。
+- 自动验收覆盖营业明细真实支付字段，避免前端只靠兜底文案展示。
 
 ## V77 新增能力
 
