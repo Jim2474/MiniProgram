@@ -274,6 +274,14 @@
       <view class="row-title">{{item.user.phone}} · {{item.amountText}}</view>
       <view class="muted">{{item.statusText}} · {{item.employee ? item.employee.name : '自然订单'}}</view>
     </view>
+    <view class="row">
+      <view class="row-title">营业明细</view>
+      <view class="muted">展示最近支付订单的项目、支付时间、金额、支付方式和服务人员。</view>
+    </view>
+    <view wx:for="{{businessDetails}}" wx:key="orderId" class="row">
+      <view class="row-title">{{item.itemSummary || item.orderId}} · {{item.amountText}}</view>
+      <view class="muted">支付时间 {{item.paidAtText}} · 支付方式 {{item.paymentMethodText}} · 服务人员 {{item.employeeName}}</view>
+    </view>
   </view>
 
   <view class="section">

@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V73 验收状态
+## V74 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V74.md`
 - `docs/ACCEPTANCE-V73.md`
 - `docs/ACCEPTANCE-V72.md`
 - `docs/ACCEPTANCE-V71.md`
@@ -283,6 +284,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V74 新增能力
+
+- 后台财务与营业模块展示营业明细列表。
+- 营业明细包含项目摘要、支付时间、金额、支付方式和服务人员，对齐 Excel 中收入明细/营业明细展示要求。
+- 自动验收覆盖营业明细支付字段展示，避免只请求数据不渲染。
 
 ## V73 新增能力
 

@@ -327,7 +327,14 @@ Page({
         monthRevenueText: money(finance.monthRevenue),
         wechatPayRevenueText: money(finance.wechatPayRevenue)
       },
-      businessDetails: business.details,
+      businessDetails: business.details.slice(0, 10).map((item) => ({
+        ...item,
+        amountText: money(item.amount),
+        paidAtText: item.paidAt ? item.paidAt.slice(0, 16) : "未支付",
+        paymentMethodText: item.paymentProvider || "wechat_pay",
+        itemSummary: (item.items || []).map((orderItem) => `${orderItem.product ? orderItem.product.name : orderItem.skuId} x${orderItem.quantity}`).join("；"),
+        employeeName: item.employee ? item.employee.name : "自然订单"
+      })),
       users: users.users.map((item) => ({ ...item, totalSpendText: money(item.totalSpend) })),
       consumptionRecords: consumptionRecords.records.map((item) => ({ ...item, amountText: money(item.amount), statusText: statusText(item.orderStatus) })),
       pointsLedgers: pointsLedgers.ledgers.slice(0, 8).map((item) => ({

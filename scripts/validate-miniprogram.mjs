@@ -166,6 +166,7 @@ assert(adminJs.includes("createdDate") && adminJs.includes("statusText: statusTe
 assert(adminJs.includes("/api/admin/stock-counts") && adminWxml.includes("库存盘点单"), "admin page supports stock count workflow");
 assert(adminJs.includes("stockCountForm") && adminJs.includes("onStockCountQty") && adminWxml.includes("实盘库存") && adminWxml.includes("创建盘点单") && !adminWxml.includes("盘点 +10"), "admin page supports real stock count input");
 assert(adminJs.includes("/api/admin/finance/overview"), "admin page calls finance API");
+assert(adminJs.includes("/api/admin/business-details") && adminJs.includes("paidAtText") && adminJs.includes("paymentMethodText") && adminJs.includes("itemSummary") && adminWxml.includes("支付时间") && adminWxml.includes("支付方式"), "admin page displays business detail payment fields");
 assert(!adminJs.includes("/api/admin/recharge-configs") && !adminWxml.includes("新增充值"), "admin page hides recharge config operations");
 assert(adminJs.includes("/api/admin/consumption-records"), "admin page calls consumption records API");
 assert(adminJs.includes("/api/admin/users") && adminWxml.includes("存酒 {{item.hasStorage") && adminWxml.includes("消费 {{item.totalSpendText"), "admin page displays member storage points and spend summary");
