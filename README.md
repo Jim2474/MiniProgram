@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V25
+# 德扑棋牌门店小程序 V26
 
 本仓库包含：
 
@@ -27,6 +27,8 @@ APP_ENV=production   # 默认禁止模拟微信能力
 ALLOW_MOCK_WECHAT=true  # 仅用于生产前沙箱演示，显式允许模拟微信能力
 REQUIRE_AUTH=true       # 开发/沙箱环境也强制后台和员工接口校验员工会话
 ```
+
+生产环境变量可参考 `.env.example`。`/api/health` 会返回 `runtime.deployment`，列出真实微信支付/登录和数据库配置缺口。
 
 健康检查：
 
@@ -69,10 +71,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V25 验收状态
+## V26 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V26.md`
 - `docs/ACCEPTANCE-V25.md`
 - `docs/EXCEL-AUDIT-V25.md`
 - `docs/REQUIREMENTS-AUDIT-V24.md`
@@ -101,10 +104,16 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：132 项。
+- 后端业务自验收：134 项。
 - 小程序结构与 API 调用校验：121 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V26 新增能力
+
+- `/api/health` 新增 `runtime.deployment`，机器可读地报告微信登录、微信支付和数据库配置缺口。
+- 新增 `.env.example`，列出生产环境微信和数据库变量。
+- 重新验证 V25 项目在本机微信开发者工具中已打开；CLI 仍阻塞超时，需 GUI 人工看模拟器画面。
 
 ## V25 新增能力
 

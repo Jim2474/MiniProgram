@@ -35,6 +35,7 @@ async function main() {
     assert(boot.user.phone === "13800000000", "微信登录种子会员存在");
     assert(boot.employees.every((employee) => !("passwordHash" in employee)), "初始化数据不暴露员工密码字段");
     assert(boot.runtime.mockWechatEnabled === true && boot.runtime.paymentProvider === "mock_wechat", "开发环境显式标记模拟微信能力");
+    assert(boot.runtime.deployment.missingWechatEnv.includes("WECHAT_APPID") && boot.runtime.deployment.usingJsonStore === true, "运行时返回微信和数据层部署检查");
 
     const loggedInUser = await request(baseUrl, "/api/wechat/login", { method: "POST", body: { phone: "13700001111", nickname: "新会员" } });
     const newUserId = loggedInUser.user.userId;
@@ -476,6 +477,7 @@ async function main() {
     try {
       const blockedHealth = await request(blockedBaseUrl, "/api/health");
       assert(blockedHealth.runtime.mockWechatEnabled === false, "生产环境默认禁用模拟微信能力");
+      assert(blockedHealth.runtime.deployment.wechatConfigured === false && blockedHealth.runtime.deployment.missingWechatEnv.includes("WECHAT_MCH_ID"), "生产环境健康检查暴露真实微信配置缺口");
       let prodLoginError = "";
       try {
         await request(blockedBaseUrl, "/api/wechat/login", { method: "POST", body: { phone: "13600000000" } });

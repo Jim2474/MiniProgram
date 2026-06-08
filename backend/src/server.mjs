@@ -20,11 +20,30 @@ const addDays = (days) => {
 const currentAppEnv = () => process.env.APP_ENV || process.env.NODE_ENV || "development";
 const mockWechatEnabled = () => process.env.ALLOW_MOCK_WECHAT === "true" || currentAppEnv() !== "production";
 const authRequired = () => process.env.REQUIRE_AUTH === "true" || currentAppEnv() === "production";
+const requiredWechatEnv = [
+  "WECHAT_APPID",
+  "WECHAT_APP_SECRET",
+  "WECHAT_MCH_ID",
+  "WECHAT_PAY_SERIAL_NO",
+  "WECHAT_PAY_PRIVATE_KEY",
+  "WECHAT_PAY_API_V3_KEY",
+  "WECHAT_PAY_NOTIFY_URL",
+];
+const deploymentChecks = () => {
+  const missingWechatEnv = requiredWechatEnv.filter((key) => !process.env[key]);
+  return {
+    wechatConfigured: missingWechatEnv.length === 0,
+    missingWechatEnv,
+    databaseConfigured: Boolean(process.env.DATABASE_URL),
+    usingJsonStore: !process.env.DATABASE_URL,
+  };
+};
 const runtimeInfo = () => ({
   appEnv: currentAppEnv(),
   mockWechatEnabled: mockWechatEnabled(),
   paymentProvider: mockWechatEnabled() ? "mock_wechat" : "wechat_pay_required",
   authRequired: authRequired(),
+  deployment: deploymentChecks(),
 });
 function requireMockWechat(feature) {
   if (!mockWechatEnabled()) throw new HttpError(501, `${feature}需要接入真实微信能力，生产环境禁止使用模拟接口`);
