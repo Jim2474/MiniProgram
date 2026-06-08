@@ -21,6 +21,22 @@
   margin-bottom: 12rpx;
 }
 
+.blind-live-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 12rpx;
+}
+
+.blind-meta-item {
+  min-width: 180rpx;
+  padding: 8rpx 12rpx;
+  border-radius: 8rpx;
+  background: #eef6f1;
+  color: #1d3a2a;
+  font-size: 24rpx;
+}
+
 .champion-panel {
   margin-top: 12rpx;
   border: 1rpx solid #d8ded6;

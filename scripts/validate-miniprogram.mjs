@@ -236,6 +236,9 @@ assert(dealerWxml.includes("gameSeatAction"), "dealer page supports seat-specifi
 assert(dealerJs.includes("/api/staff/blind-settings") && !dealerJs.includes("/api/admin/blind-settings"), "dealer page reads staff-safe blind settings API");
 assert(dealerWxml.includes("championBackgroundImage") && dealerWxml.includes("voiceTerms") && dealerWxml.includes("blindLevelsText"), "dealer page displays advanced blind settings and blind sequence");
 assert(dealerWxml.includes("blindSettings.logo") && dealerWxml.includes("blind-logo") && dealerWxss.includes(".blind-logo"), "dealer page displays configured blind timer logo");
+assert(dealerJs.includes("beijingTimeText") && dealerJs.includes("updateClockText") && dealerJs.includes("setInterval") && dealerWxml.includes("北京时间 {{beijingTimeText}}"), "dealer page displays live Beijing time when enabled");
+assert(dealerJs.includes("registrationCountdownText") && dealerWxml.includes("报名倒计时 {{registrationCountdownText}}") && dealerWxml.includes("showRegistrationCountdown"), "dealer page displays registration countdown when enabled");
+assert(dealerWxss.includes("blind-live-meta") && dealerWxss.includes("blind-meta-item"), "dealer page styles blind live meta display");
 assert(dealerWxml.includes("titleMap.prizePlayer") && dealerWxml.includes("titleMap.nextBreak") && dealerWxml.includes("titleMap.totalChips"), "dealer page displays full blind title map");
 assert(dealerJs.includes("headsUpText") && dealerJs.includes("单挑阶段") && dealerWxml.includes("game.headsUpText"), "dealer page displays heads-up stage prompt");
 assert(dealerJs.includes("championText") && dealerJs.includes("冠军产生") && dealerJs.includes("isChampion") && dealerWxml.includes("champion-panel") && dealerWxml.includes("blindSettings.championBackgroundImage"), "dealer page displays champion stage and champion background");

@@ -16,11 +16,23 @@ Page({
     timer: null,
     voiceEvents: [],
     blindSettings: { titleMap: {} },
+    beijingTimeText: "",
+    registrationCountdownText: "",
     seats: []
   },
 
   onShow() {
     this.loadGame()
+    this.updateClockText()
+    this.clockTimer = setInterval(() => this.updateClockText(), 1000)
+  },
+
+  onHide() {
+    if (this.clockTimer) clearInterval(this.clockTimer)
+  },
+
+  onUnload() {
+    if (this.clockTimer) clearInterval(this.clockTimer)
   },
 
   async loadGame() {
@@ -59,6 +71,14 @@ Page({
       isChampion: game.currentPlayers === 1,
       buyinTotalText: money(game.buyinAmount * game.buyinCount)
     }
+  },
+
+  updateClockText() {
+    const now = new Date()
+    const hh = String(now.getHours()).padStart(2, "0")
+    const mm = String(now.getMinutes()).padStart(2, "0")
+    const ss = String(now.getSeconds()).padStart(2, "0")
+    this.setData({ beijingTimeText: `${hh}:${mm}:${ss}` })
   },
 
   onInput(event) {
@@ -149,6 +169,7 @@ Page({
           ...data.timer,
           remainingText: `${Math.floor(data.timer.remainingSeconds / 60)}:${String(data.timer.remainingSeconds % 60).padStart(2, "0")}`
         },
+        registrationCountdownText: `${Math.floor(data.timer.remainingSeconds / 60)}:${String(data.timer.remainingSeconds % 60).padStart(2, "0")}`,
         voiceEvents: data.timer.latestEvents || []
       })
     } catch (error) {
