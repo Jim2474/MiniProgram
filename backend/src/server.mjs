@@ -47,6 +47,7 @@ const deploymentChecks = () => {
     missingWechatPayEnv,
     wechatLoginDryRun: process.env.WECHAT_LOGIN_DRY_RUN === "true",
     wechatPhoneDryRun: process.env.WECHAT_PHONE_DRY_RUN === "true",
+    wechatQrDryRun: process.env.WECHAT_QR_DRY_RUN === "true",
     wechatPayDryRun: process.env.WECHAT_PAY_DRY_RUN === "true",
     databaseConfigured: Boolean(process.env.DATABASE_URL),
     usingJsonStore: !process.env.DATABASE_URL,
@@ -72,6 +73,33 @@ async function qrDataUri(payload) {
     width: 256,
     color: { dark: "#18241f", light: "#ffffff" },
   });
+}
+
+async function wechatMiniProgramCode(scene, page = "pages/customer/customer") {
+  if (!scene) throw new HttpError(400, "缺少小程序码 scene");
+  const missing = requiredWechatLoginEnv.filter((key) => !process.env[key]);
+  if (missing.length) throw new HttpError(501, missingConfigMessage("微信小程序码", missing));
+  if (process.env.WECHAT_QR_DRY_RUN === "true") {
+    return { imageUrl: await qrDataUri(`mp:${page}?scene=${encodeURIComponent(scene)}`), provider: "wechat_qr_dry_run", page, scene };
+  }
+  const accessToken = await getWechatAccessToken();
+  const response = await fetch(`https://api.weixin.qq.com/wxa/getwxacodeunlimit?access_token=${encodeURIComponent(accessToken)}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      scene,
+      page,
+      check_path: false,
+      env_version: process.env.WECHAT_MINIPROGRAM_ENV_VERSION || "release",
+    }),
+  });
+  const contentType = response.headers.get("content-type") || "";
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (!response.ok || contentType.includes("application/json")) {
+    const data = JSON.parse(buffer.toString("utf8") || "{}");
+    throw new HttpError(502, `微信小程序码生成失败：${data.errmsg || response.statusText}`);
+  }
+  return { imageUrl: `data:image/png;base64,${buffer.toString("base64")}`, provider: "wechat_miniprogram_code", page, scene };
 }
 
 const defaultBlindLevels = () => [
@@ -971,10 +999,20 @@ function publicEmployee(employee) {
 
 async function employeeOrderQr(employee) {
   const qrPayload = `employee:${employee.employeeId}`;
+  let qrImage = null;
+  if (!mockWechatEnabled() || process.env.WECHAT_QR_DRY_RUN === "true") {
+    qrImage = await wechatMiniProgramCode(qrPayload);
+  }
+  if (!qrImage) {
+    qrImage = { imageUrl: await qrDataUri(qrPayload), provider: "payload_qr", page: "", scene: qrPayload };
+  }
   return {
     scene: "employee_qr",
     qrPayload,
-    qrImageUrl: await qrDataUri(qrPayload),
+    qrImageUrl: qrImage.imageUrl,
+    qrProvider: qrImage.provider,
+    miniProgramPage: qrImage.page,
+    miniProgramScene: qrImage.scene,
     employee: publicEmployee(employee),
     title: `${employee.name}专属点单码`,
     hint: "客户扫码后下单，订单、营收和员工业绩归属该员工。",
@@ -2368,15 +2406,18 @@ function createRouter(store) {
   add("GET", "/api/store/location", async () => ({ location: store.data.settings.location, store: store.data.stores[0] }));
   add("GET", "/api/support/contact", async () => ({ phone: store.data.settings.supportPhone }));
   add("POST", "/api/scan/employee", async (body) => {
-    const employee = store.getEmployee(body.employeeId || "emp_anna");
+    const scenePayload = decodeURIComponent(body.scene || "");
+    const rawPayload = body.rawCode || scenePayload;
+    const resolvedEmployeeId = body.employeeId || (rawPayload.includes("employee:") ? rawPayload.split("employee:")[1] : "");
+    const employee = store.getEmployee(resolvedEmployeeId || "emp_anna");
     const expectedPayload = `employee:${employee.employeeId}`;
-    if (body.rawCode && body.rawCode !== expectedPayload) throw new HttpError(400, "员工二维码码值不匹配");
+    if (rawPayload && rawPayload !== expectedPayload) throw new HttpError(400, "员工二维码码值不匹配");
     const record = {
       recordId: newId("scan"),
       userId: body.userId || "user_demo",
       employeeId: employee.employeeId,
       scene: "employee_qr",
-      rawCode: body.rawCode || expectedPayload,
+      rawCode: rawPayload || expectedPayload,
       createdAt: now(),
     };
     store.data.scanRecords.unshift(record);

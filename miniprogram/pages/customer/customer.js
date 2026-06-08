@@ -35,8 +35,9 @@ Page({
     scanText: ""
   },
 
-  onShow() {
-    this.loadAll()
+  async onShow() {
+    await this.loadAll()
+    await this.consumePendingEmployeeScene()
   },
 
   async loadAll() {
@@ -245,14 +246,27 @@ Page({
       if (!rawCode) throw new Error("请扫描员工专属二维码")
       const employeeId = rawCode.includes("employee:") ? rawCode.split("employee:")[1] : ""
       if (!employeeId) throw new Error("员工二维码格式不正确")
-      const data = await request("/api/scan/employee", { method: "POST", data: { userId: app.globalData.userId, employeeId, rawCode } })
-      app.globalData.selectedEmployeeId = data.employee.employeeId
-      this.setData({ selectedEmployee: data.employee, scannedEmployeeId: data.employee.employeeId, scanText: `已扫码归属：${data.employee.name}` })
-      await this.loadCart()
+      await this.bindEmployeeScene({ employeeId, rawCode })
       wx.showToast({ title: "扫码成功" })
     } catch (error) {
       showError(error)
     }
+  },
+
+  async consumePendingEmployeeScene() {
+    const scene = app.globalData.pendingEmployeeScene
+    if (!scene) return
+    app.globalData.pendingEmployeeScene = ""
+    const employeeId = scene.indexOf("employee:") === 0 ? scene.split("employee:")[1] : ""
+    if (!employeeId) return
+    await this.bindEmployeeScene({ employeeId, scene })
+  },
+
+  async bindEmployeeScene({ employeeId, rawCode = "", scene = "" }) {
+    const data = await request("/api/scan/employee", { method: "POST", data: { userId: app.globalData.userId, employeeId, rawCode, scene } })
+    app.globalData.selectedEmployeeId = data.employee.employeeId
+    this.setData({ selectedEmployee: data.employee, scannedEmployeeId: data.employee.employeeId, scanText: `已扫码归属：${data.employee.name}` })
+    await this.loadCart()
   },
 
   async addToCart(event) {

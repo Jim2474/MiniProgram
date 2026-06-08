@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V33
+# 德扑棋牌门店小程序 V34
 
 本仓库包含：
 
@@ -72,10 +72,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V33 验收状态
+## V34 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V34.md`
 - `docs/ACCEPTANCE-V33.md`
 - `docs/ACCEPTANCE-V32.md`
 - `docs/ACCEPTANCE-V31.md`
@@ -112,10 +113,18 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：164 项。
-- 小程序结构与 API 调用校验：126 项。
+- 后端业务自验收：166 项。
+- 小程序结构与 API 调用校验：128 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V34 新增能力
+
+- 员工专属点单码在生产/沙箱链路支持微信小程序码生成，scene 使用 `employee:<employeeId>`。
+- 员工点单码返回 `qrProvider`、`miniProgramPage` 和 `miniProgramScene`，便于区分普通二维码和微信小程序码。
+- 客户小程序启动时解析 `query.scene`，从员工小程序码进入后自动建立订单归属。
+- `/api/scan/employee` 支持接收小程序码 scene，仍兼容原 `employee:<employeeId>` 普通二维码码值。
+- 新增 `WECHAT_QR_DRY_RUN` 和 `WECHAT_MINIPROGRAM_ENV_VERSION` 配置，自动验收覆盖员工小程序码 dry-run 与 scene 自动归属。
 
 ## V33 新增能力
 

@@ -35,6 +35,7 @@ for (const relative of required) {
 }
 
 const appConfig = JSON.parse(await readFile(join(root, "miniprogram/app.json"), "utf8"));
+const appSource = await readFile(join(root, "miniprogram/app.js"), "utf8");
 assert(appConfig.pages.includes("pages/customer/customer"), "customer page registered");
 assert(appConfig.pages.includes("pages/staff/staff"), "staff page registered");
 assert(appConfig.pages.includes("pages/admin/admin"), "admin page registered");
@@ -44,6 +45,7 @@ assert(appConfig.tabBar?.list?.length === 4, "four tabBar entries configured");
 const projectConfig = JSON.parse(await readFile(join(root, "miniprogram/project.config.json"), "utf8"));
 assert(projectConfig.setting?.urlCheck === false, "local API urlCheck disabled for devtools");
 assert(projectConfig.miniprogramRoot === "./", "miniprogram root configured");
+assert(appSource.includes("pendingEmployeeScene") && appSource.includes("decodeURIComponent") && appSource.includes("employee:"), "app parses employee mini program code scene");
 
 const apiSource = await readFile(join(root, "miniprogram/utils/api.js"), "utf8");
 assert(apiSource.includes("http://localhost:3000"), "api util points to local backend");
@@ -85,6 +87,7 @@ assert(customerJs.includes("wx.scanCode"), "customer page uses WeChat scanCode")
 assert(customerJs.includes("wx.openLocation"), "customer page uses WeChat openLocation");
 assert(customerJs.includes("wx.makePhoneCall"), "customer page uses WeChat makePhoneCall");
 assert(customerJs.includes("/api/scan/employee"), "customer page records employee QR scan");
+assert(customerJs.includes("consumePendingEmployeeScene") && customerJs.includes("bindEmployeeScene"), "customer page consumes employee mini program code scene");
 assert(!customerJs.includes("onEmployeeChange") && !customerWxml.includes('range="{{employees}}"'), "customer page does not manually select employees");
 assert(!customerJs.includes("requestLotteryRedeem"), "customer page hides lottery redeem request");
 
