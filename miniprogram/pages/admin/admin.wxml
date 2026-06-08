@@ -75,6 +75,11 @@
       <input class="input" type="number" value="{{stockCountForm.countedQty}}" bindinput="onStockCountQty" placeholder="实盘库存" />
       <input class="input" value="{{stockCountForm.reason}}" bindinput="onStockCountReason" placeholder="盘点原因" />
     </view>
+    <view class="row">
+      <view class="row-title">出入库申请表单</view>
+      <input class="input" type="number" value="{{stockRequestForm.quantity}}" bindinput="onStockRequestQty" placeholder="出入库数量" />
+      <input class="input" value="{{stockRequestForm.reason}}" bindinput="onStockRequestReason" placeholder="出入库原因" />
+    </view>
     <view wx:for="{{products}}" wx:key="skuId" class="row">
       <view class="row-title">{{item.name}} · {{item.spec}}</view>
       <view class="muted">{{item.priceText}} · 成本 {{item.costPrice}} · {{item.supplierName || '未填供应商'}} · 库存 {{item.stockQty}} · 预警 {{item.warningQty}} · 存酒 {{item.storageDays}}天</view>

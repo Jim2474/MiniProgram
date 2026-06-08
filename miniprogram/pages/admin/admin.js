@@ -33,6 +33,10 @@ Page({
     stockRequests: [],
     stockLedgers: [],
     stockCounts: [],
+    stockRequestForm: {
+      quantity: 1,
+      reason: "日常库存调整"
+    },
     stockCountForm: {
       countedQty: 10,
       reason: "闭店盘点"
@@ -415,13 +419,27 @@ Page({
     try {
       await request("/api/admin/stock-requests", {
         method: "POST",
-        data: { skuId: event.currentTarget.dataset.id, direction: event.currentTarget.dataset.direction, quantity: 3, operatorId: "emp_admin" }
+        data: {
+          skuId: event.currentTarget.dataset.id,
+          direction: event.currentTarget.dataset.direction,
+          quantity: this.data.stockRequestForm.quantity,
+          reason: this.data.stockRequestForm.reason,
+          operatorId: "emp_admin"
+        }
       })
       wx.showToast({ title: "申请已提交" })
       await this.loadV3Admin()
     } catch (error) {
       showError(error)
     }
+  },
+
+  onStockRequestQty(event) {
+    this.setData({ "stockRequestForm.quantity": Number(event.detail.value || 0) })
+  },
+
+  onStockRequestReason(event) {
+    this.setData({ "stockRequestForm.reason": event.detail.value })
   },
 
   async confirmStockRequest(event) {
