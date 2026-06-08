@@ -118,6 +118,8 @@ assert(adminJs.includes("/api/admin/tables"), "admin page calls table management
 assert(adminJs.includes("tablePagination") && adminJs.includes("pageSize") && adminJs.includes("tableSummary"), "admin page supports table pagination and summary");
 assert(adminJs.includes("tableStatusOptions") && adminJs.includes("onTableKeyword"), "admin page supports table status and keyword filtering");
 assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind settings API");
+assert(adminJs.includes("blindForm") && adminJs.includes("onBlindField"), "admin page supports blind settings form");
+assert(adminJs.includes("titleMap") && adminJs.includes("voiceTerms"), "admin page updates blind title map and voice terms");
 assert(adminJs.includes("/api/admin/system-settings"), "admin page calls system settings API");
 
 const dealerJs = await readFile(join(root, "miniprogram/pages/dealer/dealer.js"), "utf8");
@@ -129,6 +131,7 @@ assert(dealerWxml.includes("buyin_minus"), "dealer page supports buyin decrement
 assert(dealerWxml.includes("set_buyin_amount"), "dealer page supports buyin amount sync action");
 assert(dealerWxml.includes("gameSeatAction"), "dealer page supports seat-specific game action");
 assert(dealerJs.includes("/api/admin/blind-settings"), "dealer page reads blind settings API");
+assert(dealerWxml.includes("championBackgroundImage") && dealerWxml.includes("voiceTerms"), "dealer page displays advanced blind settings");
 
 console.log(`Miniprogram validation passed: ${checks.length} checks`);
 for (const check of checks) console.log(`- ${check}`);

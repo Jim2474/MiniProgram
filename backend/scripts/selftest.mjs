@@ -378,8 +378,37 @@ async function main() {
     assert(filteredTables.tables.length === 1 && filteredTables.tables[0].tableId === occupiedTable.table.tableId, "后台咖位列表支持关键词、状态筛选和分页");
     assert(filteredTables.pagination.total >= 1 && filteredTables.pagination.pageSize === 1 && filteredTables.summary.occupied >= 1, "后台咖位列表返回分页信息和状态汇总");
 
-    const blindSettings = await request(baseUrl, "/api/admin/blind-settings", { method: "PATCH", body: { theme: "neon", fontSize: 56, registrationStatus: "stopped" } });
-    assert(blindSettings.settings.theme === "neon" && blindSettings.settings.registrationStatus === "stopped", "后台可配置升盲样式和报名状态");
+    const blindSettings = await request(baseUrl, "/api/admin/blind-settings", {
+      method: "PATCH",
+      body: {
+        theme: "neon",
+        backgroundImage: "https://example.com/bg.png",
+        logo: "https://example.com/logo.png",
+        fontColor: "#00FFAA",
+        timerColor: "#FFEE00",
+        breakColor: "#00AAFF",
+        dialogColor: "#111111",
+        fontSize: 56,
+        fontFamily: "DIN",
+        registrationStatus: "stopped",
+        championBackgroundImage: "https://example.com/champion.png",
+        voiceType: "custom",
+        voiceStartText: "比赛开始",
+        voiceEndText: "本局结束",
+        entrants: 18,
+        totalBuyins: 23,
+        showBeijingTime: false,
+        showRegistrationCountdown: false,
+        autoStartAfterCountdown: true,
+        titleMap: { level: "级别", entrants: "参赛人数", blinds: "盲注" },
+        voiceTerms: { smallBlind: "小盲位", bigBlind: "大盲位", ante: "前注" },
+      },
+    });
+    assert(blindSettings.settings.theme === "neon" && blindSettings.settings.registrationStatus === "stopped" && blindSettings.settings.fontColor === "#00FFAA", "后台可配置升盲样式和报名状态");
+    assert(blindSettings.settings.backgroundImage && blindSettings.settings.logo && blindSettings.settings.championBackgroundImage, "后台可配置升盲背景、Logo 和冠军背景");
+    assert(blindSettings.settings.titleMap.level === "级别" && blindSettings.settings.titleMap.playerLeft === "PLAYER LEFT", "后台可局部配置升盲标题文案且保留未改标题");
+    assert(blindSettings.settings.voiceType === "custom" && blindSettings.settings.voiceStartText === "比赛开始" && blindSettings.settings.voiceTerms.smallBlind === "小盲位", "后台可配置升盲语音和术语");
+    assert(blindSettings.settings.entrants === 18 && blindSettings.settings.totalBuyins === 23 && blindSettings.settings.autoStartAfterCountdown === true, "后台可配置参赛人数、总买入和倒计时行为");
 
     const systemSettings = await request(baseUrl, "/api/admin/system-settings", { method: "PATCH", body: { pointsVisible: false, supportPhone: "400-000-0000" } });
     assert(systemSettings.settings.pointsVisible === false && systemSettings.settings.supportPhone === "400-000-0000", "后台可配置系统设置");

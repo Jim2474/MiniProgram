@@ -2137,7 +2137,15 @@ function createRouter(store) {
   });
   add("GET", "/api/admin/blind-settings", async () => ({ settings: store.data.blindSettings }));
   add("PATCH", "/api/admin/blind-settings", async (body) => {
-    store.data.blindSettings = { ...store.data.blindSettings, ...body };
+    const before = deepClone(store.data.blindSettings);
+    const { titleMap, voiceTerms, ...updates } = body;
+    store.data.blindSettings = {
+      ...store.data.blindSettings,
+      ...updates,
+      titleMap: { ...(store.data.blindSettings.titleMap || {}), ...(titleMap || {}) },
+      voiceTerms: { ...(store.data.blindSettings.voiceTerms || {}), ...(voiceTerms || {}) },
+    };
+    store.log(body.operatorId || "emp_admin", "admin", "update_blind_settings", "BlindSettings", store.data.settings.storeId, before, store.data.blindSettings, "修改升盲高级设置");
     await store.save();
     return { settings: store.data.blindSettings };
   });

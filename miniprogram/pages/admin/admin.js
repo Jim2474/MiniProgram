@@ -39,6 +39,31 @@ Page({
     scanRecords: [],
     systemSettings: {},
     blindSettings: {},
+    blindForm: {
+      theme: "classic",
+      backgroundImage: "",
+      logo: "",
+      fontColor: "#FFFFFF",
+      timerColor: "#F8D66D",
+      breakColor: "#7DD3FC",
+      dialogColor: "#15221B",
+      fontSize: 48,
+      fontFamily: "system",
+      registrationStatus: "accepting",
+      championBackgroundImage: "",
+      voiceType: "default",
+      voiceStartText: "开始提示音",
+      voiceEndText: "结束提示音",
+      entrants: 9,
+      totalBuyins: 0,
+      levelTitle: "LEVEL",
+      playerLeftTitle: "PLAYER LEFT",
+      blindsTitle: "BLINDS",
+      entrantsTitle: "ENTRANTS",
+      smallBlindTerm: "小盲",
+      bigBlindTerm: "大盲",
+      anteTerm: "前注"
+    },
     productForm: {
       categoryIndex: 0,
       name: "气泡水",
@@ -175,7 +200,18 @@ Page({
       stockLedgers: stockLedgers.ledgers.slice(0, 8),
       scanRecords: scanRecords.records.slice(0, 8),
       systemSettings: system.settings,
-      blindSettings: blind.settings
+      blindSettings: blind.settings,
+      blindForm: {
+        ...this.data.blindForm,
+        ...blind.settings,
+        levelTitle: blind.settings.titleMap?.level || this.data.blindForm.levelTitle,
+        playerLeftTitle: blind.settings.titleMap?.playerLeft || this.data.blindForm.playerLeftTitle,
+        blindsTitle: blind.settings.titleMap?.blinds || this.data.blindForm.blindsTitle,
+        entrantsTitle: blind.settings.titleMap?.entrants || this.data.blindForm.entrantsTitle,
+        smallBlindTerm: blind.settings.voiceTerms?.smallBlind || this.data.blindForm.smallBlindTerm,
+        bigBlindTerm: blind.settings.voiceTerms?.bigBlind || this.data.blindForm.bigBlindTerm,
+        anteTerm: blind.settings.voiceTerms?.ante || this.data.blindForm.anteTerm
+      }
     })
   },
 
@@ -568,9 +604,49 @@ Page({
     }
   },
 
+  onBlindField(event) {
+    const key = event.currentTarget.dataset.key
+    const numericKeys = ["fontSize", "entrants", "totalBuyins"]
+    const value = numericKeys.includes(key) ? Number(event.detail.value || 0) : event.detail.value
+    this.setData({ [`blindForm.${key}`]: value })
+  },
+
   async updateBlindSettings() {
     try {
-      await request("/api/admin/blind-settings", { method: "PATCH", data: { theme: "neon", fontSize: 56, registrationStatus: "stopped" } })
+      const form = this.data.blindForm
+      await request("/api/admin/blind-settings", {
+        method: "PATCH",
+        data: {
+          operatorId: "emp_admin",
+          theme: form.theme,
+          backgroundImage: form.backgroundImage,
+          logo: form.logo,
+          fontColor: form.fontColor,
+          timerColor: form.timerColor,
+          breakColor: form.breakColor,
+          dialogColor: form.dialogColor,
+          fontSize: form.fontSize,
+          fontFamily: form.fontFamily,
+          registrationStatus: form.registrationStatus,
+          championBackgroundImage: form.championBackgroundImage,
+          voiceType: form.voiceType,
+          voiceStartText: form.voiceStartText,
+          voiceEndText: form.voiceEndText,
+          entrants: form.entrants,
+          totalBuyins: form.totalBuyins,
+          titleMap: {
+            level: form.levelTitle,
+            playerLeft: form.playerLeftTitle,
+            blinds: form.blindsTitle,
+            entrants: form.entrantsTitle
+          },
+          voiceTerms: {
+            smallBlind: form.smallBlindTerm,
+            bigBlind: form.bigBlindTerm,
+            ante: form.anteTerm
+          }
+        }
+      })
       wx.showToast({ title: "升盲设置已更新" })
       await this.loadV3Admin()
     } catch (error) {

@@ -43,12 +43,16 @@
   <view class="section">
     <view class="section-title">后台升盲配置</view>
     <view class="row">
-      <view class="row-title">主题 {{blindSettings.theme}} · 字号 {{blindSettings.fontSize}}</view>
-      <view class="muted">报名状态 {{blindSettings.registrationStatus}} · 北京时间 {{blindSettings.showBeijingTime}}</view>
+      <view class="row-title">主题 {{blindSettings.theme}} · 字号 {{blindSettings.fontSize}} · 字体 {{blindSettings.fontFamily}}</view>
+      <view class="muted">报名状态 {{blindSettings.registrationStatus}} · 北京时间 {{blindSettings.showBeijingTime}} · 自动开赛 {{blindSettings.autoStartAfterCountdown}}</view>
+      <view class="muted">字体 {{blindSettings.fontColor}} · 计时 {{blindSettings.timerColor}} · 休息 {{blindSettings.breakColor}} · 弹窗 {{blindSettings.dialogColor}}</view>
+      <view class="muted">背景 {{blindSettings.backgroundImage || '未配置'}} · Logo {{blindSettings.logo || '未配置'}} · 冠军背景 {{blindSettings.championBackgroundImage || '未配置'}}</view>
     </view>
     <view class="row">
       <view class="row-title">名词</view>
-      <view class="muted">级别 {{blindSettings.titleMap.level}} · 剩余人数 {{blindSettings.titleMap.playerLeft}} · 盲注 {{blindSettings.titleMap.blinds}}</view>
+      <view class="muted">级别 {{blindSettings.titleMap.level}} · 剩余人数 {{blindSettings.titleMap.playerLeft}} · 盲注 {{blindSettings.titleMap.blinds}} · 参赛 {{blindSettings.titleMap.entrants}}</view>
+      <view class="muted">语音 {{blindSettings.voiceType}} · 开始 {{blindSettings.voiceStartText}} · 结束 {{blindSettings.voiceEndText}}</view>
+      <view class="muted">术语 {{blindSettings.voiceTerms.smallBlind}}/{{blindSettings.voiceTerms.bigBlind}}/{{blindSettings.voiceTerms.ante}} · 参赛 {{blindSettings.entrants}} · 总买入 {{blindSettings.totalBuyins}}</view>
     </view>
   </view>
 

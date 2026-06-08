@@ -213,6 +213,29 @@
     <view class="row">
       <view class="row-title">升盲设置</view>
       <view class="muted">主题 {{blindSettings.theme}} · 字号 {{blindSettings.fontSize}} · 报名 {{blindSettings.registrationStatus}}</view>
+      <input class="input" value="{{blindForm.theme}}" data-key="theme" bindinput="onBlindField" placeholder="主题风格" />
+      <input class="input" value="{{blindForm.backgroundImage}}" data-key="backgroundImage" bindinput="onBlindField" placeholder="背景图 URL" />
+      <input class="input" value="{{blindForm.logo}}" data-key="logo" bindinput="onBlindField" placeholder="Logo URL" />
+      <input class="input" value="{{blindForm.championBackgroundImage}}" data-key="championBackgroundImage" bindinput="onBlindField" placeholder="冠军背景图 URL" />
+      <input class="input" value="{{blindForm.fontColor}}" data-key="fontColor" bindinput="onBlindField" placeholder="字体颜色" />
+      <input class="input" value="{{blindForm.timerColor}}" data-key="timerColor" bindinput="onBlindField" placeholder="计时颜色" />
+      <input class="input" value="{{blindForm.breakColor}}" data-key="breakColor" bindinput="onBlindField" placeholder="休息颜色" />
+      <input class="input" value="{{blindForm.dialogColor}}" data-key="dialogColor" bindinput="onBlindField" placeholder="弹窗颜色" />
+      <input class="input" type="number" value="{{blindForm.fontSize}}" data-key="fontSize" bindinput="onBlindField" placeholder="字体大小" />
+      <input class="input" value="{{blindForm.fontFamily}}" data-key="fontFamily" bindinput="onBlindField" placeholder="字体样式" />
+      <input class="input" value="{{blindForm.registrationStatus}}" data-key="registrationStatus" bindinput="onBlindField" placeholder="报名状态" />
+      <input class="input" type="number" value="{{blindForm.entrants}}" data-key="entrants" bindinput="onBlindField" placeholder="参赛人数" />
+      <input class="input" type="number" value="{{blindForm.totalBuyins}}" data-key="totalBuyins" bindinput="onBlindField" placeholder="总买入手数" />
+      <input class="input" value="{{blindForm.levelTitle}}" data-key="levelTitle" bindinput="onBlindField" placeholder="标题：级别" />
+      <input class="input" value="{{blindForm.playerLeftTitle}}" data-key="playerLeftTitle" bindinput="onBlindField" placeholder="标题：剩余人数" />
+      <input class="input" value="{{blindForm.blindsTitle}}" data-key="blindsTitle" bindinput="onBlindField" placeholder="标题：盲注" />
+      <input class="input" value="{{blindForm.entrantsTitle}}" data-key="entrantsTitle" bindinput="onBlindField" placeholder="标题：参赛人数" />
+      <input class="input" value="{{blindForm.voiceType}}" data-key="voiceType" bindinput="onBlindField" placeholder="语音类型" />
+      <input class="input" value="{{blindForm.voiceStartText}}" data-key="voiceStartText" bindinput="onBlindField" placeholder="开始语音文案" />
+      <input class="input" value="{{blindForm.voiceEndText}}" data-key="voiceEndText" bindinput="onBlindField" placeholder="结束语音文案" />
+      <input class="input" value="{{blindForm.smallBlindTerm}}" data-key="smallBlindTerm" bindinput="onBlindField" placeholder="术语：小盲" />
+      <input class="input" value="{{blindForm.bigBlindTerm}}" data-key="bigBlindTerm" bindinput="onBlindField" placeholder="术语：大盲" />
+      <input class="input" value="{{blindForm.anteTerm}}" data-key="anteTerm" bindinput="onBlindField" placeholder="术语：前注" />
     </view>
     <view wx:for="{{scanRecords}}" wx:key="recordId" class="row">
       <view class="row-title">扫码归属 {{item.employeeId}}</view>
