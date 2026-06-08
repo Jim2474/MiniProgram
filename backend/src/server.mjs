@@ -2677,8 +2677,12 @@ function createRouter(store) {
     const seat = store.data.seats.find((item) => item.seatNo === seatNo);
     if (!seat) throw new HttpError(404, "座位不存在");
     const before = deepClone(seat);
+    const user = body.userId
+      ? store.getUser(body.userId)
+      : store.data.users.find((item) => item.phone === body.phone);
+    if (!user) throw new HttpError(404, "会员不存在");
     seat.status = "occupied";
-    seat.userId = body.userId || "user_demo";
+    seat.userId = user.userId;
     seat.eliminated = false;
     seat.updatedAt = now();
     store.log(body.operatorId || "emp_anna", "staff", "seat_sit", "Seat", String(seatNo), before, seat, "确认入座");

@@ -464,6 +464,8 @@ async function main() {
 
     const seatSit = await request(baseUrl, "/api/staff/seats/3/sit", { method: "POST", body: { userId: "user_demo", operatorId: "emp_anna" } });
     assert(seatSit.seat.status === "occupied", "员工可确认座位入座");
+    const phoneSeatSit = await request(baseUrl, "/api/staff/seats/4/sit", { method: "POST", body: { phone: "13800000000", operatorId: "emp_anna" } });
+    assert(phoneSeatSit.seat.status === "occupied" && phoneSeatSit.seat.userId === "user_demo", "员工可按手机号确认客户入座");
     const seatEliminate = await request(baseUrl, "/api/staff/seats/3/eliminate", { method: "POST", body: { operatorId: "emp_anna" } });
     assert(seatEliminate.seat.eliminated === true, "员工可淘汰座位");
     const seatRestore = await request(baseUrl, "/api/staff/seats/3/restore", { method: "POST", body: { operatorId: "emp_anna" } });

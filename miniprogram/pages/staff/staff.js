@@ -34,6 +34,7 @@ Page({
     qrPayload: "",
     scannedCode: null,
     seats: [],
+    seatPhone: "13800000000",
     newPassword: "new-demo"
   },
 
@@ -313,9 +314,15 @@ Page({
     await this.seatAction(event.currentTarget.dataset.seat, "restore")
   },
 
+  onSeatPhone(event) {
+    this.setData({ seatPhone: event.detail.value })
+  },
+
   async seatAction(seatNo, action) {
     try {
-      await request(`/api/staff/seats/${seatNo}/${action}`, { method: "POST", data: { operatorId: this.data.selectedEmployee.employeeId, userId: "user_demo" } })
+      const data = { operatorId: this.data.selectedEmployee.employeeId }
+      if (action === "sit") data.phone = this.data.seatPhone
+      await request(`/api/staff/seats/${seatNo}/${action}`, { method: "POST", data })
       wx.showToast({ title: "座位已更新" })
       await this.loadSeats()
     } catch (error) {

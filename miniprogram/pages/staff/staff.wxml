@@ -118,6 +118,7 @@
 
   <view class="section">
     <view class="section-title">座位管理</view>
+    <input class="input" value="{{seatPhone}}" bindinput="onSeatPhone" placeholder="入座客户手机号" />
     <view class="seat-grid">
       <view wx:for="{{seats}}" wx:key="seatNo" class="seat">
         <view class="row-title">{{item.seatNo}}号位</view>
