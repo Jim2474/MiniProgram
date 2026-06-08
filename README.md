@@ -78,6 +78,7 @@ node scripts/validate-miniprogram.mjs
 验收记录：
 
 - `docs/ACCEPTANCE-V79.md`
+- `docs/REQUIREMENTS-AUDIT-V79.md`
 - `docs/ACCEPTANCE-V78.md`
 - `docs/ACCEPTANCE-V77.md`
 - `docs/ACCEPTANCE-V76.md`
@@ -296,6 +297,7 @@ node scripts/validate-miniprogram.mjs
 - 新增公开支付记录脱敏函数，订单列表中的 `payment` 不暴露预支付签名字段。
 - 营业明细保留支付方式、状态、支付时间和交易号等审计字段。
 - 自动验收覆盖营业明细支付记录不泄漏 `nonceStr`、`paySign` 和 `requestPayment`。
+- 新增 V79 需求审计矩阵，同步 V77-V79 产品补齐后的 Excel 覆盖证据。
 
 ## V78 新增能力
 
