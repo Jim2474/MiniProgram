@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V48
+# 德扑棋牌门店小程序 V49
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V48 验收状态
+## V49 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V49.md`
 - `docs/ACCEPTANCE-V48.md`
 - `docs/ACCEPTANCE-V47.md`
 - `docs/ACCEPTANCE-V46.md`
@@ -254,6 +255,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V49 新增能力
+
+- 后台 SKU 列表新增“填入编辑”，可将现有 SKU 回填到表单。
+- 后台新增“保存 SKU”，可编辑分类、名称、规格、单位、价格、成本、供应商、预警库存、描述和存酒有效期。
+- SKU 编辑不直接修改库存数量，库存仍通过盘点/出入库流水变动。
 
 ## V48 新增能力
 

@@ -107,6 +107,7 @@ Page({
       sortOrder: 4
     },
     productForm: {
+      editingSkuId: "",
       categoryIndex: 0,
       name: "气泡水",
       spec: "330ml",
@@ -458,6 +459,56 @@ Page({
       wx.showToast({ title: "SKU 已新增" })
       await this.loadProducts()
       await this.loadV3Admin()
+    } catch (error) {
+      showError(error)
+    }
+  },
+
+  fillProductForm(event) {
+    const product = this.data.products.find((item) => item.skuId === event.currentTarget.dataset.id)
+    if (!product) return
+    const categoryIndex = Math.max(0, this.data.productCategories.findIndex((item) => item.categoryId === product.categoryId))
+    this.setData({
+      productForm: {
+        editingSkuId: product.skuId,
+        categoryIndex,
+        name: product.name,
+        spec: product.spec,
+        unit: product.unit,
+        description: product.description || "",
+        price: product.price,
+        costPrice: product.costPrice,
+        supplierName: product.supplierName,
+        stockQty: product.stockQty,
+        warningQty: product.warningQty,
+        storageDays: product.storageDays
+      }
+    })
+  },
+
+  async updateProduct() {
+    try {
+      if (!this.data.productForm.editingSkuId) throw new Error("请先选择要编辑的 SKU")
+      const category = this.data.productCategories[this.data.productForm.categoryIndex] || this.data.productCategories[0]
+      await request(`/api/admin/products/${this.data.productForm.editingSkuId}`, {
+        method: "PATCH",
+        data: {
+          categoryId: category.categoryId,
+          name: this.data.productForm.name,
+          spec: this.data.productForm.spec,
+          unit: this.data.productForm.unit,
+          price: this.data.productForm.price,
+          costPrice: this.data.productForm.costPrice,
+          supplierName: this.data.productForm.supplierName,
+          warningQty: this.data.productForm.warningQty,
+          description: this.data.productForm.description,
+          storageDays: this.data.productForm.storageDays,
+          reason: "后台 SKU 表单编辑",
+          operatorId: "emp_admin"
+        }
+      })
+      wx.showToast({ title: "SKU 已保存" })
+      await this.loadProducts()
     } catch (error) {
       showError(error)
     }

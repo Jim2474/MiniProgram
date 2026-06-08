@@ -139,6 +139,8 @@ assert(adminJs.includes("categoryForm") && adminJs.includes("onCategorySortOrder
 assert(adminJs.includes("/api/admin/products") && adminJs.includes("createProduct"), "admin page supports product create API");
 assert(adminJs.includes("/api/admin/products/"), "admin page calls product update API");
 assert(adminJs.includes("onProductSpec") && adminJs.includes("onProductUnit") && adminJs.includes("onProductDescription") && adminWxml.includes("商品描述") && !adminJs.includes("标准规格") && !adminJs.includes("后台新增 SKU"), "admin page supports full SKU create form");
+assert(adminJs.includes("fillProductForm") && adminJs.includes("updateProduct") && adminWxml.includes("填入编辑") && adminWxml.includes("保存 SKU"), "admin page supports SKU edit form");
+assert(!/async updateProduct\(\)[\s\S]*?stockQty[\s\S]*?async toggleProduct/.test(adminJs), "admin SKU edit form does not bypass stock ledger");
 assert(adminJs.includes("storageDays") && adminJs.includes("warningQty"), "admin page supports SKU warning stock and storage days");
 assert(adminJs.includes("costPrice") && adminJs.includes("supplierName") && adminWxml.includes("成本价") && adminWxml.includes("供应商"), "admin page supports SKU cost and supplier fields");
 assert(adminJs.includes("/api/admin/stock-counts") && adminWxml.includes("库存盘点单"), "admin page supports stock count workflow");
