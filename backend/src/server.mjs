@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { existsSync, createReadStream } from "node:fs";
 import { dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createDecipheriv, createSign, createVerify, randomBytes } from "node:crypto";
+import { createDecipheriv, createSign, createVerify, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import QRCode from "qrcode";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -108,6 +108,35 @@ function newId(prefix) {
 
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+const passwordHashPrefix = "scrypt";
+function hashPassword(password) {
+  const salt = randomBytes(16).toString("base64url");
+  const hash = scryptSync(String(password || ""), salt, 64).toString("base64url");
+  return `${passwordHashPrefix}$${salt}$${hash}`;
+}
+
+function isStrongPasswordHash(value) {
+  return String(value || "").startsWith(`${passwordHashPrefix}$`);
+}
+
+function verifyPassword(password, storedHash) {
+  const stored = String(storedHash || "");
+  const rawPassword = String(password || "");
+  if (!isStrongPasswordHash(stored)) return stored === rawPassword;
+  const [, salt, expectedHash] = stored.split("$");
+  if (!salt || !expectedHash) return false;
+  const actual = scryptSync(rawPassword, salt, 64);
+  const expected = Buffer.from(expectedHash, "base64url");
+  return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+function migrateEmployeePassword(employee) {
+  if (!employee || !employee.passwordHash || isStrongPasswordHash(employee.passwordHash)) return false;
+  employee.passwordHash = hashPassword(employee.passwordHash);
+  employee.passwordMigratedAt = now();
+  return true;
 }
 
 function createUserFromWechat(store, { openid, nickname, avatar = "", phone = "" }) {
@@ -379,7 +408,7 @@ function seedData() {
         phone: "13900000001",
         role: "staff",
         loginAccount: "anna",
-        passwordHash: "demo",
+        passwordHash: hashPassword("demo"),
         commissionRate: 0.08,
         status: "active",
         createdAt,
@@ -392,7 +421,7 @@ function seedData() {
         phone: "13900000002",
         role: "warehouse",
         loginAccount: "bar",
-        passwordHash: "demo",
+        passwordHash: hashPassword("demo"),
         commissionRate: 0.03,
         status: "active",
         createdAt,
@@ -405,7 +434,7 @@ function seedData() {
         phone: "13900000003",
         role: "admin",
         loginAccount: "admin",
-        passwordHash: "demo",
+        passwordHash: hashPassword("demo"),
         commissionRate: 0,
         status: "active",
         createdAt,
@@ -418,7 +447,7 @@ function seedData() {
         phone: "13900000004",
         role: "dealer",
         loginAccount: "dealer",
-        passwordHash: "demo",
+        passwordHash: hashPassword("demo"),
         commissionRate: 0.02,
         status: "active",
         createdAt,
@@ -634,12 +663,14 @@ class Store {
     this.data.verificationCodes ||= [];
     this.data.staffSessions ||= [];
     this.data.voiceEvents ||= [];
+    let shouldSaveAfterLoad = false;
     for (const user of this.data.users || []) {
       user.balance ||= 0;
       user.memberLevel ||= "普通会员";
     }
     for (const employee of this.data.employees || []) {
       employee.commissionRate ??= employee.role === "staff" ? 0.05 : 0;
+      shouldSaveAfterLoad = migrateEmployeePassword(employee) || shouldSaveAfterLoad;
     }
     for (const product of this.data.products || []) {
       product.costPrice ??= 0;
@@ -659,6 +690,7 @@ class Store {
       storage.expiredHandledBy ||= null;
       storage.expiredHandlingNote ||= "";
     }
+    if (shouldSaveAfterLoad) await this.save();
     return this.data;
   }
 
@@ -1209,8 +1241,9 @@ function createRouter(store) {
 
   add("POST", "/api/staff/login", async (body) => {
     const employee = store.data.employees.find((item) => item.loginAccount === body.account || item.phone === body.account);
-    if (!employee || employee.passwordHash !== (body.password || "")) throw new HttpError(401, "账号或密码错误");
+    if (!employee || !verifyPassword(body.password || "", employee.passwordHash)) throw new HttpError(401, "账号或密码错误");
     if (employee.status !== "active") throw new HttpError(403, "员工账号已停用");
+    const migratedPassword = migrateEmployeePassword(employee);
     const session = {
       sessionId: newId("session"),
       employeeId: employee.employeeId,
@@ -1219,7 +1252,7 @@ function createRouter(store) {
       expiresAt: addDays(7),
     };
     store.data.staffSessions.unshift(session);
-    store.log(employee.employeeId, employee.role, "staff_login", "Employee", employee.employeeId, null, session, "员工账号密码登录");
+    store.log(employee.employeeId, employee.role, migratedPassword ? "staff_login_migrated_password" : "staff_login", "Employee", employee.employeeId, null, session, "员工账号密码登录");
     await store.save();
     return { employee: publicEmployee(employee), session };
   });
@@ -2360,7 +2393,7 @@ function createRouter(store) {
   add("POST", "/api/staff/password", async (body) => {
     const employee = store.getEmployee(body.operatorId || "emp_anna");
     const before = deepClone(employee);
-    employee.passwordHash = body.newPassword || "demo";
+    employee.passwordHash = hashPassword(body.newPassword || "demo");
     employee.passwordChangedAt = now();
     store.log(employee.employeeId, employee.role, "change_password", "Employee", employee.employeeId, before, employee, "员工修改密码");
     await store.save();
@@ -2653,7 +2686,7 @@ function createRouter(store) {
     return { table: publicTable(store, table) };
   });
   add("POST", "/api/admin/employees", async (body) => {
-    const employee = { employeeId: newId("emp"), merchantId: store.data.settings.merchantId, storeId: store.data.settings.storeId, name: body.name, phone: body.phone, role: body.role || "staff", loginAccount: body.loginAccount || body.phone, passwordHash: body.password || "demo", commissionRate: Number(body.commissionRate ?? 0.05), status: "active", createdAt: now() };
+    const employee = { employeeId: newId("emp"), merchantId: store.data.settings.merchantId, storeId: store.data.settings.storeId, name: body.name, phone: body.phone, role: body.role || "staff", loginAccount: body.loginAccount || body.phone, passwordHash: hashPassword(body.password || "demo"), commissionRate: Number(body.commissionRate ?? 0.05), status: "active", createdAt: now() };
     store.data.employees.push(employee);
     store.log(body.operatorId || "emp_admin", "admin", "create_employee", "Employee", employee.employeeId, null, employee, "新增工作人员");
     await store.save();
@@ -2662,10 +2695,13 @@ function createRouter(store) {
   add("PATCH", "/api/admin/employees/:employeeId", async (body, params) => {
     const employee = store.getEmployee(params.employeeId);
     const before = deepClone(employee);
-    const { resetPassword: _resetPassword, ...updates } = body;
+    const { resetPassword: _resetPassword, passwordHash: _passwordHash, ...updates } = body;
     Object.assign(employee, updates);
     if (body.commissionRate !== undefined) employee.commissionRate = Number(body.commissionRate);
-    if (body.resetPassword) employee.passwordHash = body.resetPassword;
+    if (body.resetPassword) {
+      employee.passwordHash = hashPassword(body.resetPassword);
+      employee.passwordChangedAt = now();
+    }
     store.log(body.operatorId || "emp_admin", "admin", "update_employee", "Employee", employee.employeeId, before, employee, "修改工作人员");
     await store.save();
     return { employee: publicEmployee(employee) };

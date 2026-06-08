@@ -1,4 +1,4 @@
-import { rm } from "node:fs/promises";
+import { readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { createCipheriv, createSign, generateKeyPairSync, randomBytes } from "node:crypto";
 import { createApp } from "../src/server.mjs";
@@ -58,6 +58,7 @@ async function main() {
     const boot = await request(baseUrl, "/api/bootstrap");
     assert(boot.user.phone === "13800000000", "微信登录种子会员存在");
     assert(boot.employees.every((employee) => !("passwordHash" in employee)), "初始化数据不暴露员工密码字段");
+    assert(store.data.employees.every((employee) => String(employee.passwordHash).startsWith("scrypt$") && employee.passwordHash !== "demo"), "初始化员工密码以强哈希形式存储");
     assert(boot.runtime.mockWechatEnabled === true && boot.runtime.paymentProvider === "mock_wechat", "开发环境显式标记模拟微信能力");
     assert(boot.runtime.deployment.missingWechatEnv.includes("WECHAT_APPID") && boot.runtime.deployment.usingJsonStore === true, "运行时返回微信和数据层部署检查");
 
@@ -69,6 +70,10 @@ async function main() {
     const staffLogin = await request(baseUrl, "/api/staff/login", { method: "POST", body: { account: "anna", password: "demo" } });
     assert(staffLogin.employee.employeeId === "emp_anna" && staffLogin.session.sessionId, "员工可用账号密码登录");
     assert(!("passwordHash" in staffLogin.employee), "员工登录结果不暴露密码字段");
+    store.data.employees.push({ employeeId: "emp_legacy", merchantId: store.data.settings.merchantId, storeId: store.data.settings.storeId, name: "旧数据员工", phone: "13900000005", role: "staff", loginAccount: "legacy", passwordHash: "legacy-pass", commissionRate: 0.01, status: "active", createdAt: new Date().toISOString() });
+    const legacyLogin = await request(baseUrl, "/api/staff/login", { method: "POST", body: { account: "legacy", password: "legacy-pass" } });
+    const migratedEmployee = store.data.employees.find((item) => item.employeeId === legacyLogin.employee.employeeId);
+    assert(migratedEmployee.passwordHash.startsWith("scrypt$") && migratedEmployee.passwordHash !== "legacy-pass", "旧明文员工密码登录后自动迁移为强哈希");
     const staffOrderQr = await request(baseUrl, "/api/staff/employees/emp_anna/order-qr");
     assert(staffOrderQr.qr.qrPayload === "employee:emp_anna" && staffOrderQr.qr.scene === "employee_qr", "员工端可获取专属点单二维码码值");
     assert(staffOrderQr.qr.qrImageUrl.startsWith("data:image/"), "员工专属点单二维码返回可展示图片");
@@ -384,12 +389,17 @@ async function main() {
 
     const employee = await request(baseUrl, "/api/admin/employees", { method: "POST", body: { name: "新员工", phone: "13900009999", role: "staff", commissionRate: 0.06 } });
     assert(employee.employee.status === "active" && employee.employee.commissionRate === 0.06 && !("passwordHash" in employee.employee), "后台可新增工作人员并配置提成且不返回密码字段");
+    assert(store.data.employees.find((item) => item.employeeId === employee.employee.employeeId).passwordHash.startsWith("scrypt$"), "后台新增员工密码以强哈希形式保存");
     const employeesList = await request(baseUrl, "/api/admin/employees");
     assert(employeesList.employees.every((item) => !("passwordHash" in item)), "后台人员列表不暴露密码字段");
-    const disabledEmployee = await request(baseUrl, `/api/admin/employees/${employee.employee.employeeId}`, { method: "PATCH", body: { status: "disabled", resetPassword: "123456" } });
+    const disabledEmployee = await request(baseUrl, `/api/admin/employees/${employee.employee.employeeId}`, { method: "PATCH", body: { status: "disabled", resetPassword: "123456", passwordHash: "malicious-raw" } });
     assert(disabledEmployee.employee.status === "disabled" && !("passwordHash" in disabledEmployee.employee), "后台可禁用员工并重置密码但不返回密码字段");
+    const disabledStoredEmployee = store.data.employees.find((item) => item.employeeId === employee.employee.employeeId);
+    assert(disabledStoredEmployee.passwordHash.startsWith("scrypt$") && disabledStoredEmployee.passwordHash !== "123456" && disabledStoredEmployee.passwordHash !== "malicious-raw", "后台重置密码不会保存明文或接受 passwordHash 覆盖");
     const password = await request(baseUrl, "/api/staff/password", { method: "POST", body: { operatorId: "emp_anna", newPassword: "new-demo" } });
     assert(password.employee.passwordChangedAt && !("passwordHash" in password.employee), "员工可修改密码且不返回密码字段");
+    const annaAfterPasswordChange = store.data.employees.find((item) => item.employeeId === "emp_anna");
+    assert(annaAfterPasswordChange.passwordHash.startsWith("scrypt$") && annaAfterPasswordChange.passwordHash !== "new-demo", "员工改密后仅保存强哈希");
     const safeLogs = await request(baseUrl, "/api/admin/operation-logs");
     assert(safeLogs.logs.filter((log) => log.targetType === "Employee").every((log) => !log.beforeJson.includes("passwordHash") && !log.afterJson.includes("passwordHash")), "员工操作日志不记录密码字段");
 
@@ -706,6 +716,18 @@ async function main() {
         if (value === undefined) delete process.env[key];
         else process.env[key] = value;
       }
+    }
+
+    const legacyDataFile = join(rootDir, "data", "legacy-password-store.json");
+    try {
+      const legacyData = JSON.parse(JSON.stringify(store.data));
+      legacyData.employees = [{ ...store.data.employees[0], employeeId: "emp_file_legacy", loginAccount: "filelegacy", passwordHash: "file-pass" }];
+      await writeFile(legacyDataFile, JSON.stringify(legacyData, null, 2), "utf8");
+      const { store: legacyStore } = await createApp({ dataFile: legacyDataFile });
+      const persistedLegacyData = JSON.parse(await readFile(legacyDataFile, "utf8"));
+      assert(legacyStore.data.employees[0].passwordHash.startsWith("scrypt$") && persistedLegacyData.employees[0].passwordHash.startsWith("scrypt$"), "加载旧明文员工密码文件后自动迁移并写回磁盘");
+    } finally {
+      await rm(legacyDataFile, { force: true });
     }
 
     console.log(`Selftest passed: ${checks.length} checks`);
