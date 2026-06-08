@@ -18,7 +18,9 @@ Page({
     storageCustomerName: "示例客户",
     storagePhone: "13800000000",
     storageQty: 1,
+    storageReason: "客户现场寄存",
     storageAgreementAccepted: true,
+    pickupRejectReason: "客户信息或库存状态需复核",
     pointPhone: "13800000000",
     pointAmount: 20,
     pointReason: "现场服务补偿",
@@ -174,6 +176,10 @@ Page({
     this.setData({ storageQty: Number(event.detail.value || 1) })
   },
 
+  onStorageReason(event) {
+    this.setData({ storageReason: event.detail.value })
+  },
+
   onStorageAgreement(event) {
     this.setData({ storageAgreementAccepted: event.detail.value.includes("accepted") })
   },
@@ -195,6 +201,10 @@ Page({
     this.setData({ pointReason: event.detail.value })
   },
 
+  onPickupRejectReason(event) {
+    this.setData({ pickupRejectReason: event.detail.value })
+  },
+
   async addStorage() {
     try {
       await request("/api/staff/storage", {
@@ -206,7 +216,7 @@ Page({
           skuId: this.data.selectedStorageSku.skuId,
           quantity: this.data.storageQty,
           agreementAccepted: this.data.storageAgreementAccepted,
-          reason: "小程序员工端新增存酒"
+          reason: this.data.storageReason
         }
       })
       wx.showToast({ title: "已新增存酒" })
@@ -232,7 +242,7 @@ Page({
     try {
       await request(`/api/staff/storage/pickup-requests/${event.currentTarget.dataset.id}/reject`, {
         method: "POST",
-        data: { operatorId: this.data.selectedEmployee.employeeId, reason: "员工端拒绝取酒" }
+        data: { operatorId: this.data.selectedEmployee.employeeId, reason: this.data.pickupRejectReason }
       })
       wx.showToast({ title: "已拒绝" })
       await this.loadPickupRequests()

@@ -104,6 +104,7 @@ const staffJs = await readFile(join(root, "miniprogram/pages/staff/staff.js"), "
 const staffWxml = await readFile(join(root, "miniprogram/pages/staff/staff.wxml"), "utf8");
 assert(staffJs.includes("/api/staff/storage"), "staff page calls storage create API");
 assert(staffJs.includes("storageCustomerName") && staffWxml.includes("客户姓名") && staffWxml.includes("checkbox-group") && staffJs.includes("storageAgreementAccepted") && !staffJs.includes("agreementAccepted: true"), "staff page uses real storage customer name and agreement input");
+assert(staffJs.includes("storageReason") && staffJs.includes("onStorageReason") && staffWxml.includes("新增存酒原因") && !staffJs.includes("小程序员工端新增存酒"), "staff page supports real storage creation reason");
 assert(staffJs.includes("/api/staff/login"), "staff page calls staff login API");
 assert(staffJs.includes("app.globalData.staffSessionId = data.session.sessionId"), "staff page stores staff session after login");
 assert(staffJs.includes("/api/staff/performance/monthly"), "staff page calls monthly performance API");
@@ -114,6 +115,7 @@ assert(staffJs.includes("/api/staff/employees/") && staffJs.includes("/order-qr"
 assert(staffJs.includes("showOrderQr") && staffWxml.includes("orderQrPayload"), "staff page displays employee order QR payload");
 assert(staffJs.includes("orderQrImageUrl") && staffWxml.includes("qr-image"), "staff page displays employee order QR image");
 assert(staffJs.includes("/confirm"), "staff page calls pickup confirm API");
+assert(staffJs.includes("pickupRejectReason") && staffJs.includes("onPickupRejectReason") && staffWxml.includes("拒绝取酒原因") && !staffJs.includes("员工端拒绝取酒"), "staff page supports real pickup rejection reason");
 assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adjust API");
 assert(staffJs.includes("pointPhone") && staffWxml.includes("客户手机号") && staffWxml.includes("调整客户积分") && !staffWxml.includes("调整示例客户积分"), "staff page adjusts customer points by phone");
 assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code API");

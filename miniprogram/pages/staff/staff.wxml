@@ -75,6 +75,7 @@
       <view class="input">{{selectedStorageSku.name}}</view>
     </picker>
     <input class="input" type="number" value="{{storageQty}}" bindinput="onStorageQty" placeholder="数量" />
+    <input class="input" value="{{storageReason}}" bindinput="onStorageReason" placeholder="新增存酒原因" />
     <checkbox-group bindchange="onStorageAgreement">
       <label class="muted"><checkbox value="accepted" checked="{{storageAgreementAccepted}}" /> 已确认客户寄存协议</label>
     </checkbox-group>
@@ -83,6 +84,7 @@
 
   <view class="section">
     <view class="section-title">取酒申请</view>
+    <input class="input" value="{{pickupRejectReason}}" bindinput="onPickupRejectReason" placeholder="拒绝取酒原因" />
     <view wx:if="{{pickupRequests.length === 0}}" class="muted">暂无取酒申请。</view>
     <view wx:for="{{pickupRequests}}" wx:key="requestId" class="row">
       <view class="row-title">{{item.requestId}}</view>
