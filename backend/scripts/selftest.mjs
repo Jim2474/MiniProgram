@@ -72,6 +72,7 @@ async function main() {
     assert(store.data.employees.every((employee) => String(employee.passwordHash).startsWith("scrypt$") && employee.passwordHash !== "demo"), "初始化员工密码以强哈希形式存储");
     assert(boot.runtime.mockWechatEnabled === true && boot.runtime.paymentProvider === "mock_wechat", "开发环境显式标记模拟微信能力");
     assert(boot.runtime.deployment.missingWechatEnv.includes("WECHAT_APPID") && boot.runtime.deployment.usingJsonStore === true, "运行时返回微信和数据层部署检查");
+    assert(boot.runtime.deployment.productionReady === false && boot.runtime.deployment.productionBlockers.includes("APP_ENV 不是 production"), "健康检查返回生产就绪阻塞项");
 
     const loggedInUser = await request(baseUrl, "/api/wechat/login", { method: "POST", body: { phone: "13700001111", nickname: "新会员" } });
     const newUserId = loggedInUser.user.userId;
@@ -569,6 +570,7 @@ async function main() {
       "WECHAT_MINIPROGRAM_ENV_VERSION",
       "WECHAT_PAY_DRY_RUN",
       "ALLOW_JSON_STORE_IN_PRODUCTION",
+      "DATABASE_URL",
     ]) {
       envSnapshot[key] = process.env[key];
     }
@@ -620,6 +622,7 @@ async function main() {
         assert(blockedHealth.runtime.mockWechatEnabled === false, "生产环境默认禁用模拟微信能力");
         assert(blockedHealth.runtime.deployment.wechatConfigured === false && blockedHealth.runtime.deployment.missingWechatEnv.includes("WECHAT_MCH_ID"), "生产环境健康检查暴露真实微信配置缺口");
         assert(blockedHealth.runtime.deployment.wechatLoginConfigured === false && blockedHealth.runtime.deployment.wechatPayConfigured === false, "生产环境健康检查拆分微信登录和支付配置状态");
+        assert(blockedHealth.runtime.deployment.productionReady === false && blockedHealth.runtime.deployment.productionBlockers.some((item) => item.includes("缺少微信支付配置")), "生产环境健康检查返回未就绪原因");
         let prodLoginError = "";
         try {
           await request(blockedBaseUrl, "/api/wechat/login", { method: "POST", body: { phone: "13600000000" } });
@@ -699,9 +702,10 @@ async function main() {
       process.env.WECHAT_PHONE_DRY_RUN = "true";
       process.env.WECHAT_QR_DRY_RUN = "true";
       process.env.WECHAT_PAY_DRY_RUN = "true";
-      const dryRunDataFile = join(rootDir, "data", "test-store-prod-dryrun.json");
+      const dryRunDataFile = join(rootDir, "data", "test-store-prod-dryrun.sqlite");
+      process.env.DATABASE_URL = `sqlite://${dryRunDataFile}`;
       await rm(dryRunDataFile, { force: true });
-      const { server: dryRunServer } = await createApp({ dataFile: dryRunDataFile });
+      const { server: dryRunServer } = await createApp();
       await new Promise((resolveListen) => dryRunServer.listen(0, resolveListen));
       const dryRunBaseUrl = `http://127.0.0.1:${dryRunServer.address().port}`;
       try {
@@ -781,6 +785,14 @@ async function main() {
         assert(dryNotify.order.payStatus === "paid" && dryNotify.payment.status === "paid", "微信支付回调确认后订单进入已支付");
         assert(dryNotify.payment.wxTransactionId === "wx_signed_tx" && dryNotify.payment.notifyVerifiedBy === "wechat_pay_v3", "微信支付回调通过平台证书验签和资源解密");
 
+        delete process.env.WECHAT_LOGIN_DRY_RUN;
+        delete process.env.WECHAT_PHONE_DRY_RUN;
+        delete process.env.WECHAT_QR_DRY_RUN;
+        const productionReadyHealth = await request(dryRunBaseUrl, "/api/health");
+        assert(productionReadyHealth.runtime.deployment.productionReady === true && productionReadyHealth.runtime.deployment.productionBlockers.length === 0, "生产配置齐全且 dry-run 关闭时健康检查就绪");
+        process.env.WECHAT_LOGIN_DRY_RUN = "true";
+        process.env.WECHAT_PHONE_DRY_RUN = "true";
+        process.env.WECHAT_QR_DRY_RUN = "true";
         process.env.WECHAT_PAY_DRY_RUN = "true";
         const dryAdminSession = await request(dryRunBaseUrl, "/api/staff/login", { method: "POST", body: { account: "admin", password: "demo" } });
         const dryAdminHeaders = { "x-staff-session": dryAdminSession.session.sessionId };

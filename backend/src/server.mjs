@@ -39,20 +39,41 @@ const deploymentChecks = () => {
   const missingWechatEnv = requiredWechatEnv.filter((key) => !process.env[key]);
   const missingWechatLoginEnv = requiredWechatLoginEnv.filter((key) => !process.env[key]);
   const missingWechatPayEnv = requiredWechatPayEnv.filter((key) => !process.env[key]);
+  const isProduction = currentAppEnv() === "production";
+  const provider = databaseProvider();
+  const wechatLoginDryRun = process.env.WECHAT_LOGIN_DRY_RUN === "true";
+  const wechatPhoneDryRun = process.env.WECHAT_PHONE_DRY_RUN === "true";
+  const wechatQrDryRun = process.env.WECHAT_QR_DRY_RUN === "true";
+  const wechatPayDryRun = process.env.WECHAT_PAY_DRY_RUN === "true";
+  const blockers = [];
+  if (!isProduction) blockers.push("APP_ENV 不是 production");
+  if (!authRequired()) blockers.push("后台/员工接口未强制会话鉴权");
+  if (mockWechatEnabled()) blockers.push("模拟微信能力仍开启");
+  if (missingWechatLoginEnv.length) blockers.push(`缺少微信登录配置：${missingWechatLoginEnv.join(",")}`);
+  if (missingWechatPayEnv.length) blockers.push(`缺少微信支付配置：${missingWechatPayEnv.join(",")}`);
+  if (!process.env.DATABASE_URL) blockers.push("缺少 DATABASE_URL");
+  if (provider === "json_store") blockers.push("生产不可使用 JSON Store");
+  if (provider === "unsupported") blockers.push("DATABASE_URL 当前仅支持 sqlite://");
+  if (wechatLoginDryRun) blockers.push("WECHAT_LOGIN_DRY_RUN 仍开启");
+  if (wechatPhoneDryRun) blockers.push("WECHAT_PHONE_DRY_RUN 仍开启");
+  if (wechatQrDryRun) blockers.push("WECHAT_QR_DRY_RUN 仍开启");
+  if (wechatPayDryRun) blockers.push("WECHAT_PAY_DRY_RUN 仍开启");
   return {
+    productionReady: blockers.length === 0,
+    productionBlockers: blockers,
     wechatConfigured: missingWechatEnv.length === 0,
     missingWechatEnv,
     wechatLoginConfigured: missingWechatLoginEnv.length === 0,
     missingWechatLoginEnv,
     wechatPayConfigured: missingWechatPayEnv.length === 0,
     missingWechatPayEnv,
-    wechatLoginDryRun: process.env.WECHAT_LOGIN_DRY_RUN === "true",
-    wechatPhoneDryRun: process.env.WECHAT_PHONE_DRY_RUN === "true",
-    wechatQrDryRun: process.env.WECHAT_QR_DRY_RUN === "true",
-    wechatPayDryRun: process.env.WECHAT_PAY_DRY_RUN === "true",
+    wechatLoginDryRun,
+    wechatPhoneDryRun,
+    wechatQrDryRun,
+    wechatPayDryRun,
     databaseConfigured: Boolean(process.env.DATABASE_URL),
-    databaseProvider: databaseProvider(),
-    usingJsonStore: databaseProvider() === "json_store",
+    databaseProvider: provider,
+    usingJsonStore: provider === "json_store",
     jsonStoreAllowedInProduction: jsonStoreAllowedInProduction(),
   };
 };
