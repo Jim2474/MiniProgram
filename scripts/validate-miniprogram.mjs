@@ -195,6 +195,8 @@ assert(adminJs.includes("deleteTable") && adminWxml.includes("删除/禁用"), "
 assert(adminJs.includes("tableMaintenanceReason") && adminJs.includes("tableDeleteReason") && adminWxml.includes("维护原因") && adminWxml.includes("删除/禁用原因") && !adminJs.includes("后台维护") && !adminJs.includes("小程序后台删除座台"), "admin page supports real table maintenance and disable reasons");
 assert(adminJs.includes("/api/admin/blind-settings"), "admin page calls blind settings API");
 assert(adminJs.includes("blindForm") && adminJs.includes("onBlindField"), "admin page supports blind settings form");
+assert(adminJs.includes("blindThemeOptions") && adminJs.includes("broadcast") && adminJs.includes("onBlindThemeChange") && adminWxml.includes('range="{{blindThemeOptions}}"') && adminWxml.includes("主题风格"), "admin page uses four preset blind theme picker");
+assert(adminJs.includes("blindFontFamilyOptions") && adminJs.includes("Source Han Sans") && adminJs.includes("onBlindFontFamilyChange") && adminWxml.includes('range="{{blindFontFamilyOptions}}"') && adminWxml.includes("字体样式"), "admin page uses preset blind font family picker");
 assert(adminJs.includes("titleMap") && adminJs.includes("voiceTerms"), "admin page updates blind title map and voice terms");
 assert(adminJs.includes("defaultBlindTitleMap") && adminJs.includes("restoreBlindTitles") && adminWxml.includes("恢复默认标题") && adminWxml.includes("prizePlayerTitle") && adminWxml.includes("nextBreakTitle") && adminWxml.includes("totalChipsTitle"), "admin page supports full blind title map and restore defaults");
 assert(adminJs.includes("blindLevelsText") && adminWxml.includes("升盲规则"), "admin page supports blind level sequence configuration");

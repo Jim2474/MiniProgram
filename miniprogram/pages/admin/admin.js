@@ -124,11 +124,24 @@ Page({
       { label: "库房", value: "warehouse" }
     ],
     blindSettings: {},
+    blindThemeOptions: [
+      { label: "经典绿桌", value: "classic" },
+      { label: "霓虹竞技", value: "neon" },
+      { label: "暗金俱乐部", value: "gold" },
+      { label: "电视赛场", value: "broadcast" }
+    ],
+    blindFontFamilyOptions: [
+      { label: "系统字体", value: "system" },
+      { label: "DIN 数字", value: "DIN" },
+      { label: "Arial", value: "Arial" },
+      { label: "思源黑体", value: "Source Han Sans" }
+    ],
     registrationStatusOptions: [
       { label: "接受报名", value: "accepting" },
       { label: "停止报名", value: "stopped" }
     ],
     blindForm: {
+      themeIndex: 0,
       theme: "classic",
       backgroundImage: "",
       logo: "",
@@ -137,6 +150,7 @@ Page({
       breakColor: "#7DD3FC",
       dialogColor: "#15221B",
       fontSize: 48,
+      fontFamilyIndex: 0,
       fontFamily: "system",
       registrationStatusIndex: 0,
       registrationStatus: "accepting",
@@ -398,6 +412,8 @@ Page({
       blindForm: {
         ...this.data.blindForm,
         ...blind.settings,
+        themeIndex: Math.max(0, this.data.blindThemeOptions.findIndex((item) => item.value === blind.settings.theme)),
+        fontFamilyIndex: Math.max(0, this.data.blindFontFamilyOptions.findIndex((item) => item.value === blind.settings.fontFamily)),
         registrationStatusIndex: Math.max(0, this.data.registrationStatusOptions.findIndex((item) => item.value === blind.settings.registrationStatus)),
         levelTitle: blind.settings.titleMap?.level || this.data.blindForm.levelTitle,
         playerLeftTitle: blind.settings.titleMap?.playerLeft || this.data.blindForm.playerLeftTitle,
@@ -1168,6 +1184,18 @@ Page({
 
   onBlindAutoStartChange(event) {
     this.setData({ "blindForm.autoStartAfterCountdown": Boolean(event.detail.value) })
+  },
+
+  onBlindThemeChange(event) {
+    const themeIndex = Number(event.detail.value || 0)
+    const option = this.data.blindThemeOptions[themeIndex] || this.data.blindThemeOptions[0]
+    this.setData({ "blindForm.themeIndex": themeIndex, "blindForm.theme": option.value })
+  },
+
+  onBlindFontFamilyChange(event) {
+    const fontFamilyIndex = Number(event.detail.value || 0)
+    const option = this.data.blindFontFamilyOptions[fontFamilyIndex] || this.data.blindFontFamilyOptions[0]
+    this.setData({ "blindForm.fontFamilyIndex": fontFamilyIndex, "blindForm.fontFamily": option.value })
   },
 
   onBlindBeijingTimeChange(event) {

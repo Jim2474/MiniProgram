@@ -73,10 +73,12 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V83 验收状态
+## V84 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V84.md`
+- `docs/REQUIREMENTS-AUDIT-V84.md`
 - `docs/ACCEPTANCE-V83.md`
 - `docs/REQUIREMENTS-AUDIT-V83.md`
 - `docs/ACCEPTANCE-V82.md`

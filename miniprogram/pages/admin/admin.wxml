@@ -328,7 +328,7 @@
   </view>
 
   <view class="section">
-    <view class="section-title">人员与系统设置</view>
+      <view class="section-title">人员与系统设置</view>
     <view class="row">
       <view class="row-title">新增员工表单</view>
       <input class="input" value="{{employeeForm.name}}" bindinput="onEmployeeName" placeholder="员工姓名" />
@@ -364,7 +364,9 @@
     <view class="row">
       <view class="row-title">升盲设置</view>
       <view class="muted">主题 {{blindSettings.theme}} · 字号 {{blindSettings.fontSize}} · 报名 {{blindSettings.registrationStatus}}</view>
-      <input class="input" value="{{blindForm.theme}}" data-key="theme" bindinput="onBlindField" placeholder="主题风格" />
+      <picker mode="selector" range="{{blindThemeOptions}}" range-key="label" value="{{blindForm.themeIndex}}" bindchange="onBlindThemeChange">
+        <view class="input">主题风格：{{blindThemeOptions[blindForm.themeIndex].label}}</view>
+      </picker>
       <input class="input" value="{{blindForm.backgroundImage}}" data-key="backgroundImage" bindinput="onBlindField" placeholder="背景图 URL" />
       <input class="input" value="{{blindForm.logo}}" data-key="logo" bindinput="onBlindField" placeholder="Logo URL" />
       <input class="input" value="{{blindForm.championBackgroundImage}}" data-key="championBackgroundImage" bindinput="onBlindField" placeholder="冠军背景图 URL" />
@@ -373,7 +375,9 @@
       <input class="input" value="{{blindForm.breakColor}}" data-key="breakColor" bindinput="onBlindField" placeholder="休息颜色" />
       <input class="input" value="{{blindForm.dialogColor}}" data-key="dialogColor" bindinput="onBlindField" placeholder="弹窗颜色" />
       <input class="input" type="number" value="{{blindForm.fontSize}}" data-key="fontSize" bindinput="onBlindField" placeholder="字体大小" />
-      <input class="input" value="{{blindForm.fontFamily}}" data-key="fontFamily" bindinput="onBlindField" placeholder="字体样式" />
+      <picker mode="selector" range="{{blindFontFamilyOptions}}" range-key="label" value="{{blindForm.fontFamilyIndex}}" bindchange="onBlindFontFamilyChange">
+        <view class="input">字体样式：{{blindFontFamilyOptions[blindForm.fontFamilyIndex].label}}</view>
+      </picker>
       <picker mode="selector" range="{{registrationStatusOptions}}" range-key="label" value="{{blindForm.registrationStatusIndex}}" bindchange="onBlindRegistrationStatusChange">
         <view class="input">报名状态：{{registrationStatusOptions[blindForm.registrationStatusIndex].label}}</view>
       </picker>
