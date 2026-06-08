@@ -376,9 +376,21 @@
         <view class="input">冠军背景图库：{{blindChampionBackgroundOptions[blindForm.championBackgroundImageIndex].label}}</view>
       </picker>
       <input class="input" value="{{blindForm.championBackgroundImage}}" data-key="championBackgroundImage" bindinput="onBlindField" placeholder="冠军背景图 URL" />
+      <picker mode="selector" range="{{fontColorOptions}}" range-key="label" value="{{blindForm.fontColorIndex}}" data-field="fontColor" bindchange="onBlindColorChange">
+        <view class="input">字体颜色：{{fontColorOptions[blindForm.fontColorIndex].label}}</view>
+      </picker>
       <input class="input" value="{{blindForm.fontColor}}" data-key="fontColor" bindinput="onBlindField" placeholder="字体颜色" />
+      <picker mode="selector" range="{{timerColorOptions}}" range-key="label" value="{{blindForm.timerColorIndex}}" data-field="timerColor" bindchange="onBlindColorChange">
+        <view class="input">计时颜色：{{timerColorOptions[blindForm.timerColorIndex].label}}</view>
+      </picker>
       <input class="input" value="{{blindForm.timerColor}}" data-key="timerColor" bindinput="onBlindField" placeholder="计时颜色" />
+      <picker mode="selector" range="{{breakColorOptions}}" range-key="label" value="{{blindForm.breakColorIndex}}" data-field="breakColor" bindchange="onBlindColorChange">
+        <view class="input">休息颜色：{{breakColorOptions[blindForm.breakColorIndex].label}}</view>
+      </picker>
       <input class="input" value="{{blindForm.breakColor}}" data-key="breakColor" bindinput="onBlindField" placeholder="休息颜色" />
+      <picker mode="selector" range="{{dialogColorOptions}}" range-key="label" value="{{blindForm.dialogColorIndex}}" data-field="dialogColor" bindchange="onBlindColorChange">
+        <view class="input">弹窗颜色：{{dialogColorOptions[blindForm.dialogColorIndex].label}}</view>
+      </picker>
       <input class="input" value="{{blindForm.dialogColor}}" data-key="dialogColor" bindinput="onBlindField" placeholder="弹窗颜色" />
       <input class="input" type="number" value="{{blindForm.fontSize}}" data-key="fontSize" bindinput="onBlindField" placeholder="字体大小" />
       <picker mode="selector" range="{{blindFontFamilyOptions}}" range-key="label" value="{{blindForm.fontFamilyIndex}}" bindchange="onBlindFontFamilyChange">

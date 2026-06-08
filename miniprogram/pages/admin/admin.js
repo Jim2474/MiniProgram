@@ -42,6 +42,32 @@ const voiceTermOptions = {
     { label: "前置预留分", value: "前置预留分" }
   ]
 }
+const blindColorPalettes = {
+  fontColor: [
+    { label: "白色", value: "#FFFFFF" },
+    { label: "金色", value: "#F8D66D" },
+    { label: "青色", value: "#7DD3FC" },
+    { label: "粉色", value: "#F0ABFC" }
+  ],
+  timerColor: [
+    { label: "金色", value: "#F8D66D" },
+    { label: "绿色", value: "#86EFAC" },
+    { label: "青色", value: "#7DD3FC" },
+    { label: "红色", value: "#F87171" }
+  ],
+  breakColor: [
+    { label: "青色", value: "#7DD3FC" },
+    { label: "蓝色", value: "#60A5FA" },
+    { label: "绿色", value: "#86EFAC" },
+    { label: "紫色", value: "#C084FC" }
+  ],
+  dialogColor: [
+    { label: "深绿", value: "#15221B" },
+    { label: "深蓝", value: "#111827" },
+    { label: "深紫", value: "#21152F" },
+    { label: "深金", value: "#21180F" }
+  ]
+}
 
 Page({
   data: {
@@ -164,6 +190,10 @@ Page({
     smallBlindTermOptions: voiceTermOptions.smallBlind,
     bigBlindTermOptions: voiceTermOptions.bigBlind,
     anteTermOptions: voiceTermOptions.ante,
+    fontColorOptions: blindColorPalettes.fontColor,
+    timerColorOptions: blindColorPalettes.timerColor,
+    breakColorOptions: blindColorPalettes.breakColor,
+    dialogColorOptions: blindColorPalettes.dialogColor,
     blindThemeOptions: [
       { label: "经典绿桌", value: "classic" },
       { label: "霓虹竞技", value: "neon" },
@@ -186,9 +216,13 @@ Page({
       backgroundImageIndex: 0,
       backgroundImage: "",
       logo: "",
+      fontColorIndex: 0,
       fontColor: "#FFFFFF",
+      timerColorIndex: 0,
       timerColor: "#F8D66D",
+      breakColorIndex: 0,
       breakColor: "#7DD3FC",
+      dialogColorIndex: 0,
       dialogColor: "#15221B",
       fontSize: 48,
       fontFamilyIndex: 0,
@@ -461,6 +495,10 @@ Page({
         themeIndex: Math.max(0, this.data.blindThemeOptions.findIndex((item) => item.value === blind.settings.theme)),
         backgroundImageIndex: Math.max(0, this.data.blindBackgroundOptions.findIndex((item) => item.value === blind.settings.backgroundImage)),
         championBackgroundImageIndex: Math.max(0, this.data.blindChampionBackgroundOptions.findIndex((item) => item.value === blind.settings.championBackgroundImage)),
+        fontColorIndex: Math.max(0, this.data.fontColorOptions.findIndex((item) => item.value === blind.settings.fontColor)),
+        timerColorIndex: Math.max(0, this.data.timerColorOptions.findIndex((item) => item.value === blind.settings.timerColor)),
+        breakColorIndex: Math.max(0, this.data.breakColorOptions.findIndex((item) => item.value === blind.settings.breakColor)),
+        dialogColorIndex: Math.max(0, this.data.dialogColorOptions.findIndex((item) => item.value === blind.settings.dialogColor)),
         fontFamilyIndex: Math.max(0, this.data.blindFontFamilyOptions.findIndex((item) => item.value === blind.settings.fontFamily)),
         registrationStatusIndex: Math.max(0, this.data.registrationStatusOptions.findIndex((item) => item.value === blind.settings.registrationStatus)),
         voiceTypeIndex: Math.max(0, this.data.blindVoiceTypeOptions.findIndex((item) => item.value === blind.settings.voiceType)),
@@ -1258,6 +1296,16 @@ Page({
     const updates = { "blindForm.championBackgroundImageIndex": championBackgroundImageIndex }
     if (option.value) updates["blindForm.championBackgroundImage"] = option.value
     this.setData(updates)
+  },
+
+  onBlindColorChange(event) {
+    const field = event.currentTarget.dataset.field
+    const indexField = `${field}Index`
+    const options = this.data[`${field}Options`] || []
+    const colorIndex = Number(event.detail.value || 0)
+    const option = options[colorIndex] || options[0]
+    if (!option) return
+    this.setData({ [`blindForm.${indexField}`]: colorIndex, [`blindForm.${field}`]: option.value })
   },
 
   onBlindFontFamilyChange(event) {
