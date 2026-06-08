@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V34
+# 德扑棋牌门店小程序 V35
 
 本仓库包含：
 
@@ -72,10 +72,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V34 验收状态
+## V35 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V35.md`
 - `docs/ACCEPTANCE-V34.md`
 - `docs/ACCEPTANCE-V33.md`
 - `docs/ACCEPTANCE-V32.md`
@@ -113,10 +114,18 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：166 项。
-- 小程序结构与 API 调用校验：128 项。
+- 后端业务自验收：169 项。
+- 小程序结构与 API 调用校验：130 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V35 新增能力
+
+- 客户积分/存酒核销码在生产/沙箱链路支持指向员工端的微信小程序码，scene 继续使用 `verify:<codeId>`。
+- 核销码返回 `qrProvider`、`miniProgramPage` 和 `miniProgramScene`，与员工点单码保持一致。
+- 小程序启动时解析 `verify:` scene，员工页进入后自动识别核销码并展示待核销信息。
+- 员工仍需点击“确认核销二维码”后才扣积分或扣存酒，保留人工确认动作。
+- 自动验收覆盖核销小程序码 dry-run 和员工端 scene 识别。
 
 ## V34 新增能力
 

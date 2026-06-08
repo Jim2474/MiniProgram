@@ -409,6 +409,7 @@ async function main() {
     const pointsQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "points", pointsAmount: 5 } });
     assert(pointsQr.code.qrPayload.startsWith("verify:"), "客户可生成取积分二维码");
     assert(pointsQr.code.qrImageUrl.startsWith("data:image/"), "客户取积分二维码返回可展示图片");
+    assert(pointsQr.code.qrProvider === "payload_qr" && pointsQr.code.miniProgramScene === pointsQr.code.qrPayload, "开发态客户取积分二维码保留 payload 图片");
     const scannedPointsQr = await request(baseUrl, "/api/staff/verification-codes/scan", { method: "POST", body: { operatorId: "emp_anna", qrPayload: pointsQr.code.qrPayload } });
     assert(scannedPointsQr.code.type === "points", "员工可扫码查看积分二维码");
     const confirmedPointsQr = await request(baseUrl, `/api/staff/verification-codes/${pointsQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna" } });
@@ -644,6 +645,10 @@ async function main() {
         assert(dryStaffOrderQr.qr.qrProvider === "wechat_qr_dry_run" && dryStaffOrderQr.qr.miniProgramScene === "employee:emp_anna", "生产沙箱员工点单码返回微信小程序码 dry-run 图片");
         const drySceneScan = await request(dryRunBaseUrl, "/api/scan/employee", { method: "POST", body: { userId: wxUser.user.userId, scene: "employee%3Aemp_anna" } });
         assert(drySceneScan.employee.employeeId === "emp_anna" && drySceneScan.record.rawCode === "employee:emp_anna", "客户通过小程序码 scene 自动归属员工");
+        const dryPointsQr = await request(dryRunBaseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "points", pointsAmount: 1 } });
+        assert(dryPointsQr.code.qrProvider === "wechat_qr_dry_run" && dryPointsQr.code.miniProgramPage === "pages/staff/staff" && dryPointsQr.code.miniProgramScene === dryPointsQr.code.qrPayload, "生产沙箱积分核销码返回员工端小程序码 dry-run 图片");
+        const dryScannedPointsQr = await request(dryRunBaseUrl, "/api/staff/verification-codes/scan", { method: "POST", headers: { "x-staff-session": dryQrAdminSession.session.sessionId }, body: { operatorId: "emp_anna", qrPayload: dryPointsQr.code.miniProgramScene } });
+        assert(dryScannedPointsQr.code.codeId === dryPointsQr.code.codeId, "员工端可从小程序码 scene 识别积分核销码");
         const dryProductsBefore = await request(dryRunBaseUrl, "/api/products");
         const dryBudBefore = dryProductsBefore.products.find((item) => item.skuId === "sku_bud");
         await request(dryRunBaseUrl, "/api/cart/items", { method: "POST", body: { userId: wxUser.user.userId, skuId: "sku_bud", quantity: 1 } });

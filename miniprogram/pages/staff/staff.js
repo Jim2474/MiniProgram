@@ -31,8 +31,9 @@ Page({
     newPassword: "new-demo"
   },
 
-  onShow() {
-    this.loadAll()
+  async onShow() {
+    await this.loadAll()
+    await this.consumePendingVerificationScene()
   },
 
   async loadAll() {
@@ -261,6 +262,14 @@ Page({
     } catch (error) {
       showError(error)
     }
+  },
+
+  async consumePendingVerificationScene() {
+    const scene = app.globalData.pendingVerificationScene
+    if (!scene) return
+    app.globalData.pendingVerificationScene = ""
+    this.setData({ qrPayload: scene })
+    await this.scanVerificationCode()
   },
 
   async confirmVerificationCode() {

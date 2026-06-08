@@ -46,6 +46,7 @@ const projectConfig = JSON.parse(await readFile(join(root, "miniprogram/project.
 assert(projectConfig.setting?.urlCheck === false, "local API urlCheck disabled for devtools");
 assert(projectConfig.miniprogramRoot === "./", "miniprogram root configured");
 assert(appSource.includes("pendingEmployeeScene") && appSource.includes("decodeURIComponent") && appSource.includes("employee:"), "app parses employee mini program code scene");
+assert(appSource.includes("pendingVerificationScene") && appSource.includes("verify:"), "app parses verification mini program code scene");
 
 const apiSource = await readFile(join(root, "miniprogram/utils/api.js"), "utf8");
 assert(apiSource.includes("http://localhost:3000"), "api util points to local backend");
@@ -106,6 +107,7 @@ assert(staffJs.includes("/api/staff/points/adjust"), "staff page calls point adj
 assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code API");
 assert(staffJs.includes("/api/staff/verification-codes/scan"), "staff page calls QR scan verification API");
 assert(staffJs.includes("/api/staff/verification-codes/") && staffJs.includes("/confirm"), "staff page calls QR confirm API");
+assert(staffJs.includes("consumePendingVerificationScene") && staffJs.includes("pendingVerificationScene"), "staff page consumes verification mini program code scene");
 assert(staffJs.includes("/api/staff/seats/"), "staff page calls seat API");
 assert(staffJs.includes("/api/staff/password"), "staff page calls password API");
 assert(!staffJs.includes("/api/staff/lottery-records/") && !staffJs.includes("/api/staff/coupons/"), "staff page hides coupon and lottery confirm flows");

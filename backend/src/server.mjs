@@ -1154,11 +1154,21 @@ function publicVerificationCode(store, code) {
   return {
     ...code,
     qrImageUrl: code.qrImageUrl || "",
+    qrProvider: code.qrProvider || "payload_qr",
+    miniProgramPage: code.miniProgramPage || "",
+    miniProgramScene: code.miniProgramScene || code.qrPayload || "",
     user: store.data.users.find((user) => user.userId === code.userId),
     storage: code.storageId ? store.data.customerStorage.find((storage) => storage.storageId === code.storageId) : null,
     coupon: code.couponId ? store.data.coupons.find((coupon) => coupon.couponId === code.couponId) : null,
     lotteryRecord: code.lotteryRecordId ? store.data.lotteryRecords.find((record) => record.recordId === code.lotteryRecordId) : null,
   };
+}
+
+async function verificationCodeQrImage(qrPayload) {
+  if (!mockWechatEnabled() || process.env.WECHAT_QR_DRY_RUN === "true") {
+    return wechatMiniProgramCode(qrPayload, "pages/staff/staff");
+  }
+  return { imageUrl: await qrDataUri(qrPayload), provider: "payload_qr", page: "", scene: qrPayload };
 }
 
 function resolveVerificationCode(store, value) {
@@ -2348,6 +2358,9 @@ function createRouter(store) {
       expiresAt: body.expiresAt || addDays(1),
       usedAt: null,
       usedBy: null,
+      qrProvider: "payload_qr",
+      miniProgramPage: "",
+      miniProgramScene: "",
     };
     if (type === "storage") {
       const storage = store.getStorage(code.storageId);
@@ -2367,7 +2380,11 @@ function createRouter(store) {
       code.pointsAmount = amount;
     }
     code.qrPayload = `verify:${code.codeId}`;
-    code.qrImageUrl = await qrDataUri(code.qrPayload);
+    const qrImage = await verificationCodeQrImage(code.qrPayload);
+    code.qrImageUrl = qrImage.imageUrl;
+    code.qrProvider = qrImage.provider;
+    code.miniProgramPage = qrImage.page;
+    code.miniProgramScene = qrImage.scene;
     store.data.verificationCodes.unshift(code);
     store.log(user.userId, "customer", "create_verification_code", "VerificationCode", code.codeId, null, code, `生成${type}二维码`);
     await store.save();
