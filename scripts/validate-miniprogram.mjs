@@ -62,6 +62,7 @@ assert(customerJs.includes("/api/cart/items"), "customer page calls cart API");
 assert(customerJs.includes("/api/wechat/login"), "customer page calls WeChat login API");
 assert(customerJs.includes("/api/user/bind-phone"), "customer page calls bind phone API");
 assert(customerJs.includes("/api/orders") && customerJs.includes("/pay"), "customer page calls order pay API");
+assert(customerWxml.includes("模拟微信支付"), "customer page labels mock WeChat pay in dev build");
 assert(customerJs.includes("todayOrders") && customerJs.includes("historyOrders"), "customer page separates today and historical orders");
 assert(customerJs.includes("/api/storage/") && customerJs.includes("pickup-requests"), "customer page calls pickup request API");
 assert(customerJs.includes("/api/storage-records"), "customer page calls storage records API");

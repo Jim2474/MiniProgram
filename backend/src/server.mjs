@@ -17,6 +17,16 @@ const addDays = (days) => {
   date.setDate(date.getDate() + days);
   return date.toISOString();
 };
+const currentAppEnv = () => process.env.APP_ENV || process.env.NODE_ENV || "development";
+const mockWechatEnabled = () => process.env.ALLOW_MOCK_WECHAT === "true" || currentAppEnv() !== "production";
+const runtimeInfo = () => ({
+  appEnv: currentAppEnv(),
+  mockWechatEnabled: mockWechatEnabled(),
+  paymentProvider: mockWechatEnabled() ? "mock_wechat" : "wechat_pay_required",
+});
+function requireMockWechat(feature) {
+  if (!mockWechatEnabled()) throw new HttpError(501, `${feature}需要接入真实微信能力，生产环境禁止使用模拟接口`);
+}
 
 const mimeTypes = {
   ".html": "text/html; charset=utf-8",
@@ -700,16 +710,18 @@ function createRouter(store) {
   const routes = [];
   const add = (method, pattern, handler) => routes.push({ method, pattern, handler });
 
-  add("GET", "/api/health", async () => ({ ok: true, time: now() }));
+  add("GET", "/api/health", async () => ({ ok: true, time: now(), runtime: runtimeInfo() }));
   add("GET", "/api/bootstrap", async () => ({
     settings: store.data.settings,
     store: store.data.stores[0],
     user: store.getUser(),
     employees: store.data.employees.map(publicEmployee),
     seats: store.data.seats,
+    runtime: runtimeInfo(),
   }));
 
   add("POST", "/api/wechat/login", async (body) => {
+    requireMockWechat("微信登录");
     const phone = body.phone || "13800000000";
     let user = store.data.users.find((item) => item.phone === phone);
     if (!user) {
@@ -729,7 +741,7 @@ function createRouter(store) {
       store.data.users.push(user);
       await store.save();
     }
-    return { user };
+    return { user, authProvider: "mock_wechat" };
   });
 
   add("POST", "/api/staff/login", async (body) => {
@@ -869,6 +881,7 @@ function createRouter(store) {
   });
 
   add("POST", "/api/orders/:orderId/pay", async (_body, params) => {
+    requireMockWechat("微信支付");
     const order = store.getOrder(params.orderId);
     if (order.payStatus === "paid") return { order: publicOrder(store, order), idempotent: true };
     if (order.orderStatus !== "unpaid") throw new HttpError(400, "订单状态不可支付");
@@ -887,6 +900,7 @@ function createRouter(store) {
       orderId: order.orderId,
       wxTransactionId: `mock_wx_${order.orderId}`,
       amount: order.amount,
+      provider: "mock_wechat",
       status: "paid",
       paidAt: order.paidAt,
       refundedAt: null,
@@ -897,7 +911,7 @@ function createRouter(store) {
     store.createPointsLedger(store.getUser(order.userId), order.pointsAwarded, "消费赠送积分", "order", order.orderId, "system");
     store.log("system", "system", "pay_order", "Order", order.orderId, before, order, "模拟微信支付成功");
     await store.save();
-    return { order: publicOrder(store, order) };
+    return { order: publicOrder(store, order), paymentProvider: "mock_wechat" };
   });
 
   add("GET", "/api/orders", async (_body, _params, query) => {
@@ -932,6 +946,7 @@ function createRouter(store) {
   });
 
   add("POST", "/api/admin/orders/:orderId/refund", async (body, params) => {
+    requireMockWechat("微信退款");
     const order = store.getOrder(params.orderId);
     if (order.payStatus !== "paid") throw new HttpError(400, "只有已支付订单可退款");
     if (order.orderStatus === "refunded") return { order: publicOrder(store, order), idempotent: true };
@@ -944,6 +959,7 @@ function createRouter(store) {
       orderId: order.orderId,
       amount: order.amount,
       reason: body.reason || "管理员退款",
+      provider: "mock_wechat",
       status: "refunded",
       operatorId: body.operatorId || "emp_admin",
       createdAt: now(),
@@ -965,7 +981,7 @@ function createRouter(store) {
     }
     store.log(body.operatorId || "emp_admin", "admin", "refund_order", "Order", order.orderId, before, order, body.reason || "管理员退款");
     await store.save();
-    return { order: publicOrder(store, order) };
+    return { order: publicOrder(store, order), refundProvider: "mock_wechat" };
   });
 
   add("POST", "/api/admin/orders/:orderId/transfer-storage", async (body, params) => {

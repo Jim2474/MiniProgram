@@ -34,10 +34,12 @@ async function main() {
     const boot = await request(baseUrl, "/api/bootstrap");
     assert(boot.user.phone === "13800000000", "微信登录种子会员存在");
     assert(boot.employees.every((employee) => !("passwordHash" in employee)), "初始化数据不暴露员工密码字段");
+    assert(boot.runtime.mockWechatEnabled === true && boot.runtime.paymentProvider === "mock_wechat", "开发环境显式标记模拟微信能力");
 
     const loggedInUser = await request(baseUrl, "/api/wechat/login", { method: "POST", body: { phone: "13700001111", nickname: "新会员" } });
     const newUserId = loggedInUser.user.userId;
     assert(loggedInUser.user.balance === 0 && loggedInUser.user.memberLevel === "普通会员", "微信登录新会员初始化余额和等级");
+    assert(loggedInUser.authProvider === "mock_wechat", "模拟微信登录返回提供方标记");
 
     const staffLogin = await request(baseUrl, "/api/staff/login", { method: "POST", body: { account: "anna", password: "demo" } });
     assert(staffLogin.employee.employeeId === "emp_anna" && staffLogin.session.sessionId, "员工可用账号密码登录");
@@ -76,6 +78,7 @@ async function main() {
 
     const paid = await request(baseUrl, `/api/orders/${orderData.order.orderId}/pay`, { method: "POST" });
     assert(paid.order.payStatus === "paid" && paid.order.orderStatus === "pending", "模拟微信支付后订单进入待处理");
+    assert(paid.paymentProvider === "mock_wechat", "模拟微信支付返回提供方标记");
     assert(paid.order.pointsAwarded === paid.order.amount, "支付后按每元一积分赠送");
 
     const productsAfterPay = await request(baseUrl, "/api/products");
@@ -215,6 +218,7 @@ async function main() {
       body: { operatorId: "emp_admin", reason: "自验收退款" },
     });
     assert(refunded.order.payStatus === "refunded" && refunded.order.orderStatus === "refunded", "管理员可退款");
+    assert(refunded.refundProvider === "mock_wechat", "模拟微信退款返回提供方标记");
     const productsAfterRefund = await request(baseUrl, "/api/products");
     assert(productsAfterRefund.products.find((item) => item.skuId === "sku_bud").stockQty === bud.stockQty, "退款后啤酒库存恢复");
     assert(productsAfterRefund.products.find((item) => item.skuId === "sku_whisky").stockQty === whisky.stockQty, "退款后威士忌库存恢复");
@@ -420,6 +424,29 @@ async function main() {
     assert(location.location.address.includes("上海"), "门店位置可查询");
     const support = await request(baseUrl, "/api/support/contact");
     assert(support.phone === "400-000-0000", "客服电话可查询");
+
+    process.env.APP_ENV = "production";
+    delete process.env.ALLOW_MOCK_WECHAT;
+    const blockedDataFile = join(rootDir, "data", "test-store-prod-block.json");
+    await rm(blockedDataFile, { force: true });
+    const { server: blockedServer } = await createApp({ dataFile: blockedDataFile });
+    await new Promise((resolveListen) => blockedServer.listen(0, resolveListen));
+    const blockedBaseUrl = `http://127.0.0.1:${blockedServer.address().port}`;
+    try {
+      const blockedHealth = await request(blockedBaseUrl, "/api/health");
+      assert(blockedHealth.runtime.mockWechatEnabled === false, "生产环境默认禁用模拟微信能力");
+      let prodLoginError = "";
+      try {
+        await request(blockedBaseUrl, "/api/wechat/login", { method: "POST", body: { phone: "13600000000" } });
+      } catch (error) {
+        prodLoginError = error.message;
+      }
+      assert(prodLoginError.includes("生产环境禁止使用模拟接口"), "生产环境未显式允许时拦截模拟微信登录");
+    } finally {
+      await new Promise((resolveClose) => blockedServer.close(resolveClose));
+      await rm(blockedDataFile, { force: true });
+      delete process.env.APP_ENV;
+    }
 
     console.log(`Selftest passed: ${checks.length} checks`);
     for (const check of checks) console.log(`- ${check}`);

@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V17
+# 德扑棋牌门店小程序 V18
 
 本仓库包含：
 
@@ -17,6 +17,14 @@ npm --prefix backend start
 
 ```text
 http://localhost:3000
+```
+
+运行模式：
+
+```text
+APP_ENV=development  # 默认，允许本地模拟微信登录/支付/退款
+APP_ENV=production   # 默认禁止模拟微信能力
+ALLOW_MOCK_WECHAT=true  # 仅用于生产前沙箱演示，显式允许模拟微信能力
 ```
 
 健康检查：
@@ -60,10 +68,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V17 验收状态
+## V18 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V18.md`
 - `docs/ACCEPTANCE-V17.md`
 - `docs/ACCEPTANCE-V16.md`
 - `docs/ACCEPTANCE-V15.md`
@@ -82,10 +91,18 @@ node scripts/validate-miniprogram.mjs
 
 当前自动测试通过：
 
-- 后端业务自验收：107 项。
-- 小程序结构与 API 调用校验：108 项。
+- 后端业务自验收：113 项。
+- 小程序结构与 API 调用校验：109 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V18 新增能力
+
+- 健康检查和 bootstrap 返回运行模式、模拟微信能力开关和支付提供方。
+- 开发环境继续显式使用 `mock_wechat`，方便本地验收。
+- `APP_ENV=production` 默认禁止模拟微信登录、支付和退款。
+- 模拟登录、支付、退款接口返回 provider 标记，避免混淆生产链路。
+- 客户端开发态支付按钮保留“模拟微信支付”文案。
 
 ## V17 新增能力
 
@@ -197,4 +214,4 @@ node scripts/validate-miniprogram.mjs
 
 ## 说明
 
-当前版本仍使用模拟微信登录、模拟手机号授权、模拟微信支付和模拟退款。后续接入真实小程序生产环境时，需要替换对应微信接口，并将 JSON 数据持久化替换为数据库。
+当前开发模式仍使用模拟微信登录、模拟手机号授权、模拟微信支付和模拟退款。生产模式默认禁止这些模拟能力；后续接入真实小程序生产环境时，需要替换微信登录、支付下单、支付回调、退款、鉴权会话，并将 JSON 数据持久化替换为数据库。
