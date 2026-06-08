@@ -124,6 +124,10 @@ Page({
       { label: "库房", value: "warehouse" }
     ],
     blindSettings: {},
+    registrationStatusOptions: [
+      { label: "接受报名", value: "accepting" },
+      { label: "停止报名", value: "stopped" }
+    ],
     blindForm: {
       theme: "classic",
       backgroundImage: "",
@@ -134,6 +138,7 @@ Page({
       dialogColor: "#15221B",
       fontSize: 48,
       fontFamily: "system",
+      registrationStatusIndex: 0,
       registrationStatus: "accepting",
       championBackgroundImage: "",
       voiceType: "default",
@@ -141,6 +146,8 @@ Page({
       voiceEndText: "结束提示音",
       entrants: 9,
       totalBuyins: 0,
+      showBeijingTime: true,
+      showRegistrationCountdown: true,
       autoStartAfterCountdown: true,
       ...defaultBlindTitleMap,
       smallBlindTerm: "小盲",
@@ -391,6 +398,7 @@ Page({
       blindForm: {
         ...this.data.blindForm,
         ...blind.settings,
+        registrationStatusIndex: Math.max(0, this.data.registrationStatusOptions.findIndex((item) => item.value === blind.settings.registrationStatus)),
         levelTitle: blind.settings.titleMap?.level || this.data.blindForm.levelTitle,
         playerLeftTitle: blind.settings.titleMap?.playerLeft || this.data.blindForm.playerLeftTitle,
         entrantsTitle: blind.settings.titleMap?.entrants || this.data.blindForm.entrantsTitle,
@@ -1162,6 +1170,20 @@ Page({
     this.setData({ "blindForm.autoStartAfterCountdown": Boolean(event.detail.value) })
   },
 
+  onBlindBeijingTimeChange(event) {
+    this.setData({ "blindForm.showBeijingTime": Boolean(event.detail.value) })
+  },
+
+  onBlindRegistrationCountdownChange(event) {
+    this.setData({ "blindForm.showRegistrationCountdown": Boolean(event.detail.value) })
+  },
+
+  onBlindRegistrationStatusChange(event) {
+    const registrationStatusIndex = Number(event.detail.value || 0)
+    const option = this.data.registrationStatusOptions[registrationStatusIndex] || this.data.registrationStatusOptions[0]
+    this.setData({ "blindForm.registrationStatusIndex": registrationStatusIndex, "blindForm.registrationStatus": option.value })
+  },
+
   restoreBlindTitles() {
     this.setData(Object.fromEntries(Object.keys(defaultBlindTitleMap).map((key) => [`blindForm.${key}`, defaultBlindTitleMap[key]])))
   },
@@ -1196,6 +1218,8 @@ Page({
           voiceEndText: form.voiceEndText,
           entrants: form.entrants,
           totalBuyins: form.totalBuyins,
+          showBeijingTime: form.showBeijingTime,
+          showRegistrationCountdown: form.showRegistrationCountdown,
           autoStartAfterCountdown: form.autoStartAfterCountdown,
           blindLevels,
           titleMap: {

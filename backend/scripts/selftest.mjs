@@ -616,6 +616,7 @@ async function main() {
     assert(blindSettings.settings.titleMap.prizePlayer === "奖励人数" && blindSettings.settings.titleMap.nextBreak === "下次休息" && blindSettings.settings.titleMap.avgChips === "平均记分牌", "后台可配置完整升盲计时器标题");
     assert(blindSettings.settings.voiceType === "custom" && blindSettings.settings.voiceStartText === "比赛开始" && blindSettings.settings.voiceTerms.smallBlind === "小盲位", "后台可配置升盲语音和术语");
     assert(blindSettings.settings.entrants === 18 && blindSettings.settings.totalBuyins === 23 && blindSettings.settings.autoStartAfterCountdown === true, "后台可配置参赛人数、总买入和倒计时行为");
+    assert(blindSettings.settings.showBeijingTime === false && blindSettings.settings.showRegistrationCountdown === false && blindSettings.settings.registrationStatus === "stopped", "后台可配置升盲北京时间、报名倒计时和报名状态");
     assert(blindSettings.settings.blindLevels[1].smallBlind === 3 && blindSettings.settings.blindLevels[1].ante === 1, "后台可配置自定义升盲规则序列");
     const staffBlindSettings = await request(baseUrl, "/api/staff/blind-settings");
     assert(staffBlindSettings.settings.blindLevels[1].bigBlind === 6, "荷官端可读取员工升盲设置接口");

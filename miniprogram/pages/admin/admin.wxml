@@ -374,9 +374,13 @@
       <input class="input" value="{{blindForm.dialogColor}}" data-key="dialogColor" bindinput="onBlindField" placeholder="弹窗颜色" />
       <input class="input" type="number" value="{{blindForm.fontSize}}" data-key="fontSize" bindinput="onBlindField" placeholder="字体大小" />
       <input class="input" value="{{blindForm.fontFamily}}" data-key="fontFamily" bindinput="onBlindField" placeholder="字体样式" />
-      <input class="input" value="{{blindForm.registrationStatus}}" data-key="registrationStatus" bindinput="onBlindField" placeholder="报名状态" />
+      <picker mode="selector" range="{{registrationStatusOptions}}" range-key="label" value="{{blindForm.registrationStatusIndex}}" bindchange="onBlindRegistrationStatusChange">
+        <view class="input">报名状态：{{registrationStatusOptions[blindForm.registrationStatusIndex].label}}</view>
+      </picker>
       <input class="input" type="number" value="{{blindForm.entrants}}" data-key="entrants" bindinput="onBlindField" placeholder="参赛人数" />
       <input class="input" type="number" value="{{blindForm.totalBuyins}}" data-key="totalBuyins" bindinput="onBlindField" placeholder="总买入手数" />
+      <switch checked="{{blindForm.showBeijingTime}}" bindchange="onBlindBeijingTimeChange" /> 显示北京时间
+      <switch checked="{{blindForm.showRegistrationCountdown}}" bindchange="onBlindRegistrationCountdownChange" /> 显示报名倒计时
       <switch checked="{{blindForm.autoStartAfterCountdown}}" bindchange="onBlindAutoStartChange" /> 倒计时结束自动升盲
       <input class="input" value="{{blindForm.levelTitle}}" data-key="levelTitle" bindinput="onBlindField" placeholder="标题：级别" />
       <input class="input" value="{{blindForm.playerLeftTitle}}" data-key="playerLeftTitle" bindinput="onBlindField" placeholder="标题：剩余人数" />
