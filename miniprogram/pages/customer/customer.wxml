@@ -89,7 +89,7 @@
     <view wx:if="{{todayOrders.length === 0}}" class="muted">今日暂无订单。</view>
     <view wx:for="{{todayOrders}}" wx:key="orderId" class="row">
       <view class="row-title">{{item.orderId}}</view>
-      <view class="muted">{{item.statusText}} · {{item.amountText}} · 赠送 {{item.pointsAwardedText}} · {{item.employeeName}} · {{item.orderDate}}</view>
+      <view class="muted">{{item.statusText}} · {{item.amountText}} <text wx:if="{{pointsVisible}}">· 赠送 {{item.pointsAwardedText}}</text> · {{item.employeeName}} · {{item.orderDate}}</view>
     </view>
   </view>
 
@@ -98,14 +98,14 @@
     <view wx:if="{{historyOrders.length === 0}}" class="muted">暂无历史订单。</view>
     <view wx:for="{{historyOrders}}" wx:key="orderId" class="row">
       <view class="row-title">{{item.orderId}}</view>
-      <view class="muted">{{item.statusText}} · {{item.amountText}} · 赠送 {{item.pointsAwardedText}} · {{item.employeeName}} · {{item.orderDate}}</view>
+      <view class="muted">{{item.statusText}} · {{item.amountText}} <text wx:if="{{pointsVisible}}">· 赠送 {{item.pointsAwardedText}}</text> · {{item.employeeName}} · {{item.orderDate}}</view>
     </view>
   </view>
 
   <view class="section">
     <view class="section-title">积分与存酒</view>
     <view class="metrics">
-      <view class="metric">
+      <view wx:if="{{pointsVisible}}" class="metric">
         <view class="metric-value">{{points.balance}}</view>
         <view class="metric-label">当前积分</view>
       </view>
@@ -124,7 +124,7 @@
       </view>
       <view wx:if="{{item.status === 'available' && item.quantity > 0}}" class="muted">可申请 1-{{item.quantity}}{{item.product.unit}}</view>
     </view>
-    <view class="row">
+    <view wx:if="{{pointsVisible}}" class="row">
       <view class="row-title">积分明细</view>
       <input class="input small-input" type="number" value="{{pointsQrAmount}}" bindinput="onPointsQrAmount" placeholder="取积分数量" />
       <button size="mini" class="secondary" data-type="points" bindtap="createQrCode">生成取积分二维码</button>

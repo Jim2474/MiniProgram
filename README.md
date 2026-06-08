@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V74 验收状态
+## V75 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V75.md`
 - `docs/ACCEPTANCE-V74.md`
 - `docs/ACCEPTANCE-V73.md`
 - `docs/ACCEPTANCE-V72.md`
@@ -284,6 +285,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V75 新增能力
+
+- 客户端读取后台积分显示开关 `pointsVisible`。
+- 关闭积分显示时，客户页隐藏当前积分、积分明细、取积分二维码和订单赠分文字。
+- 自动验收覆盖客户页对积分显示开关的遵循。
 
 ## V74 新增能力
 

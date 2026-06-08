@@ -70,6 +70,7 @@ assert(customerJs.includes("wx.login") && customerJs.includes("payload.code"), "
 assert(customerJs.includes("isLoggedIn") && customerJs.includes("customerLoggedIn") && customerWxml.includes("avatar-default") && customerWxml.includes("未登录，当前为本地演示会员") && customerWxss.includes(".profile-card"), "customer page displays login state and default avatar");
 assert(customerJs.includes("/api/user/bind-phone"), "customer page calls bind phone API");
 assert(customerWxml.includes('open-type="getPhoneNumber"') && customerJs.includes("bindWechatPhone") && customerJs.includes("event.detail.code"), "customer page supports WeChat phone authorization code");
+assert(customerJs.includes("pointsVisible: profile.pointsVisible !== false") && customerWxml.includes('wx:if="{{pointsVisible}}"') && customerWxml.includes("<text wx:if=\"{{pointsVisible}}\">· 赠送"), "customer page respects backend points visibility setting");
 assert(customerJs.includes("/api/orders") && customerJs.includes("/pay"), "customer page calls order pay API");
 assert(customerJs.includes("wx.requestPayment") && customerJs.includes("data.prepay"), "customer page can invoke WeChat requestPayment from prepay params");
 assert(customerWxml.includes("微信支付"), "customer page labels WeChat pay action");
