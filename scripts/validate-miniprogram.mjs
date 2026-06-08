@@ -148,6 +148,7 @@ assert(adminJs.includes("/api/admin/users") && adminWxml.includes("存酒 {{item
 assert(adminJs.includes("/api/admin/member-levels"), "admin page calls member level API");
 assert(adminJs.includes("/api/admin/member-levels/"), "admin page calls member level update API");
 assert(adminJs.includes("/api/admin/points-config"), "admin page calls points config API");
+assert(adminJs.includes("memberLevelForm") && adminJs.includes("pointsConfigForm") && adminJs.includes("onCheckinEnabledChange") && adminWxml.includes("会员等级表单") && adminWxml.includes("签到赠送积分") && !adminWxml.includes("新增黑金会员"), "admin page supports real member level and points config forms");
 assert(!adminJs.includes("/api/admin/lottery/") && !adminWxml.includes("积分抽奖配置"), "admin page hides lottery admin flow");
 assert(adminJs.includes("/api/admin/scan-records"), "admin page calls scan records API");
 assert(adminJs.includes("/api/admin/tables"), "admin page calls table management API");

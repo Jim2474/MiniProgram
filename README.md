@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V42
+# 德扑棋牌门店小程序 V43
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V42 验收状态
+## V43 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V43.md`
 - `docs/ACCEPTANCE-V42.md`
 - `docs/ACCEPTANCE-V41.md`
 - `docs/ACCEPTANCE-V40.md`
@@ -248,6 +249,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V43 新增能力
+
+- 后台会员等级新增表单，可填写等级名称和最低积分。
+- 后台积分配置表单支持签到积分、积分有效期、积分显示开关和签到开关。
+- 移除固定“新增黑金会员”和固定积分配置的演示式操作。
 
 ## V42 新增能力
 

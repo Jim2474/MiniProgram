@@ -213,7 +213,12 @@
       <view class="row-title">{{item.phone}} · {{item.memberLevel}}</view>
       <view class="muted">积分 {{item.pointsBalance}} · 存酒 {{item.hasStorage ? item.storageCount : 0}} · 消费 {{item.totalSpendText}} · 订单 {{item.orderCount}}</view>
     </view>
-    <button size="mini" class="secondary" bindtap="createMemberLevel">新增黑金会员</button>
+    <view class="row">
+      <view class="row-title">会员等级表单</view>
+      <input class="input" value="{{memberLevelForm.name}}" bindinput="onMemberLevelName" placeholder="等级名称" />
+      <input class="input" type="number" value="{{memberLevelForm.minPoints}}" bindinput="onMemberLevelMinPoints" placeholder="最低积分" />
+      <button size="mini" class="secondary" bindtap="createMemberLevel">新增会员等级</button>
+    </view>
     <view wx:for="{{memberLevels}}" wx:key="levelId" class="row">
       <view class="row-title">{{item.name}}</view>
       <view class="muted">最低积分 {{item.minPoints}} · {{item.status}}</view>
@@ -221,7 +226,11 @@
     </view>
     <view class="row">
       <view class="row-title">积分配置</view>
-      <view class="muted">签到 {{pointsConfig.checkinPoints}} · 有效期 {{pointsConfig.pointExpireDays}}天 · 积分显示 {{pointsConfig.pointsVisible}}</view>
+      <view class="muted">签到 {{pointsConfig.checkinPoints}} · 有效期 {{pointsConfig.pointExpireDays}}天 · 积分显示 {{pointsConfig.pointsVisible}} · 签到开关 {{pointsConfig.checkinEnabled}}</view>
+      <input class="input" type="number" value="{{pointsConfigForm.checkinPoints}}" bindinput="onCheckinPoints" placeholder="签到赠送积分" />
+      <input class="input" type="number" value="{{pointsConfigForm.pointExpireDays}}" bindinput="onPointExpireDays" placeholder="积分有效期天数" />
+      <switch checked="{{pointsConfigForm.pointsVisible}}" bindchange="onPointsVisibleChange" /> 积分显示
+      <switch checked="{{pointsConfigForm.checkinEnabled}}" bindchange="onCheckinEnabledChange" /> 签到启用
       <button size="mini" class="secondary" bindtap="updatePointsConfig">更新积分配置</button>
     </view>
   </view>

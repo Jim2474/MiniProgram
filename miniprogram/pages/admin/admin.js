@@ -47,6 +47,16 @@ Page({
     consumptionRecords: [],
     memberLevels: [],
     pointsConfig: {},
+    memberLevelForm: {
+      name: "黑金会员",
+      minPoints: 2000
+    },
+    pointsConfigForm: {
+      checkinPoints: 12,
+      pointExpireDays: 180,
+      pointsVisible: true,
+      checkinEnabled: true
+    },
     scanRecords: [],
     systemSettings: {},
     blindSettings: {},
@@ -234,6 +244,12 @@ Page({
       consumptionRecords: consumptionRecords.records.map((item) => ({ ...item, amountText: money(item.amount), statusText: statusText(item.orderStatus) })),
       memberLevels: levels.levels,
       pointsConfig: pointsConfig.config,
+      pointsConfigForm: {
+        checkinPoints: pointsConfig.config.checkinPoints,
+        pointExpireDays: pointsConfig.config.pointExpireDays,
+        pointsVisible: pointsConfig.config.pointsVisible,
+        checkinEnabled: pointsConfig.config.checkinEnabled
+      },
       stockRequests: stockRequests.requests.map((item) => ({ ...item, statusText: statusText(item.status), directionText: item.direction === "in" ? "入库" : "出库" })),
       stockLedgers: stockLedgers.ledgers.slice(0, 8),
       stockCounts: stockCounts.counts.slice(0, 8),
@@ -601,12 +617,27 @@ Page({
 
   async createMemberLevel() {
     try {
-      await request("/api/admin/member-levels", { method: "POST", data: { name: "黑金会员", minPoints: 2000 } })
+      await request("/api/admin/member-levels", {
+        method: "POST",
+        data: {
+          name: this.data.memberLevelForm.name,
+          minPoints: this.data.memberLevelForm.minPoints,
+          status: "active"
+        }
+      })
       wx.showToast({ title: "已新增等级" })
       await this.loadV3Admin()
     } catch (error) {
       showError(error)
     }
+  },
+
+  onMemberLevelName(event) {
+    this.setData({ "memberLevelForm.name": event.detail.value })
+  },
+
+  onMemberLevelMinPoints(event) {
+    this.setData({ "memberLevelForm.minPoints": Number(event.detail.value || 0) })
   },
 
   async disableMemberLevel(event) {
@@ -621,12 +652,37 @@ Page({
 
   async updatePointsConfig() {
     try {
-      await request("/api/admin/points-config", { method: "PATCH", data: { checkinPoints: 12, pointExpireDays: 180, pointsVisible: true } })
+      await request("/api/admin/points-config", {
+        method: "PATCH",
+        data: {
+          checkinPoints: this.data.pointsConfigForm.checkinPoints,
+          pointExpireDays: this.data.pointsConfigForm.pointExpireDays,
+          pointsVisible: this.data.pointsConfigForm.pointsVisible,
+          checkinEnabled: this.data.pointsConfigForm.checkinEnabled,
+          operatorId: "emp_admin"
+        }
+      })
       wx.showToast({ title: "积分配置已更新" })
       await this.loadV3Admin()
     } catch (error) {
       showError(error)
     }
+  },
+
+  onCheckinPoints(event) {
+    this.setData({ "pointsConfigForm.checkinPoints": Number(event.detail.value || 0) })
+  },
+
+  onPointExpireDays(event) {
+    this.setData({ "pointsConfigForm.pointExpireDays": Number(event.detail.value || 0) })
+  },
+
+  onPointsVisibleChange(event) {
+    this.setData({ "pointsConfigForm.pointsVisible": Boolean(event.detail.value) })
+  },
+
+  onCheckinEnabledChange(event) {
+    this.setData({ "pointsConfigForm.checkinEnabled": Boolean(event.detail.value) })
   },
 
   async createEmployee() {
