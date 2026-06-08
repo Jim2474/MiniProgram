@@ -454,12 +454,13 @@ async function main() {
 
     const qrStorage = await request(baseUrl, "/api/staff/storage", {
       method: "POST",
-      body: { operatorId: "emp_anna", phone: "13800000000", skuId: "sku_bud", quantity: 1, agreementAccepted: true },
+      body: { operatorId: "emp_anna", phone: "13800000000", skuId: "sku_bud", quantity: 3, agreementAccepted: true },
     });
     const storageQr = await request(baseUrl, "/api/verification-codes", { method: "POST", body: { userId: "user_demo", type: "storage", storageId: qrStorage.storage.storageId } });
     assert(storageQr.code.qrImageUrl.startsWith("data:image/"), "客户取酒二维码返回可展示图片");
-    const confirmedStorageQr = await request(baseUrl, `/api/staff/verification-codes/${storageQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna", quantity: 1 } });
-    assert(confirmedStorageQr.result.storage.status === "empty", "员工可扫码核销取酒二维码");
+    await expectHttpError(baseUrl, `/api/staff/verification-codes/${storageQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna", quantity: 0 } }, 400, "二维码取酒数量必须大于 0");
+    const confirmedStorageQr = await request(baseUrl, `/api/staff/verification-codes/${storageQr.code.codeId}/confirm`, { method: "POST", body: { operatorId: "emp_anna", quantity: 2 } });
+    assert(confirmedStorageQr.result.storage.status === "available" && confirmedStorageQr.result.storage.quantity === 1, "员工可按数量扫码核销取酒二维码");
 
     const scanRecords = await request(baseUrl, "/api/admin/scan-records");
     assert(scanRecords.records.some((record) => record.employeeId === "emp_anna"), "后台可查看扫码归属记录");

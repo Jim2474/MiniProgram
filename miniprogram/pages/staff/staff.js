@@ -33,6 +33,7 @@ Page({
     verifyResult: null,
     verifyPhone: "13800000000",
     qrPayload: "",
+    verificationQty: 1,
     scannedCode: null,
     seats: [],
     seatPhone: "13800000000",
@@ -267,6 +268,10 @@ Page({
     this.setData({ qrPayload: event.detail.value })
   },
 
+  onVerificationQty(event) {
+    this.setData({ verificationQty: Number(event.detail.value || 1) })
+  },
+
   async scanVerificationCode() {
     try {
       let qrPayload = this.data.qrPayload
@@ -298,7 +303,7 @@ Page({
   async confirmVerificationCode() {
     try {
       if (!this.data.scannedCode) throw new Error("请先扫码")
-      const data = await request(`/api/staff/verification-codes/${this.data.scannedCode.codeId}/confirm`, { method: "POST", data: { operatorId: this.data.selectedEmployee.employeeId, quantity: 1 } })
+      const data = await request(`/api/staff/verification-codes/${this.data.scannedCode.codeId}/confirm`, { method: "POST", data: { operatorId: this.data.selectedEmployee.employeeId, quantity: this.data.verificationQty } })
       this.setData({ scannedCode: { ...data.code, statusText: statusText(data.code.status) } })
       wx.showToast({ title: "核销成功" })
       await this.loadAll()

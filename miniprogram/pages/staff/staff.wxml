@@ -103,6 +103,7 @@
     <input class="input" value="{{verifyPhone}}" bindinput="onVerifyPhone" placeholder="核销查询客户手机号" />
     <button class="primary" bindtap="verifyCode">查询客户积分存酒</button>
     <input class="input" value="{{qrPayload}}" bindinput="onQrPayload" placeholder="输入 verify:xxx 二维码码值" />
+    <input class="input" type="number" value="{{verificationQty}}" bindinput="onVerificationQty" placeholder="二维码取酒数量" />
     <view class="btn-row">
       <button size="mini" class="secondary" bindtap="scanVerificationCode">扫码/识别二维码</button>
       <button size="mini" class="primary" bindtap="confirmVerificationCode">确认核销二维码</button>

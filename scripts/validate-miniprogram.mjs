@@ -116,6 +116,7 @@ assert(staffJs.includes("/api/staff/verify-code"), "staff page calls verify code
 assert(staffJs.includes("verifyPhone") && staffWxml.includes("核销查询客户手机号") && staffWxml.includes("查询客户积分存酒") && !staffWxml.includes("扫码核销模拟"), "staff page verifies customer assets by phone");
 assert(staffJs.includes("/api/staff/verification-codes/scan"), "staff page calls QR scan verification API");
 assert(staffJs.includes("/api/staff/verification-codes/") && staffJs.includes("/confirm"), "staff page calls QR confirm API");
+assert(staffJs.includes("verificationQty") && staffWxml.includes("二维码取酒数量") && !staffJs.includes("quantity: 1 }"), "staff page confirms storage QR with real quantity input");
 assert(staffJs.includes("consumePendingVerificationScene") && staffJs.includes("pendingVerificationScene"), "staff page consumes verification mini program code scene");
 assert(staffJs.includes("/api/staff/seats/"), "staff page calls seat API");
 assert(staffJs.includes("seatPhone") && staffWxml.includes("入座客户手机号") && /if \(action === "sit"\) data\.phone = this\.data\.seatPhone/.test(staffJs), "staff page seats customers by phone");

@@ -2639,7 +2639,9 @@ function createRouter(store) {
         throw new HttpError(400, "存酒已过期，需管理员处理");
       }
       const beforeStorage = deepClone(storage);
-      const quantity = Math.min(storage.quantity, Number(body.quantity || 1));
+      const requestedQty = Number(body.quantity === undefined || body.quantity === null || body.quantity === "" ? 1 : body.quantity);
+      if (!Number.isFinite(requestedQty) || requestedQty <= 0) throw new HttpError(400, "核销数量必须大于 0");
+      const quantity = Math.min(storage.quantity, requestedQty);
       store.createStorageLedger(storage, -quantity, "qr_pickup_confirm", employee.employeeId, "员工扫码取酒");
       store.log(employee.employeeId, employee.role, "confirm_storage_qr", "CustomerStorage", storage.storageId, beforeStorage, storage, "员工扫码核销取酒");
       result = { storage };
