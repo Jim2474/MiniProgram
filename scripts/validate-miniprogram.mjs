@@ -136,6 +136,7 @@ assert(adminJs.includes("/api/admin/dashboard"), "admin page calls dashboard API
 assert(adminJs.includes("/api/staff/login") && adminWxml.includes("管理员登录"), "admin page supports admin login");
 assert(adminJs.includes("app.globalData.staffSessionId = data.session.sessionId"), "admin page stores admin session after login");
 assert(adminJs.includes("staffSales") && adminWxml.includes("员工销售提成"), "admin page displays staff sales commissions");
+assert(adminJs.includes("/api/admin/operation-logs") && adminJs.includes("operatorText") && adminJs.includes("targetText") && adminWxml.includes("item.operatorText") && adminWxml.includes("item.targetText"), "admin page displays operation log operator and target context");
 assert(adminJs.includes("/refund"), "admin page calls refund API");
 assert(adminJs.includes("operationForm") && adminJs.includes("refundReason") && adminWxml.includes("退款原因") && !adminJs.includes("小程序后台退款"), "admin page supports real refund reason input");
 assert(adminJs.includes("/transfer-storage"), "admin page calls transfer storage API");

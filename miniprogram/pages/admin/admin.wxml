@@ -244,8 +244,8 @@
   <view class="section">
     <view class="section-title">操作日志</view>
     <view wx:for="{{logs}}" wx:key="logId" class="row">
-      <view class="row-title">{{item.action}}</view>
-      <view class="muted">{{item.role}} · {{item.reason}} · {{item.createdAt}}</view>
+      <view class="row-title">{{item.operatorText}} · {{item.action}}</view>
+      <view class="muted">{{item.role}} · {{item.targetText}} · {{item.reason}} · {{item.createdAt}}</view>
     </view>
   </view>
 

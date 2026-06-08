@@ -323,6 +323,8 @@ async function main() {
 
     const logs = await request(baseUrl, "/api/admin/operation-logs");
     assert(logs.logs.length >= 8, "关键业务操作写入操作日志");
+    assert(logs.logs.some((log) => log.operatorId === "emp_admin" && log.operatorName === log.operator?.name), "操作日志返回操作人姓名");
+    assert(logs.logs.every((log) => !log.operator || !("passwordHash" in log.operator)), "操作日志操作人不暴露密码字段");
 
     const profile = await request(baseUrl, "/api/user/profile?userId=user_demo");
     assert(profile.user.phone === "13800000000" && profile.level.name, "个人中心聚合会员与等级");

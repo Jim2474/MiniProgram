@@ -1124,6 +1124,17 @@ function publicPointsLedger(store, ledger) {
   };
 }
 
+function publicOperationLog(store, log) {
+  const employee = publicEmployee(store.data.employees.find((item) => item.employeeId === log.operatorId));
+  const user = store.data.users.find((item) => item.userId === log.operatorId) || null;
+  return {
+    ...log,
+    operator: employee,
+    operatorUser: user,
+    operatorName: employee ? employee.name : (user ? user.nickname || user.phone : log.operatorId || "system"),
+  };
+}
+
 function publicPickupRequest(store, request) {
   const storage = store.data.customerStorage.find((item) => item.storageId === request.storageId) || null;
   const user = store.data.users.find((item) => item.userId === request.userId) || null;
@@ -2318,7 +2329,7 @@ function createRouter(store) {
   });
   add("GET", "/api/admin/employees", async () => ({ employees: store.data.employees.map(publicEmployee) }));
   add("GET", "/api/admin/scan-records", async () => ({ records: store.data.scanRecords }));
-  add("GET", "/api/admin/operation-logs", async () => ({ logs: store.data.operationLogs }));
+  add("GET", "/api/admin/operation-logs", async () => ({ logs: store.data.operationLogs.map((log) => publicOperationLog(store, log)) }));
 
   add("POST", "/api/admin/stock/adjust", async (body) => {
     const sku = store.getSku(body.skuId);

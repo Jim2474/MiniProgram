@@ -276,7 +276,13 @@ Page({
 
   async loadLogs() {
     const data = await request("/api/admin/operation-logs")
-    this.setData({ logs: data.logs.slice(0, 12) })
+    this.setData({
+      logs: data.logs.slice(0, 12).map((item) => ({
+        ...item,
+        targetText: `${item.targetType}:${item.targetId}`,
+        operatorText: item.operatorName || item.operatorId || "system"
+      }))
+    })
   },
 
   async loadV3Admin() {
