@@ -163,6 +163,7 @@ assert(adminJs.includes("blindForm") && adminJs.includes("onBlindField"), "admin
 assert(adminJs.includes("titleMap") && adminJs.includes("voiceTerms"), "admin page updates blind title map and voice terms");
 assert(adminJs.includes("blindLevelsText") && adminWxml.includes("升盲规则"), "admin page supports blind level sequence configuration");
 assert(adminJs.includes("/api/admin/system-settings"), "admin page calls system settings API");
+assert(adminJs.includes("systemSettingsForm") && adminJs.includes("onSystemLocationAddress") && adminWxml.includes("保存系统设置") && adminWxml.includes("门店地址") && !adminWxml.includes("隐藏积分并改客服电话"), "admin page supports real system settings form");
 
 const dealerJs = await readFile(join(root, "miniprogram/pages/dealer/dealer.js"), "utf8");
 const dealerWxml = await readFile(join(root, "miniprogram/pages/dealer/dealer.wxml"), "utf8");

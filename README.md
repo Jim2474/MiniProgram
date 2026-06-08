@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V43
+# 德扑棋牌门店小程序 V44
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V43 验收状态
+## V44 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V44.md`
 - `docs/ACCEPTANCE-V43.md`
 - `docs/ACCEPTANCE-V42.md`
 - `docs/ACCEPTANCE-V41.md`
@@ -249,6 +250,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V44 新增能力
+
+- 后台系统设置新增表单，可配置客服电话、门店地址、经纬度和系统积分显示。
+- 客户端门店位置与客服电话接口读取后台更新后的配置。
+- 移除固定“隐藏积分并改客服电话”的演示式操作。
 
 ## V43 新增能力
 

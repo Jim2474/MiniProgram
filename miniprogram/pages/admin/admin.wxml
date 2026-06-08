@@ -238,11 +238,16 @@
   <view class="section">
     <view class="section-title">人员与系统设置</view>
     <button size="mini" class="primary" bindtap="createEmployee">新增测试员工</button>
-    <button size="mini" class="secondary" bindtap="updateSystemSettings">隐藏积分并改客服电话</button>
     <button size="mini" class="secondary" bindtap="updateBlindSettings">更新升盲主题</button>
     <view class="row">
       <view class="row-title">系统设置</view>
-      <view class="muted">积分显示 {{systemSettings.pointsVisible}} · 客服 {{systemSettings.supportPhone}}</view>
+      <view class="muted">积分显示 {{systemSettings.pointsVisible}} · 客服 {{systemSettings.supportPhone}} · 地址 {{systemSettings.location.address}}</view>
+      <input class="input" value="{{systemSettingsForm.supportPhone}}" bindinput="onSystemSupportPhone" placeholder="客服电话" />
+      <input class="input" value="{{systemSettingsForm.locationAddress}}" bindinput="onSystemLocationAddress" placeholder="门店地址" />
+      <input class="input" type="digit" value="{{systemSettingsForm.latitude}}" bindinput="onSystemLatitude" placeholder="纬度" />
+      <input class="input" type="digit" value="{{systemSettingsForm.longitude}}" bindinput="onSystemLongitude" placeholder="经度" />
+      <switch checked="{{systemSettingsForm.pointsVisible}}" bindchange="onSystemPointsVisibleChange" /> 系统积分显示
+      <button size="mini" class="secondary" bindtap="updateSystemSettings">保存系统设置</button>
     </view>
     <view class="row">
       <view class="row-title">升盲设置</view>

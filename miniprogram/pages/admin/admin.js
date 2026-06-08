@@ -59,6 +59,13 @@ Page({
     },
     scanRecords: [],
     systemSettings: {},
+    systemSettingsForm: {
+      supportPhone: "021-88886666",
+      pointsVisible: true,
+      locationAddress: "上海市静安区示例路 88 号",
+      latitude: 31.2304,
+      longitude: 121.4737
+    },
     blindSettings: {},
     blindForm: {
       theme: "classic",
@@ -256,6 +263,13 @@ Page({
       storageLedgers: storageLedgers.ledgers.slice(0, 8).map((item) => ({ ...item, productName: item.product ? item.product.name : item.skuId, userPhone: item.user ? item.user.phone : item.userId })),
       scanRecords: scanRecords.records.slice(0, 8),
       systemSettings: system.settings,
+      systemSettingsForm: {
+        supportPhone: system.settings.supportPhone,
+        pointsVisible: system.settings.pointsVisible,
+        locationAddress: system.settings.location ? system.settings.location.address : "",
+        latitude: system.settings.location ? system.settings.location.latitude : 0,
+        longitude: system.settings.location ? system.settings.location.longitude : 0
+      },
       blindSettings: blind.settings,
       blindForm: {
         ...this.data.blindForm,
@@ -696,12 +710,44 @@ Page({
 
   async updateSystemSettings() {
     try {
-      await request("/api/admin/system-settings", { method: "PATCH", data: { pointsVisible: false, supportPhone: "400-000-0000" } })
+      await request("/api/admin/system-settings", {
+        method: "PATCH",
+        data: {
+          pointsVisible: this.data.systemSettingsForm.pointsVisible,
+          supportPhone: this.data.systemSettingsForm.supportPhone,
+          location: {
+            latitude: this.data.systemSettingsForm.latitude,
+            longitude: this.data.systemSettingsForm.longitude,
+            address: this.data.systemSettingsForm.locationAddress
+          },
+          operatorId: "emp_admin"
+        }
+      })
       wx.showToast({ title: "系统设置已更新" })
       await this.loadV3Admin()
     } catch (error) {
       showError(error)
     }
+  },
+
+  onSystemSupportPhone(event) {
+    this.setData({ "systemSettingsForm.supportPhone": event.detail.value })
+  },
+
+  onSystemLocationAddress(event) {
+    this.setData({ "systemSettingsForm.locationAddress": event.detail.value })
+  },
+
+  onSystemLatitude(event) {
+    this.setData({ "systemSettingsForm.latitude": Number(event.detail.value || 0) })
+  },
+
+  onSystemLongitude(event) {
+    this.setData({ "systemSettingsForm.longitude": Number(event.detail.value || 0) })
+  },
+
+  onSystemPointsVisibleChange(event) {
+    this.setData({ "systemSettingsForm.pointsVisible": Boolean(event.detail.value) })
   },
 
   onBlindField(event) {

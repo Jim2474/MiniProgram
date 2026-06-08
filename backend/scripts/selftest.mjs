@@ -530,11 +530,14 @@ async function main() {
     const customNext = await request(baseUrl, `/api/staff/blind-games/${customGame.game.gameId}`, { method: "PATCH", body: { action: "next_level", operatorId: "emp_dealer" } });
     assert(customNext.game.smallBlind === 3 && customNext.game.bigBlind === 6 && customNext.game.ante === 1, "荷官升盲按后台自定义规则序列推进");
 
-    const systemSettings = await request(baseUrl, "/api/admin/system-settings", { method: "PATCH", body: { pointsVisible: false, supportPhone: "400-000-0000" } });
-    assert(systemSettings.settings.pointsVisible === false && systemSettings.settings.supportPhone === "400-000-0000", "后台可配置系统设置");
+    const systemSettings = await request(baseUrl, "/api/admin/system-settings", {
+      method: "PATCH",
+      body: { pointsVisible: false, supportPhone: "400-000-0000", location: { latitude: 31.2, longitude: 121.5, address: "上海市黄浦区测试路 1 号" } },
+    });
+    assert(systemSettings.settings.pointsVisible === false && systemSettings.settings.supportPhone === "400-000-0000" && systemSettings.settings.location.address.includes("黄浦区"), "后台可配置系统设置");
 
     const location = await request(baseUrl, "/api/store/location");
-    assert(location.location.address.includes("上海"), "门店位置可查询");
+    assert(location.location.address.includes("黄浦区") && location.location.latitude === 31.2, "门店位置可查询");
     const support = await request(baseUrl, "/api/support/contact");
     assert(support.phone === "400-000-0000", "客服电话可查询");
 
