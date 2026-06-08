@@ -14,6 +14,13 @@
   padding: 12rpx;
 }
 
+.blind-logo {
+  width: 220rpx;
+  height: 96rpx;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
 .champion-panel {
   margin-top: 12rpx;
   border: 1rpx solid #d8ded6;

@@ -372,6 +372,10 @@
       </picker>
       <input class="input" value="{{blindForm.backgroundImage}}" data-key="backgroundImage" bindinput="onBlindField" placeholder="背景图 URL" />
       <input class="input" value="{{blindForm.logo}}" data-key="logo" bindinput="onBlindField" placeholder="Logo URL" />
+      <view wx:if="{{blindForm.logo}}" class="blind-logo-preview">
+        <image class="blind-logo-image" src="{{blindForm.logo}}" mode="aspectFit" />
+        <view class="muted">Logo 预览</view>
+      </view>
       <picker mode="selector" range="{{blindChampionBackgroundOptions}}" range-key="label" value="{{blindForm.championBackgroundImageIndex}}" bindchange="onBlindChampionBackgroundChange">
         <view class="input">冠军背景图库：{{blindChampionBackgroundOptions[blindForm.championBackgroundImageIndex].label}}</view>
       </picker>

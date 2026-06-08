@@ -73,10 +73,12 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V88 验收状态
+## V89 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V89.md`
+- `docs/REQUIREMENTS-AUDIT-V89.md`
 - `docs/ACCEPTANCE-V88.md`
 - `docs/REQUIREMENTS-AUDIT-V88.md`
 - `docs/ACCEPTANCE-V87.md`
@@ -184,9 +186,16 @@ node scripts/validate-miniprogram.mjs
 当前自动测试通过：
 
 - 后端业务自验收：232 项。
-- 小程序结构与 API 调用校验：201 项。
+- 小程序结构与 API 调用校验：203 项。
 
 微信开发者工具 CLI 已尝试打开/预览项目，但当前环境中 `preview` 命令超时；工具主进程已启动，并出现 `Miniprogram - 微信开发者工具 Stable v2.01.2510290` 项目窗口。最终模拟器画面需要在 GUI 中人工确认。
+
+## V89 新增能力
+
+- 后台升盲设置新增 Logo 图片预览。
+- 荷官端游戏进行中页面显示后台配置的 Logo。
+- Logo 显示使用固定尺寸，减少计时器现场画面布局跳动。
+- 自动验收覆盖后台 Logo 预览和荷官端 Logo 显示。
 
 ## V88 新增能力
 

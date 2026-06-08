@@ -22,6 +22,7 @@
     <view class="section-title">游戏进行中</view>
     <view wx:if="{{!game}}" class="muted">暂无游戏，先创建一局。</view>
     <view wx:if="{{game}}" class="row">
+      <image wx:if="{{blindSettings.logo}}" class="blind-logo" src="{{blindSettings.logo}}" mode="aspectFit" />
       <view class="row-title">Level {{game.level}} · {{game.smallBlind}}/{{game.bigBlind}}</view>
       <view class="muted">{{game.statusText}} · 剩余 {{game.currentPlayers}}/{{game.initialPlayers}} 人{{game.headsUpText}}{{game.championText}}</view>
       <view wx:if="{{game.isChampion}}" class="champion-panel">

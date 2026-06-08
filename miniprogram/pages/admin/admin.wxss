@@ -1,3 +1,17 @@
 .metrics {
   grid-template-columns: repeat(2, 1fr);
 }
+
+.blind-logo-preview {
+  margin: 12rpx 0;
+  padding: 12rpx;
+  border: 1rpx solid #d8ded6;
+  border-radius: 12rpx;
+  background: #ffffff;
+}
+
+.blind-logo-image {
+  width: 180rpx;
+  height: 80rpx;
+  display: block;
+}

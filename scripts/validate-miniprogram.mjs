@@ -134,6 +134,7 @@ assert(!staffJs.includes("/api/staff/lottery-records/") && !staffJs.includes("/a
 
 const adminJs = await readFile(join(root, "miniprogram/pages/admin/admin.js"), "utf8");
 const adminWxml = await readFile(join(root, "miniprogram/pages/admin/admin.wxml"), "utf8");
+const adminWxss = await readFile(join(root, "miniprogram/pages/admin/admin.wxss"), "utf8");
 assert(adminJs.includes("/api/admin/dashboard"), "admin page calls dashboard API");
 assert(adminJs.includes("/api/staff/login") && adminWxml.includes("管理员登录"), "admin page supports admin login");
 assert(adminJs.includes("app.globalData.staffSessionId = data.session.sessionId"), "admin page stores admin session after login");
@@ -198,6 +199,7 @@ assert(adminJs.includes("blindForm") && adminJs.includes("onBlindField"), "admin
 assert(adminJs.includes("blindThemeOptions") && adminJs.includes("broadcast") && adminJs.includes("onBlindThemeChange") && adminWxml.includes('range="{{blindThemeOptions}}"') && adminWxml.includes("主题风格"), "admin page uses four preset blind theme picker");
 assert(adminJs.includes("blindBackgroundOptions") && adminJs.includes("blindBackgroundLibrary") && adminJs.includes("onBlindBackgroundChange") && adminWxml.includes('range="{{blindBackgroundOptions}}"') && adminWxml.includes("系统背景图库"), "admin page supports system blind background library picker");
 assert(adminJs.includes("blindChampionBackgroundOptions") && adminJs.includes("blindChampionBackgroundLibrary") && adminJs.includes("onBlindChampionBackgroundChange") && adminWxml.includes('range="{{blindChampionBackgroundOptions}}"') && adminWxml.includes("冠军背景图库"), "admin page supports system champion background library picker");
+assert(adminWxml.includes("blind-logo-preview") && adminWxml.includes("blindForm.logo") && adminWxss.includes("blind-logo-image"), "admin page previews blind timer logo");
 assert(adminJs.includes("blindFontFamilyOptions") && adminJs.includes("Source Han Sans") && adminJs.includes("onBlindFontFamilyChange") && adminWxml.includes('range="{{blindFontFamilyOptions}}"') && adminWxml.includes("字体样式"), "admin page uses preset blind font family picker");
 assert(adminJs.includes("blindColorPalettes") && adminJs.includes("onBlindColorChange") && adminWxml.includes('range="{{fontColorOptions}}"') && adminWxml.includes('range="{{timerColorOptions}}"') && adminWxml.includes('range="{{breakColorOptions}}"') && adminWxml.includes('range="{{dialogColorOptions}}"'), "admin page supports blind color palette pickers");
 assert(adminJs.includes("blindVoiceTypeOptions") && adminJs.includes("onBlindVoiceTypeChange") && adminWxml.includes('range="{{blindVoiceTypeOptions}}"') && adminWxml.includes("语音类型"), "admin page uses controlled blind voice type picker");
@@ -222,6 +224,7 @@ assert(adminJs.includes("employeeDeleteReason") && adminWxml.includes("删除/�
 
 const dealerJs = await readFile(join(root, "miniprogram/pages/dealer/dealer.js"), "utf8");
 const dealerWxml = await readFile(join(root, "miniprogram/pages/dealer/dealer.wxml"), "utf8");
+const dealerWxss = await readFile(join(root, "miniprogram/pages/dealer/dealer.wxss"), "utf8");
 assert(dealerJs.includes("/api/staff/blind-games"), "dealer page calls blind game API");
 assert(dealerJs.includes("/timer"), "dealer page calls blind timer API");
 assert(dealerJs.includes("intervalOptions: [5, 8, 10, 12, 15, 20]") && dealerJs.includes("onIntervalChange") && dealerWxml.includes('range="{{intervalOptions}}"'), "dealer page uses fixed blind interval picker");
@@ -232,6 +235,7 @@ assert(dealerWxml.includes("set_buyin_amount"), "dealer page supports buyin amou
 assert(dealerWxml.includes("gameSeatAction"), "dealer page supports seat-specific game action");
 assert(dealerJs.includes("/api/staff/blind-settings") && !dealerJs.includes("/api/admin/blind-settings"), "dealer page reads staff-safe blind settings API");
 assert(dealerWxml.includes("championBackgroundImage") && dealerWxml.includes("voiceTerms") && dealerWxml.includes("blindLevelsText"), "dealer page displays advanced blind settings and blind sequence");
+assert(dealerWxml.includes("blindSettings.logo") && dealerWxml.includes("blind-logo") && dealerWxss.includes(".blind-logo"), "dealer page displays configured blind timer logo");
 assert(dealerWxml.includes("titleMap.prizePlayer") && dealerWxml.includes("titleMap.nextBreak") && dealerWxml.includes("titleMap.totalChips"), "dealer page displays full blind title map");
 assert(dealerJs.includes("headsUpText") && dealerJs.includes("单挑阶段") && dealerWxml.includes("game.headsUpText"), "dealer page displays heads-up stage prompt");
 assert(dealerJs.includes("championText") && dealerJs.includes("冠军产生") && dealerJs.includes("isChampion") && dealerWxml.includes("champion-panel") && dealerWxml.includes("blindSettings.championBackgroundImage"), "dealer page displays champion stage and champion background");
