@@ -19,6 +19,7 @@ Page({
     storage: [],
     storageLedgers: [],
     pickupRecords: [],
+    pickupQty: 1,
     tables: [],
     reservations: [],
     reservationDate: new Date().toISOString().slice(0, 10),
@@ -350,12 +351,16 @@ Page({
 
   async requestPickup(event) {
     try {
-      await request(`/api/storage/${event.currentTarget.dataset.id}/pickup-requests`, { method: "POST", data: { quantity: 1 } })
+      await request(`/api/storage/${event.currentTarget.dataset.id}/pickup-requests`, { method: "POST", data: { quantity: this.data.pickupQty } })
       wx.showToast({ title: "已申请" })
       await this.loadStorage()
     } catch (error) {
       showError(error)
     }
+  },
+
+  onPickupQty(event) {
+    this.setData({ pickupQty: Number(event.detail.value || 1) })
   },
 
   async createReservation(event) {

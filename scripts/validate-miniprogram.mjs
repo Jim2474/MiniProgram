@@ -75,6 +75,7 @@ assert(customerWxml.includes("微信支付"), "customer page labels WeChat pay a
 assert(customerJs.includes("todayOrders") && customerJs.includes("historyOrders"), "customer page separates today and historical orders");
 assert(customerJs.includes("pointsAwardedText") && customerWxml.includes("赠送 {{item.pointsAwardedText}}"), "customer orders display awarded points");
 assert(customerJs.includes("/api/storage/") && customerJs.includes("pickup-requests"), "customer page calls pickup request API");
+assert(customerJs.includes("pickupQty") && customerWxml.includes("onPickupQty") && customerWxml.includes("取酒数量"), "customer page supports pickup quantity input");
 assert(customerJs.includes("/api/storage-records"), "customer page calls storage records API");
 assert(customerJs.includes("/api/reservations"), "customer page calls reservation API");
 assert(customerJs.includes("/cancel"), "customer page calls reservation cancel API");

@@ -109,9 +109,11 @@
       <view class="row-title">{{item.product.name}} · {{item.quantity}}{{item.product.unit}}</view>
       <view class="muted">{{item.statusText}} · 到期 {{item.expireDate}}</view>
       <view wx:if="{{item.status === 'available' && item.quantity > 0}}" class="btn-row">
+        <input class="input small-input" type="number" value="{{pickupQty}}" bindinput="onPickupQty" placeholder="取酒数量" />
         <button size="mini" class="primary" data-id="{{item.storageId}}" bindtap="requestPickup">申请取酒</button>
         <button size="mini" class="secondary" data-type="storage" bindtap="createQrCode">生成取酒二维码</button>
       </view>
+      <view wx:if="{{item.status === 'available' && item.quantity > 0}}" class="muted">可申请 1-{{item.quantity}}{{item.product.unit}}</view>
     </view>
     <view class="row">
       <view class="row-title">积分明细</view>

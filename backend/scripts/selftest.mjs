@@ -175,6 +175,20 @@ async function main() {
     const customerStorageRecords = await request(baseUrl, "/api/storage-records?userId=user_demo");
     assert(customerStorageRecords.ledgers.some((ledger) => ledger.actionType === "from_order") && customerStorageRecords.ledgers.some((ledger) => ledger.actionType === "pickup_confirm"), "客户可查询历史存取酒流水");
     assert(customerStorageRecords.pickupRequests.some((request) => request.status === "completed"), "客户可查询历史取酒申请状态");
+    const multiStorage = await request(baseUrl, "/api/staff/storage", {
+      method: "POST",
+      body: { operatorId: "emp_anna", phone: "13800000000", skuId: "sku_bud", quantity: 3, agreementAccepted: true },
+    });
+    const multiPickup = await request(baseUrl, `/api/storage/${multiStorage.storage.storageId}/pickup-requests`, {
+      method: "POST",
+      body: { quantity: 2 },
+    });
+    assert(multiPickup.request.quantity === 2, "客户可按数量提交取酒申请");
+    const confirmedMultiPickup = await request(baseUrl, `/api/staff/storage/pickup-requests/${multiPickup.request.requestId}/confirm`, {
+      method: "POST",
+      body: { operatorId: "emp_anna" },
+    });
+    assert(confirmedMultiPickup.storage.quantity === 1 && confirmedMultiPickup.storage.status === "available", "员工确认多瓶取酒后保留剩余存酒");
 
     const reservation = await request(baseUrl, "/api/reservations", {
       method: "POST",

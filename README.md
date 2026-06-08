@@ -1,4 +1,4 @@
-# 德扑棋牌门店小程序 V39
+# 德扑棋牌门店小程序 V40
 
 本仓库包含：
 
@@ -73,10 +73,11 @@ npm --prefix backend test
 node scripts/validate-miniprogram.mjs
 ```
 
-## V39 验收状态
+## V40 验收状态
 
 验收记录：
 
+- `docs/ACCEPTANCE-V40.md`
 - `docs/ACCEPTANCE-V39.md`
 - `docs/ACCEPTANCE-V38.md`
 - `docs/ACCEPTANCE-V37.md`
@@ -245,6 +246,12 @@ node scripts/validate-miniprogram.mjs
 - `/api/admin/*` 默认仅管理员可访问，`/api/staff/*` 默认要求员工/荷官/管理员会话，员工登录接口除外。
 - 小程序统一 API 工具自动携带员工会话；员工端、后台端登录后写入全局会话。
 - 后台端新增管理员登录入口。
+
+## V40 新增能力
+
+- 客户端取酒申请新增取酒数量输入，不再固定每次申请 1 瓶。
+- 客户端展示当前存酒可申请数量范围。
+- 自动验收覆盖多瓶取酒申请和员工确认后保留剩余存酒。
 
 ## V39 新增能力
 

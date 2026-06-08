@@ -2,6 +2,11 @@
   margin-top: 12rpx;
 }
 
+.small-input {
+  width: 180rpx;
+  min-height: 56rpx;
+}
+
 .table-image {
   width: 100%;
   height: 220rpx;
