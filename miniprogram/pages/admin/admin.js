@@ -45,6 +45,24 @@ Page({
       skuIndex: 0,
       quantity: 1
     },
+    operationForm: {
+      orderCompleteReason: "订单已出品完成",
+      refundReason: "客户申请退款",
+      stockRejectReason: "单据信息不完整",
+      stockCancelReason: "业务计划调整",
+      reservationConfirmReason: "已电话确认到店时间",
+      reservationCancelReason: "客户取消或无法到店",
+      reservationExpireReason: "超时未到店",
+      expiredStorageActionOptions: [
+        { label: "过期作废", value: "dispose" },
+        { label: "人工延期", value: "extend" }
+      ],
+      expiredStorageActionIndex: 0,
+      expiredStorageExtendDays: 30,
+      expiredStorageNote: "管理员人工确认过期处理",
+      tableMaintenanceReason: "设备或卫生维护",
+      tableDeleteReason: "桌台下线停用"
+    },
     storageLedgers: [],
     finance: {},
     businessDetails: [],
@@ -313,7 +331,7 @@ Page({
 
   async completeOrder(event) {
     try {
-      await request(`/api/admin/orders/${event.currentTarget.dataset.id}/complete`, { method: "PATCH", data: { reason: "小程序后台标记完成" } })
+      await request(`/api/admin/orders/${event.currentTarget.dataset.id}/complete`, { method: "PATCH", data: { reason: this.data.operationForm.orderCompleteReason } })
       wx.showToast({ title: "已完成" })
       await this.loadAll()
     } catch (error) {
@@ -323,7 +341,7 @@ Page({
 
   async refundOrder(event) {
     try {
-      await request(`/api/admin/orders/${event.currentTarget.dataset.id}/refund`, { method: "POST", data: { reason: "小程序后台退款" } })
+      await request(`/api/admin/orders/${event.currentTarget.dataset.id}/refund`, { method: "POST", data: { reason: this.data.operationForm.refundReason } })
       wx.showToast({ title: "已退款" })
       await this.loadAll()
     } catch (error) {
@@ -352,6 +370,20 @@ Page({
 
   onTransferQty(event) {
     this.setData({ "transferForm.quantity": Number(event.detail.value || 1) })
+  },
+
+  onOperationReason(event) {
+    const field = event.currentTarget.dataset.field
+    this.setData({ [`operationForm.${field}`]: event.detail.value })
+  },
+
+  onOperationNumber(event) {
+    const field = event.currentTarget.dataset.field
+    this.setData({ [`operationForm.${field}`]: Number(event.detail.value || 0) })
+  },
+
+  onExpiredStorageAction(event) {
+    this.setData({ "operationForm.expiredStorageActionIndex": Number(event.detail.value) })
   },
 
   async addStock(event) {
@@ -590,7 +622,7 @@ Page({
 
   async rejectStockRequest(event) {
     try {
-      await request(`/api/admin/stock-requests/${event.currentTarget.dataset.id}/reject`, { method: "POST", data: { operatorId: "emp_admin", reason: "后台驳回" } })
+      await request(`/api/admin/stock-requests/${event.currentTarget.dataset.id}/reject`, { method: "POST", data: { operatorId: "emp_admin", reason: this.data.operationForm.stockRejectReason } })
       wx.showToast({ title: "已驳回" })
       await this.loadV3Admin()
     } catch (error) {
@@ -600,7 +632,7 @@ Page({
 
   async cancelStockRequest(event) {
     try {
-      await request(`/api/admin/stock-requests/${event.currentTarget.dataset.id}/cancel`, { method: "POST", data: { operatorId: "emp_admin", reason: "后台取消" } })
+      await request(`/api/admin/stock-requests/${event.currentTarget.dataset.id}/cancel`, { method: "POST", data: { operatorId: "emp_admin", reason: this.data.operationForm.stockCancelReason } })
       wx.showToast({ title: "已取消" })
       await this.loadV3Admin()
     } catch (error) {
@@ -612,7 +644,7 @@ Page({
     try {
       await request(`/api/admin/reservations/${event.currentTarget.dataset.id}`, {
         method: "PATCH",
-        data: { status: "confirmed", reason: "小程序后台确认预约" }
+        data: { status: "confirmed", reason: this.data.operationForm.reservationConfirmReason }
       })
       wx.showToast({ title: "已确认" })
       await this.loadReservations()
@@ -625,7 +657,7 @@ Page({
     try {
       await request(`/api/admin/reservations/${event.currentTarget.dataset.id}`, {
         method: "PATCH",
-        data: { status: "cancelled", reason: "小程序后台取消预约" }
+        data: { status: "cancelled", reason: this.data.operationForm.reservationCancelReason }
       })
       wx.showToast({ title: "已取消" })
       await this.loadReservations()
@@ -639,7 +671,7 @@ Page({
     try {
       await request(`/api/admin/reservations/${event.currentTarget.dataset.id}`, {
         method: "PATCH",
-        data: { status: "expired", reason: "小程序后台标记失效" }
+        data: { status: "expired", reason: this.data.operationForm.reservationExpireReason }
       })
       wx.showToast({ title: "已失效" })
       await this.loadReservations()
@@ -651,9 +683,10 @@ Page({
 
   async handleExpiredStorage(event) {
     try {
+      const action = this.data.operationForm.expiredStorageActionOptions[this.data.operationForm.expiredStorageActionIndex].value
       await request(`/api/admin/storage/${event.currentTarget.dataset.id}/expire-handle`, {
         method: "POST",
-        data: { operatorId: "emp_admin", action: "dispose", note: "后台人工确认过期作废" }
+        data: { operatorId: "emp_admin", action, extendDays: this.data.operationForm.expiredStorageExtendDays, note: this.data.operationForm.expiredStorageNote }
       })
       wx.showToast({ title: "已处理" })
       await this.loadStorage()
@@ -740,7 +773,7 @@ Page({
 
   async disableTable(event) {
     try {
-      await request(`/api/admin/tables/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status: "maintenance", reason: "后台维护" } })
+      await request(`/api/admin/tables/${event.currentTarget.dataset.id}`, { method: "PATCH", data: { status: "maintenance", reason: this.data.operationForm.tableMaintenanceReason, operatorId: "emp_admin" } })
       wx.showToast({ title: "已维护" })
       await this.loadTables()
       await this.loadDashboard()
@@ -751,7 +784,7 @@ Page({
 
   async deleteTable(event) {
     try {
-      await request(`/api/admin/tables/${event.currentTarget.dataset.id}`, { method: "DELETE", data: { operatorId: "emp_admin", reason: "小程序后台删除座台" } })
+      await request(`/api/admin/tables/${event.currentTarget.dataset.id}`, { method: "DELETE", data: { operatorId: "emp_admin", reason: this.data.operationForm.tableDeleteReason } })
       wx.showToast({ title: "座台已禁用" })
       await this.loadTables()
       await this.loadDashboard()

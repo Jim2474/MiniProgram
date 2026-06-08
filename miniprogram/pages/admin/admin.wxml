@@ -33,6 +33,8 @@
         <view class="input">{{products[transferForm.skuIndex].name || '选择转存 SKU'}}</view>
       </picker>
       <input class="input" type="number" value="{{transferForm.quantity}}" bindinput="onTransferQty" placeholder="转存数量" />
+      <input class="input" value="{{operationForm.orderCompleteReason}}" data-field="orderCompleteReason" bindinput="onOperationReason" placeholder="订单完成原因" />
+      <input class="input" value="{{operationForm.refundReason}}" data-field="refundReason" bindinput="onOperationReason" placeholder="退款原因" />
     </view>
     <view wx:if="{{orders.length === 0}}" class="muted">暂无订单。</view>
     <view wx:for="{{orders}}" wx:key="orderId" class="row">
@@ -115,6 +117,10 @@
     <view wx:for="{{stockRequests}}" wx:key="requestId" class="row">
       <view class="row-title">{{item.directionText}} · {{item.product.name}} x {{item.quantity}}</view>
       <view class="muted">{{item.statusText}} · {{item.reason}}</view>
+      <view wx:if="{{item.status === 'pending'}}">
+        <input class="input" value="{{operationForm.stockRejectReason}}" data-field="stockRejectReason" bindinput="onOperationReason" placeholder="驳回原因" />
+        <input class="input" value="{{operationForm.stockCancelReason}}" data-field="stockCancelReason" bindinput="onOperationReason" placeholder="取消原因" />
+      </view>
       <view wx:if="{{item.status === 'pending'}}" class="btn-row">
         <button size="mini" class="primary" data-id="{{item.requestId}}" bindtap="confirmStockRequest">确认入账</button>
         <button size="mini" class="secondary" data-id="{{item.requestId}}" bindtap="rejectStockRequest">驳回</button>
@@ -149,6 +155,14 @@
 
   <view class="section">
     <view class="section-title">客户存酒</view>
+    <view class="row">
+      <view class="row-title">过期存酒处理表单</view>
+      <picker range="{{operationForm.expiredStorageActionOptions}}" range-key="label" value="{{operationForm.expiredStorageActionIndex}}" bindchange="onExpiredStorageAction">
+        <view class="input">处理动作：{{operationForm.expiredStorageActionOptions[operationForm.expiredStorageActionIndex].label}}</view>
+      </picker>
+      <input class="input" type="number" value="{{operationForm.expiredStorageExtendDays}}" data-field="expiredStorageExtendDays" bindinput="onOperationNumber" placeholder="延期天数" />
+      <input class="input" value="{{operationForm.expiredStorageNote}}" data-field="expiredStorageNote" bindinput="onOperationReason" placeholder="处理备注" />
+    </view>
     <view wx:for="{{storage}}" wx:key="storageId" class="row">
       <view class="row-title">{{item.user.phone}} · {{item.product.name}}</view>
       <view class="muted">{{item.statusText}} · 数量 {{item.quantity}} · 到期 {{item.expireDate}}</view>
@@ -158,6 +172,12 @@
 
   <view class="section">
     <view class="section-title">预约管理</view>
+    <view class="row">
+      <view class="row-title">预约处理原因</view>
+      <input class="input" value="{{operationForm.reservationConfirmReason}}" data-field="reservationConfirmReason" bindinput="onOperationReason" placeholder="确认原因" />
+      <input class="input" value="{{operationForm.reservationCancelReason}}" data-field="reservationCancelReason" bindinput="onOperationReason" placeholder="取消原因" />
+      <input class="input" value="{{operationForm.reservationExpireReason}}" data-field="reservationExpireReason" bindinput="onOperationReason" placeholder="失效原因" />
+    </view>
     <view wx:if="{{reservations.length === 0}}" class="muted">暂无预约。</view>
     <view wx:for="{{reservations}}" wx:key="reservationId" class="row">
       <view class="row-title">{{item.table.name}} · {{item.user.phone}}</view>
@@ -197,6 +217,8 @@
       <view class="row-title">开台占用表单</view>
       <input class="input" type="number" value="{{tableOccupyForm.consumptionAmount}}" bindinput="onTableOccupyAmount" placeholder="开台消费金额" />
       <input class="input" value="{{tableOccupyForm.reason}}" bindinput="onTableOccupyReason" placeholder="开台原因" />
+      <input class="input" value="{{operationForm.tableMaintenanceReason}}" data-field="tableMaintenanceReason" bindinput="onOperationReason" placeholder="维护原因" />
+      <input class="input" value="{{operationForm.tableDeleteReason}}" data-field="tableDeleteReason" bindinput="onOperationReason" placeholder="删除/禁用原因" />
     </view>
     <view wx:for="{{tables}}" wx:key="tableId" class="row">
       <view class="row-title">{{item.name}} · {{item.capacity}}人</view>
